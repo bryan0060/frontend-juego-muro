@@ -11,11 +11,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    // TODO: Cargar assets reales aquí cuando estén listos
-    // this.load.image('ball-basket', 'assets/images/ball-basket.png');
-    // this.load.audio('impact', 'assets/audio/impact.mp3');
-
-    // Pantalla de carga mínima mientras se descargan los assets
     const { width, height } = this.scale;
     this.add.text(width / 2, height / 2, 'Cargando...', {
       fontSize: '32px',
@@ -24,8 +19,8 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    // Cuando los assets estén listos, ir a la escena de baloncesto
-    // En el futuro esto lo controlará el GameMenu de React
-    this.scene.start('BasketballScene');
+    // Leer la escena inicial definida desde React
+    const escenaInicial = this.registry.get('escenaInicial') || 'BasketballScene';
+    this.scene.start(escenaInicial);
   }
 }
