@@ -18,7 +18,7 @@ con juegos diseñados para niños.
 
 | Rol | Nombre | Responsabilidad |
 |---|---|---|
-| Tech Lead | Bryan | Arquitectura, WebSocket, integración final |
+| Tech Lead | Bryan Arias Rios | Arquitectura, WebSocket, integración final |
 | Frontend Dev | David Herrera Carvajal | Componentes React, escenas Phaser, estilos |
 | Backend Dev | Jean Pierr Suaza Novoa | Servidor WebSocket, procesamiento del sensor |
 
