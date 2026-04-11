@@ -12,5 +12,15 @@ html, body, #root {
   background-color: #000;
 }
 
+:root {
+  --color-purpura:    #9c4eb3;
+  --color-verde:      #3dc9a1;
+  --color-naranja:    #fa804f;
+  --color-amarillo:   #fdbf2c;
+  --color-azul:       #40c0dd;
+  --font-principal:   'Fredoka', sans-serif;
+  --font-complementaria: 'Nunito', sans-serif;
+}
+
 /* Descomentar en producción cuando el sensor reemplace el mouse */
 /* cursor: none; */

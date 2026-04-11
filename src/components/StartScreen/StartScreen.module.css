@@ -1,0 +1,142 @@
+/* Contenedor principal — ocupa toda la pantalla */
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #9c4eb3 0%, #40c0dd 100%);
+  overflow: hidden;
+  font-family: var(--font-principal);
+}
+
+/* Burbujas decorativas de fondo */
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.15;
+  animation: float 6s ease-in-out infinite;
+}
+
+.bubble1 {
+  width: 300px;
+  height: 300px;
+  background: var(--color-amarillo);
+  top: -80px;
+  left: -80px;
+  animation-delay: 0s;
+}
+
+.bubble2 {
+  width: 200px;
+  height: 200px;
+  background: var(--color-verde);
+  bottom: -60px;
+  right: -60px;
+  animation-delay: 2s;
+}
+
+.bubble3 {
+  width: 150px;
+  height: 150px;
+  background: var(--color-naranja);
+  bottom: 100px;
+  left: 80px;
+  animation-delay: 4s;
+}
+
+.bubble4 {
+  width: 100px;
+  height: 100px;
+  background: var(--color-azul);
+  top: 80px;
+  right: 120px;
+  animation-delay: 1s;
+}
+
+/* Estrellas decorativas */
+.star {
+  position: absolute;
+  font-size: 2rem;
+  animation: spin 8s linear infinite;
+}
+
+.star1 { top: 15%; left: 10%; animation-delay: 0s; }
+.star2 { top: 20%; right: 12%; animation-delay: 2s; font-size: 1.5rem; }
+.star3 { bottom: 20%; left: 15%; animation-delay: 4s; font-size: 1.2rem; }
+.star4 { bottom: 25%; right: 10%; animation-delay: 1s; }
+
+/* Logo */
+.logo {
+  width: min(420px, 55vw);
+  height: auto;
+  animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  filter: drop-shadow(0px 8px 24px rgba(0,0,0,0.3));
+  margin-bottom: 40px;
+}
+
+/* Botón jugar */
+.playButton {
+  background: var(--color-amarillo);
+  color: #fff;
+  border: none;
+  border-radius: 60px;
+  padding: 22px 80px;
+  font-family: var(--font-principal);
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow:
+    0 8px 0 #c8890a,
+    0 12px 20px rgba(0,0,0,0.3);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s both;
+}
+
+.playButton:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 0 #c8890a,
+    0 16px 24px rgba(0,0,0,0.3);
+}
+
+.playButton:active {
+  transform: translateY(4px);
+  box-shadow:
+    0 4px 0 #c8890a,
+    0 8px 16px rgba(0,0,0,0.3);
+}
+
+/* Créditos Noah */
+.credits {
+  position: fixed;
+  bottom: 20px;
+  right: 24px;
+  font-family: var(--font-complementaria);
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.788);
+  letter-spacing: 0.5px;
+}
+
+/* Animaciones */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-20px); }
+}
+
+@keyframes spin {
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
