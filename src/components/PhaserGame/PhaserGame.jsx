@@ -13,7 +13,7 @@ import { createPhaserConfig } from '../../phaser/PhaserConfig';
 import { connectWebSocket, disconnectWebSocket } from '../../services/websocket/WebSocketClient';
 import { initMockWebSocket } from '../../services/websocket/MockWebSocket';
 
-const PhaserGame = () => {
+const PhaserGame = ({ escenaInicial = 'BasketballScene', onBack }) => {
   const gameContainerRef = useRef(null);
   const gameRef = useRef(null);
 
@@ -21,11 +21,9 @@ const PhaserGame = () => {
     const container = gameContainerRef.current;
     if (!container || gameRef.current) return;
 
-    // 1. Crear instancia de Phaser
-    const config = createPhaserConfig(container);
+    const config = createPhaserConfig(container, escenaInicial);
     gameRef.current = new Phaser.Game(config);
 
-    // 2. Conectar fuente de datos según el entorno
     if (import.meta.env.DEV) {
       const cleanup = initMockWebSocket();
       gameRef.current._mockCleanup = cleanup;
@@ -33,7 +31,6 @@ const PhaserGame = () => {
       connectWebSocket();
     }
 
-    // 3. Limpieza al desmontar
     return () => {
       gameRef.current?._mockCleanup?.();
       disconnectWebSocket();
@@ -43,18 +40,34 @@ const PhaserGame = () => {
   }, []);
 
   return (
-    <div
-      ref={gameContainerRef}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        overflow: 'hidden',
-        backgroundColor: '#000',
-      }}
-    />
+    <div style={{ position: 'fixed', inset: 0 }}>
+      {/* Canvas de Phaser */}
+      <div
+        ref={gameContainerRef}
+        style={{ width: '100%', height: '100%' }}
+      />
+
+      {/* Botón volver al menú — overlay sobre el canvas */}
+      <button
+        onClick={onBack}
+        style={{
+          position: 'absolute',
+          bottom: '20px',      // ← Cambiar top por bottom
+          left: '20px',
+          zIndex: 10,
+          background: 'rgba(0,0,0,0.5)',
+          border: '2px solid rgba(255,255,255,0.4)',
+          borderRadius: '50px',
+          padding: '10px 24px',
+          color: '#fff',
+          fontSize: '1rem',
+          fontFamily: 'var(--font-principal)',
+          cursor: 'pointer',
+        }}
+      >
+        ← Menú
+      </button>
+    </div>
   );
 };
 
