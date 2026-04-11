@@ -1,0 +1,16 @@
+/* Reset total para kiosk mode - sin scroll, sin cursor en producción */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000;
+}
+
+/* Descomentar en producción cuando el sensor reemplace el mouse */
+/* cursor: none; */
