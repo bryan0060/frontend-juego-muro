@@ -12,7 +12,7 @@ export class SoccerScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    this.add.text(width / 2, height / 2, '⚽ SoccerScene Activa', {
+    this.add.text(width / 2, height / 2, '⚽ SoccerScene ', {
       fontSize: '36px',
       color: '#ffffff',
     }).setOrigin(0.5);
