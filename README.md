@@ -1,16 +1,8 @@
-# 🎮 Muro Interactivo — Parke Tr3s
+# 🎮 Master UI — Parke Tr3s
 
-Proyecto desarrollado por **Noah Technology Solutions** para **Parke Tr3s**.  
-Un muro interactivo proyectado en pared, controlado por un sensor láser RPlidar C1,
-con juegos diseñados para niños.
-
----
-
-## 🧱 Tecnologías
-
-- **React + Vite** — Interfaz de usuario (menús, pantallas, puntajes)
-- **Phaser 3** — Motor de juegos (físicas, animaciones, partículas)
-- **WebSocket** — Comunicación en tiempo real con el sensor láser
+Proyecto desarrollado por **Noah Technology Solutions** para **Parke Tr3s**.
+Una Master UI que aloja 6 minijuegos controlados por 2 tipos de sensores físicos,
+proyectada en una pared en Kiosk Mode.
 
 ---
 
@@ -18,102 +10,207 @@ con juegos diseñados para niños.
 
 | Rol | Nombre | Responsabilidad |
 |---|---|---|
-| Tech Lead | Bryan Arias Rios | Arquitectura, WebSocket, integración final |
-| Frontend Dev | David Herrera Carvajal | Componentes React, escenas Phaser, estilos |
-| Backend Dev | Jean Pierr Suaza Novoa | Servidor WebSocket, procesamiento del sensor |
+| Tech Lead | Bryan Arias Rios | Arquitectura, integración, revisión |
+| Phaser Dev | David Herrera Carvajal | Escenas de juego en Phaser |
+| Frontend Dev | Tomás | Escenas de juego en Phaser + apoyo UI |
 
 ---
 
-## 🚀 Cómo correr el proyecto por primera vez
+## 🧱 Stack
 
-### 1. Clona el repositorio
-```bash
-git clone https://github.com/bryan0060/frontend-juego-muro.git
-cd frontend-juego-muro
-```
+- **React + Vite** — Menús y navegación entre juegos
+- **Phaser 4** — Motor de cada minijuego
+- **WebSocket** — Comunicación en tiempo real con los sensores
 
-### 2. Instala las dependencias
-```bash
-npm install
-```
+---
 
-### 3. Corre el proyecto en modo desarrollo
-```bash
-npm run dev
-```
+## 🎮 Los 6 juegos
 
-Abre el navegador en `http://localhost:5173`
+Hay 2 tipos de sensores. Cada sensor tiene su propio puerto WebSocket:
 
-> **En desarrollo:** los clics del mouse simulan impactos del sensor láser.
-> Verás partículas explotar donde hagas clic — así es como funciona el mock.
+### 📷 Cámara de reconocimiento corporal → Puerto 8080
+El sensor detecta el cuerpo del jugador (poses, movimiento, impactos).
+
+| Juego | Escena Phaser | Estado |
+|---|---|---|
+| Just Dance | `JustDanceScene` | 🔴 Pendiente |
+| Subway Surfers | `SubwaySurfersScene` | 🔴 Pendiente |
+| Animales | `AnimalesScene` | 🔴 Pendiente |
+| Duro contra el Muro | `DuroMuroScene` | 🔴 Pendiente |
+
+### 🔴 Sensor RPLiDAR → Puerto 8081
+El sensor detecta coordenadas (X, Y) de impactos físicos en la pared.
+
+| Juego | Escena Phaser | Estado |
+|---|---|---|
+| Pizarra Mágica | `MagicBoardScene` | 🔴 Pendiente |
+| Penaltis | `SoccerScene` | 🟡 Base lista |
 
 ---
 
 ## 📁 Estructura del proyecto
+
+```
 src/
+├── config/
+│   └── games.config.js        ← Catálogo de los 6 juegos (ÚNICA FUENTE DE VERDAD)
 ├── components/
-│   └── PhaserGame/       # Puente entre React y Phaser
+│   ├── StartScreen/           ← Pantalla de bienvenida
+│   ├── GameMenu/              ← Menú de selección
+│   └── PhaserGame/            ← Puente entre React y Phaser
 ├── phaser/
-│   ├── PhaserConfig.js   # Configuración global de Phaser
-│   └── scenes/           # Cada juego es una escena aquí
+│   ├── PhaserConfig.js        ← Configuración global de Phaser
+│   └── scenes/                ← AQUÍ van todas las escenas de juego
+│       ├── BootScene.js       ← Precarga de assets (no tocar)
+│       └── SoccerScene.js     ← Ejemplo de escena funcional
 ├── services/
-│   └── websocket/        # Cliente WebSocket real y mock
-└── styles/               # Estilos globales
+│   └── websocket/
+│       ├── WebSocketClient.js ← Cliente WS dinámico (no tocar)
+│       └── MockWebSocket.js   ← Simulador para desarrollo (no tocar)
+└── styles/
+    └── global.css
+```
 
 ---
 
-## 🌿 Ramas del repositorio
-
-| Rama | Para qué sirve |
-|---|---|
-| `main` | Versión final lista para instalar en el Mini PC. **No tocar.** |
-| `develop` | Aquí trabajamos todos. Hacer push aquí siempre. |
-
-### Flujo de trabajo diario
+## 🚀 Cómo correr el proyecto
 
 ```bash
-# ANTES de empezar a trabajar — siempre
+# 1. Clonar el repositorio
+git clone https://github.com/bryan0060/frontend-juego-muro.git
+cd frontend-juego-muro
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Correr en desarrollo
+npm run dev
+```
+
+> En desarrollo los clics del mouse simulan impactos del sensor.
+> No necesitas ningún sensor físico para desarrollar.
+
+---
+
+## 🌿 Git Flow
+
+| Rama | Uso |
+|---|---|
+| `main` | Versión final para el Mini PC. **No tocar.** |
+| `develop` | Rama de trabajo. Hacer push aquí siempre. |
+
+```bash
+# Antes de empezar a trabajar — siempre
 git pull origin develop
 
-# CUANDO algo funciona y está estable
+# Cuando algo funciona
 git add .
-git commit -m "feat: descripción de lo que hiciste"
+git commit -m "feat(escena): descripción de lo que hiciste"
 git push origin develop
 ```
 
-### ⚠️ Reglas importantes
-- **Siempre** hacer `git pull` antes de empezar a trabajar
+---
+
+## 👨‍💻 Guía para David y Tomás
+
+### ¿Cómo crear una escena nueva?
+
+Toda la lógica de cada juego vive en un archivo dentro de `src/phaser/scenes/`.
+Miren `SoccerScene.js` como ejemplo funcional.
+
+**Paso 1 — Crear el archivo de la escena**
+
+Crear `src/phaser/scenes/NombreScene.js`:
+
+```javascript
+import * as Phaser from 'phaser';
+
+export class NombreScene extends Phaser.Scene {
+  constructor() {
+    super({ key: 'NombreScene' });
+  }
+
+  create() {
+    const { width, height } = this.scale;
+
+    // Tu lógica de juego aquí
+
+    // Escuchar impactos del sensor
+    this._impactHandler = this.handleImpact.bind(this);
+    window.addEventListener('ws-message', this._impactHandler);
+  }
+
+  handleImpact(event) {
+    const { x, y, tipo_evento } = event.detail;
+    // x, y → coordenadas del impacto en pantalla
+    // tipo_evento → tipo de evento que mandó el sensor
+  }
+
+  shutdown() {
+    // OBLIGATORIO — evita memory leaks
+    window.removeEventListener('ws-message', this._impactHandler);
+  }
+}
+```
+
+**Paso 2 — Registrar la escena en PhaserConfig.js**
+
+```javascript
+// Agregar el import
+import { NombreScene } from './scenes/NombreScene';
+
+// Agregar al array scene
+scene: [BootScene, SoccerScene, NombreScene],
+```
+
+**Paso 3 — Activar el juego en games.config.js**
+
+```javascript
+{
+  id: 'nombre-juego',
+  nombre: 'Nombre del Juego',
+  emoji: '🎮',
+  escena: 'NombreScene',   // ← Debe coincidir con el key del constructor
+  wsPort: 8080,             // ← 8080 cámara / 8081 RPLiDAR
+  disponible: true,         // ← Cambiar a true cuando esté listo
+},
+```
+
+> ⚠️ El nombre en `escena` debe ser exactamente igual al `key` del constructor de la escena.
+
+### Reglas importantes
+
+- **Nunca** modificar `WebSocketClient.js`, `MockWebSocket.js` ni `PhaserGame.jsx`
 - **Nunca** hacer push directo a `main`
-- Los commits deben describir claramente qué se hizo
-- Si algo se rompe, avisar al equipo antes de hacer push
+- **Siempre** hacer `git pull origin develop` antes de empezar
+- Si algo se rompe, avisar a Bryan antes de hacer push
 
 ---
 
-## ✅ Fases del proyecto
+## ✅ Estado del proyecto
 
 | Fase | Estado | Descripción |
 |---|---|---|
-| 0 — Base | ✅ Completa | Estructura, puente React/Phaser, mock WebSocket |
-| 1 — UI React | 🔄 En progreso | StartScreen, GameMenu, navegación |
-| 2 — Juego Core | ⬜ Pendiente | Física de pelota, detección de colisiones |
-| 3 — WebSocket Real | ⬜ Pendiente | Conexión con sensor RPlidar C1 |
-| 4 — Efectos | ⬜ Pendiente | Partículas avanzadas, sonidos, animaciones |
-| 5 — Producción | ⬜ Pendiente | Build final, configuración del Mini PC |
+| Arquitectura base | ✅ Completa | React + Phaser + WebSocket dinámico |
+| Menú con 6 juegos | ✅ Completa | Config central, disponibilidad |
+| SoccerScene (Penaltis) | 🟡 En progreso | Base funcional, falta lógica real |
+| 5 escenas restantes | 🔴 Pendiente | |
+| WebSocket real | 🔴 Pendiente | Depende del backend |
+| Build para Mini PC | 🔴 Pendiente | |
 
 ---
 
 ## 🎨 Identidad visual — Parke Tr3s
-Colores:
+
+```
 Púrpura:    #9c4eb3  ← Color principal
 Verde agua: #3dc9a1
 Naranja:    #fa804f
 Amarillo:   #fdbf2c
 Azul:       #40c0dd
-Tipografía principal:      Playthings
+
+Tipografía principal:      Fredoka
 Tipografía complementaria: Gotham Rounded
+```
 
 ---
-
-## 📞 Contacto
-
-¿Dudas sobre el proyecto? Escribirle directamente a Bryan (Tech Lead).
