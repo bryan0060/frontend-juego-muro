@@ -27,7 +27,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, onBack }) => {
 
     // Conectar WebSocket al puerto del juego activo
     if (import.meta.env.DEV) {
-      const cleanup = initMockWebSocket();
+      const cleanup = initMockWebSocket(wsPort); // ← Agregar wsPort
       gameRef.current._mockCleanup = cleanup;
     } else {
       connectWebSocket(wsPort);

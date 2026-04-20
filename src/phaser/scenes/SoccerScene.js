@@ -35,17 +35,17 @@ export class SoccerScene extends Phaser.Scene {
     });
 
     this._impactHandler = this.handleImpact.bind(this);
-    window.addEventListener('laser-impact', this._impactHandler);
+    window.addEventListener('ws-message', this._impactHandler);
   }
 
   handleImpact(event) {
-    const { x, y } = event.detail;
-    this.particles.setPosition(x, y);
-    this.particles.explode(25);
-    this.statusText.setText(`💥 Impacto en X:${Math.round(x)} Y:${Math.round(y)}`);
-  }
+  const { x, y } = event.detail;
+  this.particles.setPosition(x, y);
+  this.particles.explode(25);
+  this.statusText.setText(`💥 Impacto en X:${Math.round(x)} Y:${Math.round(y)}`);
+}
 
   shutdown() {
-    window.removeEventListener('laser-impact', this._impactHandler);
+    window.removeEventListener('ws-message', this._impactHandler);
   }
 }
