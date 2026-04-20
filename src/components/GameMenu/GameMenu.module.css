@@ -140,6 +140,21 @@
   color: rgba(255,255,255,0.5);
 }
 
+.cardBloqueado {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(60%);
+}
+
+.proximamente {
+  display: block;
+  font-size: 0.7rem;
+  margin-top: 6px;
+  color: #ffffff99;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50%       { transform: translateY(-20px); }
