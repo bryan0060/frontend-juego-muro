@@ -1,9 +1,8 @@
 // Configuración central de Phaser 3
 import * as Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
-import { BasketballScene } from './scenes/BasketballScene';
 import { SoccerScene } from './scenes/SoccerScene';
-import { TargetScene } from './scenes/TargetScene';
+
 
 /**
  * Genera la config de Phaser adaptada al tamaño real de la pantalla.
@@ -41,5 +40,5 @@ export const createPhaserConfig = (parent, escenaInicial = 'BasketballScene') =>
       game.registry.set('escenaInicial', escenaInicial);
     },
   },
-  scene: [BootScene, BasketballScene, SoccerScene, TargetScene],
+  scene: [BootScene, SoccerScene],
 });

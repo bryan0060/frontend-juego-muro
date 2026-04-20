@@ -25,11 +25,11 @@ const PhaserGame = ({ escenaInicial = 'BasketballScene', onBack }) => {
     gameRef.current = new Phaser.Game(config);
 
     if (import.meta.env.DEV) {
-      const cleanup = initMockWebSocket();
-      gameRef.current._mockCleanup = cleanup;
-    } else {
-      connectWebSocket();
-    }
+  const cleanup = initMockWebSocket();
+  gameRef.current._mockCleanup = cleanup;
+} else {
+  connectWebSocket();
+}
 
     return () => {
       gameRef.current?._mockCleanup?.();
