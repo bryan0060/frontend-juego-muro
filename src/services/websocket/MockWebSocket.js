@@ -1,33 +1,39 @@
 /**
- * MockWebSocket — Simulador del sensor para desarrollo.
- * 
- * Convierte CLICS DEL MOUSE en eventos 'laser-impact',
- * imitando exactamente lo que haría el sensor RPlidar C1.
- * 
+ * MockWebSocket.js — Simulador del sensor para desarrollo.
+ *
+ * Convierte CLICS DEL MOUSE en eventos 'ws-message',
+ * imitando exactamente lo que haría el WebSocketClient real.
+ *
  * Solo se activa en modo desarrollo (import.meta.env.DEV).
  * Nunca corre en producción.
+ *
+ * @param {number} port - Puerto a simular (8080 o 8081)
  */
-export const initMockWebSocket = () => {
+export const initMockWebSocket = (port) => {
   if (!import.meta.env.DEV) return;
 
-  console.info('[MOCK WS] Modo simulación activo. Haz clic en la pantalla para simular impactos del sensor.');
+  console.info(
+    `[MOCK WS] Modo simulación activo en puerto ${port}. Haz clic para simular impactos.`
+  );
 
   const handleClick = (e) => {
-    const mockPayload = {
+    const payload = {
+      port,
       tipo_evento: 'impacto',
       x: e.clientX,
       y: e.clientY,
     };
 
-    console.debug('[MOCK WS] Impacto simulado:', mockPayload);
+    console.debug('[MOCK WS] Impacto simulado:', payload);
 
-    window.dispatchEvent(new CustomEvent('laser-impact', {
-      detail: { x: mockPayload.x, y: mockPayload.y },
-    }));
+    window.dispatchEvent(
+      new CustomEvent('ws-message', {
+        detail: payload,
+      })
+    );
   };
 
   window.addEventListener('click', handleClick);
 
-  // Retornar función de limpieza
   return () => window.removeEventListener('click', handleClick);
 };
