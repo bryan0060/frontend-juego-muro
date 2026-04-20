@@ -9,25 +9,11 @@ import styles from './GameMenu.module.css';
 // Para añadir un juego nuevo, solo agrega un objeto aquí
 const JUEGOS = [
   {
-    id: 'basketball',
-    nombre: 'Baloncesto',
-    emoji: '🏀',
-    escena: 'BasketballScene',
-    estilo: styles.cardBasketball,
-  },
-  {
     id: 'soccer',
     nombre: 'Fútbol',
     emoji: '⚽',
     escena: 'SoccerScene',
     estilo: styles.cardSoccer,
-  },
-  {
-    id: 'target',
-    nombre: 'Tiro al Blanco',
-    emoji: '🎯',
-    escena: 'TargetScene',
-    estilo: styles.cardTarget,
   },
 ];
 
