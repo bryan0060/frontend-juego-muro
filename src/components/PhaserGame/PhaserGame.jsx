@@ -1,10 +1,10 @@
 /**
- * PhaserGame — El puente entre React y Phaser 3.
+ * PhaserGame.jsx — Puente entre React y Phaser.
  *
  * Responsabilidades:
- * 1. Crear y montar el canvas de Phaser en el DOM.
- * 2. Destruir el juego correctamente al desmontar el componente.
- * 3. No re-renderizar innecesariamente (el canvas lo controla Phaser).
+ * 1. Montar el canvas de Phaser en el DOM.
+ * 2. Conectar el WebSocket al puerto correcto según el juego.
+ * 3. Destruir el juego y desconectar el WS al salir.
  */
 
 import { useEffect, useRef } from 'react';
@@ -13,7 +13,7 @@ import { createPhaserConfig } from '../../phaser/PhaserConfig';
 import { connectWebSocket, disconnectWebSocket } from '../../services/websocket/WebSocketClient';
 import { initMockWebSocket } from '../../services/websocket/MockWebSocket';
 
-const PhaserGame = ({ escenaInicial = 'BasketballScene', onBack }) => {
+const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, onBack }) => {
   const gameContainerRef = useRef(null);
   const gameRef = useRef(null);
 
@@ -21,17 +21,20 @@ const PhaserGame = ({ escenaInicial = 'BasketballScene', onBack }) => {
     const container = gameContainerRef.current;
     if (!container || gameRef.current) return;
 
+    // Montar Phaser
     const config = createPhaserConfig(container, escenaInicial);
     gameRef.current = new Phaser.Game(config);
 
+    // Conectar WebSocket al puerto del juego activo
     if (import.meta.env.DEV) {
-      const cleanup = initMockWebSocket();
+      const cleanup = initMockWebSocket(wsPort); // ← Agregar wsPort
       gameRef.current._mockCleanup = cleanup;
     } else {
-      connectWebSocket();
+      connectWebSocket(wsPort);
     }
 
     return () => {
+      // Cleanup al salir del juego
       gameRef.current?._mockCleanup?.();
       disconnectWebSocket();
       gameRef.current?.destroy(true);
@@ -41,18 +44,15 @@ const PhaserGame = ({ escenaInicial = 'BasketballScene', onBack }) => {
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
-      {/* Canvas de Phaser */}
       <div
         ref={gameContainerRef}
         style={{ width: '100%', height: '100%' }}
       />
-
-      {/* Botón volver al menú — overlay sobre el canvas */}
       <button
         onClick={onBack}
         style={{
           position: 'absolute',
-          bottom: '20px',      // ← Cambiar top por bottom
+          bottom: '20px',
           left: '20px',
           zIndex: 10,
           background: 'rgba(0,0,0,0.5)',

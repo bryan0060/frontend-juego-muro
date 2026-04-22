@@ -1,7 +1,8 @@
 /**
- * App — Punto de entrada principal de React.
- * Por ahora monta directamente el juego para validar la integración.
- * En la Fase 1 añadiremos StartScreen y GameMenu aquí.
+ * App.jsx — Punto de entrada principal de React.
+ *
+ * Maneja la navegación entre pantallas y transporta
+ * el objeto completo del juego seleccionado.
  */
 
 import { useState } from 'react';
@@ -12,11 +13,17 @@ import PhaserGame from './components/PhaserGame/PhaserGame';
 
 function App() {
   const [pantalla, setPantalla] = useState('inicio');
-  const [escenaActiva, setEscenaActiva] = useState(null);
+  const [juegoActivo, setJuegoActivo] = useState(null);
 
-  const handleSelectGame = (escena) => {
-    setEscenaActiva(escena);
+  const handleSelectGame = (juego) => {
+    // juego = { id, nombre, escena, wsPort, disponible, ... }
+    setJuegoActivo(juego);
     setPantalla('juego');
+  };
+
+  const handleBack = () => {
+    setJuegoActivo(null);
+    setPantalla('menu');
   };
 
   return (
@@ -30,10 +37,11 @@ function App() {
           onBack={() => setPantalla('inicio')}
         />
       )}
-      {pantalla === 'juego' && (
+      {pantalla === 'juego' && juegoActivo && (
         <PhaserGame
-          escenaInicial={escenaActiva}
-          onBack={() => setPantalla('menu')}
+          escenaInicial={juegoActivo.escena}
+          wsPort={juegoActivo.wsPort}
+          onBack={handleBack}
         />
       )}
     </>

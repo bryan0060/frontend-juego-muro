@@ -1,22 +1,15 @@
-// Configuración central de Phaser 3
+/**
+ * PhaserConfig.js — Configuración central de Phaser.
+ *
+ * Solo registrar aquí las escenas que existen.
+ * Para agregar una escena nueva: importarla y añadirla al array scene.
+ */
+
 import * as Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
-import { BasketballScene } from './scenes/BasketballScene';
 import { SoccerScene } from './scenes/SoccerScene';
-import { TargetScene } from './scenes/TargetScene';
 
-/**
- * Genera la config de Phaser adaptada al tamaño real de la pantalla.
- * Se llama en tiempo de ejecución para capturar las dimensiones reales
- * del dispositivo (crítico para proyección en pared de tamaño desconocido de momento).
- */
-
-/**
- * @param {HTMLElement} parent - Contenedor DOM
- * @param {string} escenaInicial - Escena a lanzar después del Boot
- */
-
-export const createPhaserConfig = (parent, escenaInicial = 'BasketballScene') => ({
+export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
   type: Phaser.AUTO,
   parent: parent,
   width: window.innerWidth,
@@ -35,11 +28,10 @@ export const createPhaserConfig = (parent, escenaInicial = 'BasketballScene') =>
     width: window.innerWidth,
     height: window.innerHeight,
   },
-  // Pasamos la escena inicial como datos globales
   callbacks: {
     preBoot: (game) => {
       game.registry.set('escenaInicial', escenaInicial);
     },
   },
-  scene: [BootScene, BasketballScene, SoccerScene, TargetScene],
+  scene: [BootScene, SoccerScene],
 });
