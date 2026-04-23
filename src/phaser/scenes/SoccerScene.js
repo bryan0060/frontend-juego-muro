@@ -405,28 +405,11 @@ export class SoccerScene extends Phaser.Scene {
 
   // ─── Compatibilidad con laser-impact externo ────────────────────
   handleImpact(event) {
-<<<<<<< HEAD
-    const { x, y } = event.detail;
-    this.particles.setPosition(x, y);
-    this.particles.explode(20);
-  }
-
-  update() {
-    this.aimGraphics.clear();
-    if (this.phase !== 'aim') return;
-    const ax = this.aimX, ay = this.aimY;
-    this.aimGraphics.lineStyle(2, 0xffdd00, 0.85);
-    this.aimGraphics.strokeCircle(ax, ay, 8);
-    this.aimGraphics.strokeLineShape(new Phaser.Geom.Line(ax - 14, ay, ax + 14, ay));
-    this.aimGraphics.strokeLineShape(new Phaser.Geom.Line(ax, ay - 14, ax, ay + 14));
-  }
-=======
   const { x, y } = event.detail;
   this.particles.setPosition(x, y);
   this.particles.explode(25);
   this.statusText.setText(`💥 Impacto en X:${Math.round(x)} Y:${Math.round(y)}`);
 }
->>>>>>> 6a710f4befbeed18c08f1681f991b6baa913443c
 
   shutdown() {
     window.removeEventListener('ws-message', this._impactHandler);
