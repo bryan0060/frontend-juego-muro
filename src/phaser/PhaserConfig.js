@@ -1,13 +1,7 @@
-/**
- * PhaserConfig.js — Configuración central de Phaser.
- *
- * Solo registrar aquí las escenas que existen.
- * Para agregar una escena nueva: importarla y añadirla al array scene.
- */
-
 import * as Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { SoccerScene } from './scenes/SoccerScene';
+import { DuroMuroScene } from './scenes/DuroMuroScene';
 
 export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
   type: Phaser.AUTO,
@@ -33,5 +27,5 @@ export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
       game.registry.set('escenaInicial', escenaInicial);
     },
   },
-  scene: [BootScene, SoccerScene],
+  scene: [BootScene, SoccerScene, DuroMuroScene],
 });
