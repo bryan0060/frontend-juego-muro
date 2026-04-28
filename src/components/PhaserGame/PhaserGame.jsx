@@ -3,8 +3,15 @@
  *
  * Responsabilidades:
  * 1. Montar el canvas de Phaser en el DOM.
- * 2. Conectar el WebSocket al puerto correcto según el juego.
+ * 2. Conectar el WebSocket al puerto, path y juego correctos.
  * 3. Destruir el juego y desconectar el WS al salir.
+ *
+ * Props:
+ * - escenaInicial: string  → qué escena de Phaser lanzar
+ * - wsPort: number         → puerto del WebSocket (8080 o 8081)
+ * - wsPath: string         → path de la URL ('/ws' o '')
+ * - wsJuego: string|null   → juego a activar en el backend al conectar
+ * - onBack: function       → volver al menú
  */
 
 import { useEffect, useRef } from 'react';
@@ -13,7 +20,7 @@ import { createPhaserConfig } from '../../phaser/PhaserConfig';
 import { connectWebSocket, disconnectWebSocket } from '../../services/websocket/WebSocketClient';
 import { initMockWebSocket } from '../../services/websocket/MockWebSocket';
 
-const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, onBack }) => {
+const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJuego = null, onBack }) => {
   const gameContainerRef = useRef(null);
   const gameRef = useRef(null);
 
@@ -25,16 +32,15 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, onBack }) => {
     const config = createPhaserConfig(container, escenaInicial);
     gameRef.current = new Phaser.Game(config);
 
-    // Conectar WebSocket al puerto del juego activo
+    // Conectar WebSocket al puerto, path y juego del juego activo
     if (import.meta.env.DEV) {
-      const cleanup = initMockWebSocket(wsPort); // ← Agregar wsPort
+      const cleanup = initMockWebSocket(wsPort);
       gameRef.current._mockCleanup = cleanup;
     } else {
-      connectWebSocket(wsPort);
+      connectWebSocket(wsPort, wsPath, wsJuego);
     }
 
     return () => {
-      // Cleanup al salir del juego
       gameRef.current?._mockCleanup?.();
       disconnectWebSocket();
       gameRef.current?.destroy(true);
