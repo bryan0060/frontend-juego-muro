@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { SoccerScene } from './scenes/SoccerScene';
+import { DuroMuroScene } from './scenes/DuroMuroScene';
 
 export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
   type: Phaser.AUTO,
@@ -11,8 +12,8 @@ export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
   physics: {
     default: 'arcade',
     arcade: {
-      gravity: { y: 600 },
-      debug: import.meta.env.DEV,
+      gravity: { y: 0 },
+      debug: false,
     },
   },
   scale: {
@@ -22,11 +23,9 @@ export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
     height: window.innerHeight,
   },
   callbacks: {
-    preBoot: (game) => {
+    postBoot: (game) => {
       game.registry.set('escenaInicial', escenaInicial);
     },
   },
   scene: [BootScene, SoccerScene, DuroMuroScene],
 });
-
-
