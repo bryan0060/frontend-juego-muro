@@ -28,6 +28,7 @@ export class BootScene extends Phaser.Scene {
     this.load.audio('victoria', 'assets/audio/victoria.mp3');
     this.load.image('keeper_neutral', 'assets/images/futbol/posicion1.png');
     this.load.image('keeper_side', 'assets/images/futbol/posicion iz.png');
+    this.load.image('ball', 'assets/images/futbol/Balon.png');
   }
 
   create() {
