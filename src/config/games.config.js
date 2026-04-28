@@ -13,6 +13,8 @@ export const GAMES = [
     emoji: '🕺',
     escena: 'JustDanceScene',
     wsPort: 8080,
+    wsPath: '/ws',
+    wsJuego: 'ritmo',
     disponible: false,
   },
   {
@@ -21,6 +23,8 @@ export const GAMES = [
     emoji: '🏃',
     escena: 'SubwaySurfersScene',
     wsPort: 8080,
+    wsPath: '/ws',
+    wsJuego: 'esquive',
     disponible: false,
   },
   {
@@ -29,6 +33,8 @@ export const GAMES = [
     emoji: '🐾',
     escena: 'AnimalesScene',
     wsPort: 8080,
+    wsPath: '/ws',
+    wsJuego: 'impacto',
     disponible: false,
   },
   {
@@ -37,7 +43,9 @@ export const GAMES = [
     emoji: '🧱',
     escena: 'DuroMuroScene',
     wsPort: 8080,
-    disponible: false,
+    wsPath: '/ws',
+    wsJuego: 'poses',
+    disponible: true,
   },
 
   // ── Puerto 8081 — Sensor RPLiDAR ─────────────────────────────
@@ -47,6 +55,8 @@ export const GAMES = [
     emoji: '✨',
     escena: 'MagicBoardScene',
     wsPort: 8081,
+    wsPath: '',
+    wsJuego: null,
     disponible: false,
   },
   {
@@ -55,6 +65,8 @@ export const GAMES = [
     emoji: '⚽',
     escena: 'SoccerScene',
     wsPort: 8081,
+    wsPath: '',
+    wsJuego: null,
     disponible: true,
   },
 ];
