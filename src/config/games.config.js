@@ -13,8 +13,6 @@ export const GAMES = [
     emoji: '🕺',
     escena: 'JustDanceScene',
     wsPort: 8080,
-    wsPath: '/ws',
-    wsJuego: 'ritmo',
     disponible: false,
   },
   {

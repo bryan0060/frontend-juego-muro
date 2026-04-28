@@ -1,7 +1,6 @@
 import * as Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { SoccerScene } from './scenes/SoccerScene';
-import { DuroMuroScene } from './scenes/DuroMuroScene';
 
 export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
   type: Phaser.AUTO,
@@ -29,3 +28,5 @@ export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
   },
   scene: [BootScene, SoccerScene, DuroMuroScene],
 });
+
+

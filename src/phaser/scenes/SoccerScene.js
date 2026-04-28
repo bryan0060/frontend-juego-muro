@@ -13,6 +13,7 @@ export class SoccerScene extends Phaser.Scene {
     this.H = H;
 
     this.score = 0;
+    this.cpuScore = 0;
     this.shots = 0;
     this.phase = 'aim';
 
@@ -140,11 +141,15 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   _buildKeeper() {
+    // Definimos escalas independientes para cada imagen
+    this.scaleNeutral = 0.45; // Escala para 'keeper_neutral'
+    this.scaleSide = 0.45;    // Escala para 'keeper_side'
+
     // Iniciamos con la pose neutral
     const sp = this.add.sprite(0, 0, 'keeper_neutral');
 
-    // Escala y Origen (1 = Pies en el suelo)
-    sp.setScale(0.15);
+    // Aplicamos la escala neutral
+    sp.setScale(this.scaleNeutral);
     sp.setOrigin(0.5, 1);
 
     this.keeperContainer.add(sp);
@@ -152,16 +157,13 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   _createBall(x, y) {
-    const g = this.add.graphics();
-    g.fillStyle(0xffffff);
-    g.fillCircle(0, 0, 10);
-    g.lineStyle(1, 0x222222);
-    g.strokeCircle(0, 0, 10);
-    g.fillStyle(0x222222);
-    g.fillTriangle(0, -5, -4, 1, 4, 1);
-    g.x = x;
-    g.y = y;
-    return g;
+    // Usamos el sprite cargado en BootScene
+    const ball = this.add.sprite(x, y, 'ball');
+    
+    // Ajustamos la escala para que se vea bien en el punto de penalti
+    ball.setScale(0.018); 
+    
+    return ball;
   }
 
   _buildHUD() {
@@ -233,7 +235,7 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   _updateHUDStats() {
-    this.teamText.setText(`JUG   ${this.score} - 0   CPU`);
+    this.teamText.setText(`JUG   ${this.score} - ${this.cpuScore}   CPU`);
     this.shotsInfo.setText(`TIROS: ${this.shots} / ${SoccerScene.MAX_SHOTS}`);
   }
 
@@ -262,24 +264,34 @@ export class SoccerScene extends Phaser.Scene {
     this._updateHUDStats();
     this.hintText.setAlpha(0);
 
-    // Portero se lanza al azar (rango mucho más amplio)
-    const dir = Math.random() > 0.5 ? 1 : -1;
-    const keeperDest = this.W / 2 + dir * 250;
+    // DIFICULTAD DINÁMICA: El arquero lee mejor el tiro según el puntaje
+    const intelligence = Math.min(this.score * 0.22, 0.95); // Sube más rápido y llega al 95%
+    const randomDir = Math.random() > 0.5 ? 1 : -1;
+    const randomDestX = this.W / 2 + randomDir * 280;
+    
+    // El destino final es una mezcla entre azar y la posición real del balón (tx)
+    let keeperDestX = randomDestX * (1 - intelligence) + tx * intelligence;
+    
+    // LÍMITES: Que no se salga demasiado de los postes
+    keeperDestX = Phaser.Math.Clamp(keeperDestX, this.W / 2 - 380, this.W / 2 + 380);
+    
+    // SALTO DINÁMICO: Limitamos la altura para que no vuele sobre el estadio
+    const jumpPower = Phaser.Math.Clamp(Math.max(70, (320 - ty) * 0.75), 0, 180);
 
-    // CAMBIO DE POSE:
+    // VELOCIDAD PROGRESIVA: El arquero se mueve más rápido conforme metes goles
+    const reactionTime = Math.max(280, 420 - (this.score * 35));
+
+    // CAMBIO DE POSE, ESCALA Y DIRECCIÓN
     this.keeperSprite.setTexture('keeper_side');
-    if (dir === 1) {
-      this.keeperSprite.setFlipX(true);  // Derecha (espejo)
-    } else {
-      this.keeperSprite.setFlipX(false); // Izquierda (original)
-    }
+    this.keeperSprite.setScale(this.scaleSide); // Aplicamos escala de salto
+    this.keeperSprite.setFlipX(keeperDestX > this.W / 2);
 
     this.tweens.add({
       targets: this.keeperContainer,
-      x: keeperDest,
-      y: 320 - 70, // Altura media de salto
-      angle: dir * 40,
-      duration: 450,
+      x: keeperDestX,
+      y: 320 - jumpPower,
+      angle: (keeperDestX > this.W / 2 ? 1 : -1) * 35,
+      duration: reactionTime, // Ahora es dinámico y más rápido
       ease: 'Quad.easeOut',
     });
 
@@ -288,21 +300,22 @@ export class SoccerScene extends Phaser.Scene {
       targets: [this.ballSprite, this.ballShadow],
       x: tx,
       y: ty,
-      scaleX: 0.6,
-      scaleY: 0.6,
+      scaleX: 0.01,
+      scaleY: 0.01,
       duration: 400,
       ease: 'Quad.easeIn',
-      onComplete: () => this._evaluateShot(tx, ty, keeperDest),
+      onComplete: () => this._evaluateShot(tx, ty, keeperDestX),
     });
   }
 
   _evaluateShot(tx, ty, keeperDest) {
     const cx = this.W / 2;
     // Hitbox afinada para la escala 0.15
-    const kLeft = keeperDest - 88;
-    const kRight = keeperDest + 88;
-    const kTop = this.keeperContainer.y - 100;
-    const kBot = this.keeperContainer.y + 20;
+    // Hitbox ajustada para escala 0.45
+    const kLeft = keeperDest - 264;
+    const kRight = keeperDest + 264;
+    const kTop = this.keeperContainer.y - 300;
+    const kBot = this.keeperContainer.y + 60;
 
     const inGoal = tx > cx - 320 && tx < cx + 320 && ty > 55 && ty < 285;
     const blocked = tx > kLeft && tx < kRight && ty > kTop && ty < kBot;
@@ -315,6 +328,7 @@ export class SoccerScene extends Phaser.Scene {
       this.particles.explode(40);
     } else {
       this._showResult('ATAJADO', '#f44336');
+      this.cpuScore++;
     }
 
     this._updateHUDStats();
@@ -342,7 +356,7 @@ export class SoccerScene extends Phaser.Scene {
       return;
     }
     // Reponer balón y portero inmediatamente
-    this.keeperSprite.setTexture('keeper_neutral').setFlipX(false).setAngle(0);
+    this.keeperSprite.setTexture('keeper_neutral').setScale(this.scaleNeutral).setFlipX(false).setAngle(0);
 
     this.tweens.add({
       targets: this.keeperContainer,
@@ -356,8 +370,8 @@ export class SoccerScene extends Phaser.Scene {
       targets: [this.ballSprite, this.ballShadow],
       x: this.W / 2,
       y: this.H - 50,
-      scaleX: 1,
-      scaleY: 1,
+      scaleX: 0.018,
+      scaleY: 0.018,
       duration: 300,
     });
     this.ballShadow.y = this.H - 50 + 12;
@@ -369,7 +383,7 @@ export class SoccerScene extends Phaser.Scene {
     this.phase = 'gameover';
 
     // Regresar al centro y pose neutral al terminar
-    this.keeperSprite.setTexture('keeper_neutral').setFlipX(false).setAngle(0);
+    this.keeperSprite.setTexture('keeper_neutral').setScale(this.scaleNeutral).setFlipX(false).setAngle(0);
     this.tweens.add({
       targets: this.keeperContainer,
       x: this.W / 2,
@@ -392,13 +406,14 @@ export class SoccerScene extends Phaser.Scene {
 
   _resetGame() {
     this.score = 0;
+    this.cpuScore = 0;
     this.shots = 0;
     this._updateHUDStats();
     this.messageText.setAlpha(0).setFontSize('48px');
     this.hintText.setText('APUNTA Y DISPARA').setAlpha(1);
     this.keeperContainer.setPosition(this.W / 2, 320).setAngle(0);
-    this.keeperSprite.setTexture('keeper_neutral').setFlipX(false).setAngle(0);
-    this.ballSprite.setPosition(this.W / 2, this.H - 50).setScale(1);
+    this.keeperSprite.setTexture('keeper_neutral').setScale(this.scaleNeutral).setFlipX(false).setAngle(0);
+    this.ballSprite.setPosition(this.W / 2, this.H - 50).setScale(0.018);
     this.ballShadow.setPosition(this.W / 2, this.H - 50 + 12).setScale(1);
     this.phase = 'aim';
   }
