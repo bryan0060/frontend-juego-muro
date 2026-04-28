@@ -41,6 +41,8 @@ function App() {
         <PhaserGame
           escenaInicial={juegoActivo.escena}
           wsPort={juegoActivo.wsPort}
+          wsPath={juegoActivo.wsPath}
+          wsJuego={juegoActivo.wsJuego}
           onBack={handleBack}
         />
       )}
