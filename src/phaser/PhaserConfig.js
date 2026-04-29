@@ -2,7 +2,10 @@ import * as Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { SoccerScene } from './scenes/SoccerScene';
 import { DuroMuroScene } from './scenes/DuroMuroScene';
+
 import { MagicBoardScene } from './scenes/MagicBoardScene';
+import { JustDanceScene } from './scenes/JustDanceScene';
+
 
 export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
   type: Phaser.AUTO,
@@ -28,5 +31,6 @@ export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
       game.registry.set('escenaInicial', escenaInicial);
     },
   },
-  scene: [BootScene, SoccerScene, DuroMuroScene, MagicBoardScene],
+
+  scene: [BootScene, SoccerScene, DuroMuroScene, MagicBoardScene, JustDanceScene],
 });
