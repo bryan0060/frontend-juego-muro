@@ -6,22 +6,16 @@ export class SoccerScene extends Phaser.Scene {
 
     // --- CONFIGURACIÓN DE HITBOX (Ajusta aquí) ---
     this.hitbox = {
-      showDebug: true,
+      showDebug: false,
 
       // 4 cajas para cubrir toda la diagonal del portero en salto lateral
-      //
-      //  [1.Manos]  [2.Cabeza/Torso sup]  [3.Torso/Cadera]  [4.Piernas/Pies]
-      //    ◄──────────────────────────────────────────────────────►
-      //   izq                                                    der
-      //
       boxesSide: [
-        { ox: -320, oy: 0, w: 115, h: 130 }, // 1. Manos/brazos (izq, bajo)
-        { ox: -175, oy: -90, w: 145, h: 210 }, // 2. Cabeza + torso superior
-        { ox: -35, oy: -70, w: 135, h: 150 }, // 3. Torso central / cadera
-        { ox: 110, oy: -140, w: 130, h: 175 }, // 4. Piernas y pies (der, arriba)
+        { ox: -320, oy: 0, w: 115, h: 130 }, 
+        { ox: -175, oy: -90, w: 145, h: 210 }, 
+        { ox: -35, oy: -70, w: 135, h: 150 }, 
+        { ox: 110, oy: -140, w: 130, h: 175 }, 
       ],
 
-      // Hitbox para cuando está parado (neutral)
       boxesNeutral: [
         { ox: -50, oy: -140, w: 100, h: 280 }
       ],
@@ -42,6 +36,8 @@ export class SoccerScene extends Phaser.Scene {
     this.score = 0;
     this.cpuScore = 0;
     this.shots = 0;
+
+    // El fondo se construye en _buildGraphics para mayor control de capas
     this.phase = 'aim';
 
     this._buildGraphics();
@@ -56,23 +52,40 @@ export class SoccerScene extends Phaser.Scene {
   _buildGraphics() {
     const W = this.W, H = this.H;
 
-    this.add.rectangle(W / 2, H * 0.42, W, H * 0.85, 0x0a0a0a);
-    this.add.rectangle(W / 2, H * 0.05, W, H * 0.1, 0x1a1a2e);
+    // 1. Fondo Negro Profundo
+    this.add.rectangle(W / 2, H / 2, W, H, 0x080808).setDepth(0);
 
+    // 2. Gradas / Hinchas (Integrados con sutileza en el fondo)
+    const fans = this.add.image(W / 2, H * 0.5, 'fans_bg')
+      .setDisplaySize(W, H)
+      .setAlpha(0.2)
+      .setDepth(1);
+    
+    // 3. Degradados para enfoque (Efecto Viñeta)
+    const vignette = this.add.graphics().setDepth(2);
+    // Degradado superior a negro
+    vignette.fillGradientStyle(0x000000, 0x000000, 0x080808, 0x080808, 1, 1, 0, 0);
+    vignette.fillRect(0, 0, W, H * 0.4);
+    // Degradado inferior para el suelo
+    vignette.fillGradientStyle(0x080808, 0x080808, 0x000000, 0x000000, 0, 0, 1, 1);
+    vignette.fillRect(0, H * 0.6, W, H * 0.4);
+
+    // 4. Vallas publicitarias (Minimalistas en negro)
     this._drawAdBoards();
 
-    // Césped eliminado (Fondo limpio)
-    
+    // 5. Portería
     this._drawGoal();
-    // Punto de penalti y área eliminados
-    // this.add.circle(W / 2, H - 40, 6, 0xffffff);
-    // this._drawPenaltyArea();
 
-    this.keeperContainer = this.add.container(W / 2, H * 0.75);
+    // 6. Portero y Sombra sutil
+    this.keeperShadow = this.add.ellipse(W / 2, H * 0.75 + 50, 140, 35, 0x000000, 0.5)
+      .setDepth(4);
+    
+    this.keeperContainer = this.add.container(W / 2, H * 0.75).setDepth(5);
     this._buildKeeper();
 
-    this.ballShadow = this.add.ellipse(W / 2, H - 35 + 15, 50, 12, 0x000000, 0.2);
-    this.ballSprite = this._createBall(W / 2, H - 35);
+    // 7. Balón y su sombra
+    this.ballShadow = this.add.ellipse(W / 2, H - 35 + 15, 60, 15, 0x000000, 0.4).setDepth(6);
+    this.ballSprite = this._createBall(W / 2, H - 35).setDepth(7);
 
     this.particles = this.add.particles(0, 0, '__DEFAULT', {
       speed: { min: 100, max: 350 },
@@ -88,19 +101,25 @@ export class SoccerScene extends Phaser.Scene {
     this.debugGraphics = this.add.graphics().setDepth(1000);
   }
 
+  // Eliminado _drawPitch por petición del usuario
+
   _drawAdBoards() {
     const W = this.W, H = this.H;
-    const y = H * 0.85;
-    const boardHeight = 80;
-    const g = this.add.graphics();
-    g.fillStyle(0x000000, 0.8);
-    g.fillRect(0, y - boardHeight, W, boardHeight);
-    g.lineStyle(3, 0xffffff, 0.2);
-    g.strokeRect(0, y - boardHeight, W, boardHeight);
+    const y = H * 0.75; // Alineado con los pies del portero
+    const boardHeight = 60;
+    const g = this.add.graphics().setDepth(3);
+
+    // Fondo de la valla (Gris casi negro)
+    g.fillStyle(0x111111, 0.8);
+    g.fillRect(0, y, W, boardHeight);
+
+    // Borde superior sutil
+    g.lineStyle(2, 0xffffff, 0.1);
+    g.strokeLineShape(new Phaser.Geom.Line(0, y, W, y));
   }
 
   _drawGoal() {
-    const g = this.add.graphics();
+    const g = this.add.graphics().setDepth(4);
     const cx = this.W / 2;
     const H = this.H;
 
@@ -109,43 +128,34 @@ export class SoccerScene extends Phaser.Scene {
     const fWid = this.W * 0.45;
 
     const bTop = fTop + 70;
-    const bBot = fBot - 20;
-    const bWid = fWid - 100;
+    const bBot = fBot - 30;
+    const bWid = fWid - 120;
 
-    g.lineStyle(1, 0xffffff, 0.15);
+    // Red (Hilos finos)
+    g.lineStyle(1, 0xffffff, 0.1);
 
-    for (let x = cx - bWid; x <= cx + bWid; x += 50) {
+    for (let x = cx - bWid; x <= cx + bWid; x += 40) {
       g.strokeLineShape(new Phaser.Geom.Line(x, bTop, x, bBot));
     }
-    for (let y = bTop; y <= bBot; y += 40) {
+    for (let y = bTop; y <= bBot; y += 30) {
       g.strokeLineShape(new Phaser.Geom.Line(cx - bWid, y, cx + bWid, y));
     }
 
-    const steps = 12;
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const txF = (cx - fWid) + t * (fWid * 2);
-      const txB = (cx - bWid) + t * (bWid * 2);
-      g.strokeLineShape(new Phaser.Geom.Line(txF, fTop, txB, bTop));
-
-      const tyF = fTop + t * (fBot - fTop);
-      const tyB = bTop + t * (bBot - bTop);
-      g.strokeLineShape(new Phaser.Geom.Line(cx - fWid, tyF, cx - bWid, tyB));
-      g.strokeLineShape(new Phaser.Geom.Line(cx + fWid, tyF, cx + bWid, tyB));
-    }
-
-    g.lineStyle(6, 0xaaaaaa, 0.6);
+    // Estructura trasera
+    g.lineStyle(4, 0x888888, 0.5);
     g.strokeLineShape(new Phaser.Geom.Line(cx - bWid, bTop, cx + bWid, bTop));
     g.strokeLineShape(new Phaser.Geom.Line(cx - bWid, bBot, cx + bWid, bBot));
     g.strokeLineShape(new Phaser.Geom.Line(cx - bWid, bTop, cx - bWid, bBot));
     g.strokeLineShape(new Phaser.Geom.Line(cx + bWid, bTop, cx + bWid, bBot));
 
+    // Postes frontales (Principales) - Con brillo
     g.lineStyle(20, 0xffffff, 1);
     g.strokeLineShape(new Phaser.Geom.Line(cx - fWid, fTop, cx + fWid, fTop));
     g.strokeLineShape(new Phaser.Geom.Line(cx - fWid, fTop, cx - fWid, fBot));
     g.strokeLineShape(new Phaser.Geom.Line(cx + fWid, fTop, cx + fWid, fBot));
 
-    g.lineStyle(8, 0xcccccc, 0.4);
+    // Base lateral
+    g.lineStyle(8, 0xcccccc, 0.3);
     g.strokeLineShape(new Phaser.Geom.Line(cx - fWid, fBot, cx - bWid, bBot));
     g.strokeLineShape(new Phaser.Geom.Line(cx + fWid, fBot, cx + bWid, bBot));
   }
@@ -203,48 +213,17 @@ export class SoccerScene extends Phaser.Scene {
 
   // ─── HUD ─────────────────────────────────────────────────────────
   _buildHUD() {
-    const W = this.W;
+    const { width: W, height: H } = this.scale;
 
     const hudGroup = this.add.container(40, 40).setDepth(100);
 
     const bg = this.add.graphics();
     bg.fillStyle(0x000000, 0.85);
     bg.fillRoundedRect(0, 0, 220, 60, 4);
-    bg.lineStyle(2, 0xffffff, 0.1);
-    bg.strokeRoundedRect(0, 0, 220, 60, 4);
-    bg.fillStyle(0x0072ce, 1);
-    bg.fillRect(0, 0, 6, 60);
+    this._createBroadcastScoreboard();
 
-    hudGroup.add(bg);
-
-    this.teamText = this.add.text(20, 15, 'MCI   0 - 0   PSG', {
-      fontSize: '18px',
-      fontFamily: 'Arial Black',
-      color: '#ffffff',
-    }).setOrigin(0, 0.5);
-
-    this.matchInfoText = this.add.text(20, 40, 'PENALTY SHOOTOUT', {
-      fontSize: '10px',
-      fontFamily: 'Arial',
-      color: '#aaaaaa',
-      letterSpacing: 2
-    }).setOrigin(0, 0.5);
-
-    hudGroup.add([this.teamText, this.matchInfoText]);
-
-    this.scoreText = this.teamText;
-
-    this.shotsInfo = this.add.text(this.W - 20, this.H - 20, '', {
-      fontSize: '14px',
-      fontFamily: 'Arial Black',
-      color: '#ffffff',
-      backgroundColor: '#00000099',
-      padding: { x: 10, y: 5 }
-    }).setOrigin(1, 1).setDepth(100);
-
-    this._updateHUDStats();
-
-    this.messageText = this.add.text(W / 2, this.H / 2 - 10, '', {
+    // ── UI — Mensajes centrales ────────────────────────────────
+    this.messageText = this.add.text(W / 2, H / 2 - 10, '', {
       fontSize: '48px',
       fontFamily: 'Arial Black',
       fontStyle: 'bold',
@@ -253,18 +232,103 @@ export class SoccerScene extends Phaser.Scene {
       strokeThickness: 6,
     }).setOrigin(0.5).setDepth(120).setAlpha(0);
 
-    this.hintText = this.add.text(W / 2, this.H - 80, 'APUNTA Y DISPARA', {
-      fontSize: '14px',
+    this.hintText = this.add.text(W / 2, this.H - 85, 'APUNTA Y DISPARA', {
+      fontSize: '16px',
       fontFamily: 'Arial Black',
       color: '#ffffff',
       backgroundColor: '#000000aa',
-      padding: { x: 15, y: 8 },
+      padding: { x: 20, y: 10 },
     }).setOrigin(0.5).setDepth(100);
+
+    // Animación de respiración para el texto
+    this.tweens.add({
+      targets: this.hintText,
+      alpha: 0.5,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+  }
+
+  _createBroadcastScoreboard() {
+    const W = this.W;
+    const cx = W / 2;
+    const cy = 60; // Altura del marcador
+
+    this.scoreboardGraphics = this.add.graphics().setDepth(100);
+    
+    // Texto de equipos y puntajes
+    this.scoreJUG = this.add.text(cx - 150, cy, '0', {
+      fontSize: '38px', fontFamily: 'Arial Black', color: '#ffffff'
+    }).setOrigin(0.5).setDepth(101);
+
+    this.scoreCPU = this.add.text(cx + 150, cy, '0', {
+      fontSize: '38px', fontFamily: 'Arial Black', color: '#ffffff'
+    }).setOrigin(0.5).setDepth(101);
+
+    this.teamJUG = this.add.text(cx - 75, cy, 'JUG', {
+      fontSize: '18px', fontFamily: 'Arial Black', color: '#ffffff'
+    }).setOrigin(0.5).setDepth(101);
+
+    this.teamCPU = this.add.text(cx + 75, cy, 'CPU', {
+      fontSize: '18px', fontFamily: 'Arial Black', color: '#ffffff'
+    }).setOrigin(0.5).setDepth(101);
+
+    this.shotsCounterText = this.add.text(cx, cy + 5, '0/5', {
+      fontSize: '22px', fontFamily: 'Arial Black', color: '#00ff00'
+    }).setOrigin(0.5).setDepth(101);
+
+    this._drawScoreboardGraphics();
+  }
+
+  _drawScoreboardGraphics() {
+    const g = this.scoreboardGraphics;
+    g.clear();
+    const cx = this.W / 2;
+    const cy = 60;
+
+    // 1. Barra central negra (fondo de nombres y tiempo)
+    g.fillStyle(0x1a1a1a, 0.9);
+    // x1, y1, x2, y2, x3, y3, x4, y4 (Trapecio central)
+    g.fillPoints([
+      { x: cx - 180, y: cy - 25 },
+      { x: cx + 180, y: cy - 25 },
+      { x: cx + 200, y: cy + 25 },
+      { x: cx - 200, y: cy + 25 }
+    ], true);
+
+    // 2. Bloque Score Izquierdo (Verde)
+    g.fillStyle(0x2e7d32, 1);
+    g.fillPoints([
+      { x: cx - 240, y: cy - 25 },
+      { x: cx - 180, y: cy - 25 },
+      { x: cx - 200, y: cy + 25 },
+      { x: cx - 260, y: cy + 25 }
+    ], true);
+
+    // 3. Bloque Score Derecho (Verde)
+    g.fillStyle(0x2e7d32, 1);
+    g.fillPoints([
+      { x: cx + 180, y: cy - 25 },
+      { x: cx + 240, y: cy - 25 },
+      { x: cx + 260, y: cy + 25 },
+      { x: cx + 200, y: cy + 25 }
+    ], true);
+
+    // 4. Detalle superior (decoración verde)
+    g.fillStyle(0x4caf50, 1);
+    g.fillRect(cx - 60, cy - 35, 120, 10);
+    
+    // Bordes
+    g.lineStyle(2, 0xffffff, 0.3);
+    g.strokeRect(cx - 60, cy - 35, 120, 10);
   }
 
   _updateHUDStats() {
-    this.teamText.setText(`JUG   ${this.score} - ${this.cpuScore}   CPU`);
-    this.shotsInfo.setText(`TIROS: ${this.shots} / ${SoccerScene.MAX_SHOTS}`);
+    if (this.scoreJUG) this.scoreJUG.setText(this.score);
+    if (this.scoreCPU) this.scoreCPU.setText(this.cpuScore);
+    if (this.shotsCounterText) this.shotsCounterText.setText(`${this.shots}/${SoccerScene.MAX_SHOTS}`);
   }
 
   // ─── Input ───────────────────────────────────────────────────────
@@ -316,9 +380,9 @@ export class SoccerScene extends Phaser.Scene {
     this.keeperSprite.setFlipX(keeperDestX > this.W / 2);
 
     this.tweens.add({
-      targets: this.keeperContainer,
+      targets: [this.keeperContainer, this.keeperShadow],
       x: keeperDestX,
-      y: this.H * 0.75 - jumpPower,
+      y: (targets) => targets === this.keeperShadow ? this.H * 0.75 + 50 : this.H * 0.75 - jumpPower,
       angle: (keeperDestX > this.W / 2 ? 1 : -1) * 35,
       duration: reactionTime,
       ease: 'Quad.easeOut',
@@ -365,6 +429,7 @@ export class SoccerScene extends Phaser.Scene {
     if (inGoal && !blocked) {
       this._showResult('GOL!', '#4CAF50');
       this.score++;
+      this.sound.play('gol'); // Sonido de gol
       this.cameras.main.shake(250, 0.012);
       this.particles.setPosition(tx, ty);
       this.particles.explode(40);
@@ -448,9 +513,9 @@ export class SoccerScene extends Phaser.Scene {
       .setAngle(0);
 
     this.tweens.add({
-      targets: this.keeperContainer,
+      targets: [this.keeperContainer, this.keeperShadow],
       x: this.W / 2,
-      y: this.H * 0.75,
+      y: (targets) => targets === this.keeperShadow ? this.H * 0.75 + 50 : this.H * 0.75,
       angle: 0,
       duration: 300,
       ease: 'Back.easeOut',
@@ -491,7 +556,7 @@ export class SoccerScene extends Phaser.Scene {
     const won = this.score >= 3;
     const text = won
       ? `GANASTE\n${this.score}/${SoccerScene.MAX_SHOTS} GOLES`
-      : `PERDISTE\n${this.score}/${SoccerScene.MAX_SHOTS} GOLES`;
+      : `VUELVE A INTENTAR\n${this.score}/${SoccerScene.MAX_SHOTS} GOLES`;
     const color = won ? '#ffd700' : '#f44336';
 
     this.messageText
@@ -502,9 +567,8 @@ export class SoccerScene extends Phaser.Scene {
 
     this.hintText.setText('Clic para jugar de nuevo').setAlpha(1);
 
-    if (won) {
-      this.sound.play('victoria');
-    }
+    // El sonido de victoria suena siempre al final
+    this.sound.play('victoria');
   }
 
   _resetGame() {
