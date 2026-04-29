@@ -13,7 +13,7 @@ export const GAMES = [
     emoji: '🕺',
     escena: 'JustDanceScene',
     wsPort: 8080,
-    disponible: false,
+    disponible: true,
   },
   {
     id: 'subway-surfers',
