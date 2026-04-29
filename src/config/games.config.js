@@ -55,7 +55,7 @@ export const GAMES = [
     wsPort: 8081,
     wsPath: '',
     wsJuego: null,
-    disponible: false,
+    disponible: true,
   },
   {
     id: 'penaltis',
