@@ -1,144 +1,194 @@
 /**
  * DuroMuroScene.js — "Duro contra el Muro"
  *
- * Juego tipo "Hole in the Wall":
- * Un muro con la silueta de una pose se acerca al jugador.
- * El jugador tiene que adoptar esa pose antes de que el muro llegue.
- * 5 rondas. Puerto 8080 (cámara de reconocimiento corporal).
+ * Juego tipo "Hole in the Wall".
+ * Valida poses comparando ÁNGULOS de articulaciones,
+ * no posiciones absolutas — funciona sin importar
+ * la distancia del jugador a la cámara.
+ *
+ * Modo: 1 jugador (2 jugadores pendiente de soporte en backend)
+ * Puerto: 8080 — Cámara de reconocimiento corporal
  */
 
 import * as Phaser from 'phaser';
 
-// ─── Configuración fácil de ajustar ──────────────────────────────────────────
+// ─── Paleta de colores Parke Tr3s ─────────────────────────────────────────────
+const C = {
+  purpura:    0x9c4eb3,
+  verde:      0x3dc9a1,
+  naranja:    0xfa804f,
+  amarillo:   0xfdbf2c,
+  azul:       0x40c0dd,
+  blanco:     0xffffff,
+  negro:      0x000000,
+  oscuro:     0x0d0d1a,
+};
+
+// ─── Configuración del juego ──────────────────────────────────────────────────
 const CONFIG = {
-  totalRondas: 5,
-  duracionPorPose: 10,  // segundos por ronda
-  tolerancia: 0.28,     // margen de error para validar poses (en coords normalizadas 0-1)
+  totalRondas:      5,
+  duracionPorPose:  8,    // segundos que tiene el jugador
+  toleranciaAngulo: 25,   // grados de tolerancia por articulación
+  umbralExito:      0.60, // necesita acertar el 60% de los ángulos evaluados
   poses: [
     {
       id: 'estrella',
-      nombre: 'Estrella',
-      emoji: '⭐',
-      descripcion: '¡Abre los brazos y las piernas!',
-      esqueleto: {
-        nariz: { x: 0.50, y: 0.12 },
-        hombro_izquierdo: { x: 0.35, y: 0.28 },
-        hombro_derecho: { x: 0.65, y: 0.28 },
-        codo_izquierdo: { x: 0.20, y: 0.18 },
-        codo_derecho: { x: 0.80, y: 0.18 },
-        muneca_izquierda: { x: 0.08, y: 0.10 },
-        muneca_derecha: { x: 0.92, y: 0.10 },
-        cadera_izquierda: { x: 0.42, y: 0.55 },
-        cadera_derecha: { x: 0.58, y: 0.55 },
-        rodilla_izquierda: { x: 0.35, y: 0.73 },
-        rodilla_derecha: { x: 0.65, y: 0.73 },
-        tobillo_izquierdo: { x: 0.28, y: 0.91 },
-        tobillo_derecho: { x: 0.72, y: 0.91 },
+      nombre: '⭐ Estrella',
+      descripcion: '¡Abre brazos y piernas!',
+      // Ángulos objetivo en grados para cada articulación
+      // Cada ángulo se calcula como: punto_medio visto desde punto_a hacia punto_b
+      angulos: {
+        codo_izquierdo:   { a: 'hombro_izquierdo',  m: 'codo_izquierdo',   b: 'muneca_izquierda',  objetivo: 160 },
+        codo_derecho:     { a: 'hombro_derecho',     m: 'codo_derecho',     b: 'muneca_derecha',    objetivo: 160 },
+        hombro_izquierdo: { a: 'cadera_izquierda',   m: 'hombro_izquierdo', b: 'codo_izquierdo',    objetivo: 135 },
+        hombro_derecho:   { a: 'cadera_derecha',     m: 'hombro_derecho',   b: 'codo_derecho',      objetivo: 135 },
+        rodilla_izquierda:{ a: 'cadera_izquierda',   m: 'rodilla_izquierda',b: 'tobillo_izquierdo', objetivo: 165 },
+        rodilla_derecha:  { a: 'cadera_derecha',     m: 'rodilla_derecha',  b: 'tobillo_derecho',   objetivo: 165 },
+        cadera_izquierda: { a: 'hombro_izquierdo',   m: 'cadera_izquierda', b: 'rodilla_izquierda', objetivo: 145 },
+        cadera_derecha:   { a: 'hombro_derecho',     m: 'cadera_derecha',   b: 'rodilla_derecha',   objetivo: 145 },
+      },
+      // Silueta visual del muro (coordenadas normalizadas 0-1)
+      silueta: {
+        nariz:             { x: 0.50, y: 0.10 },
+        hombro_izquierdo:  { x: 0.35, y: 0.28 },
+        hombro_derecho:    { x: 0.65, y: 0.28 },
+        codo_izquierdo:    { x: 0.18, y: 0.18 },
+        codo_derecho:      { x: 0.82, y: 0.18 },
+        muneca_izquierda:  { x: 0.05, y: 0.08 },
+        muneca_derecha:    { x: 0.95, y: 0.08 },
+        cadera_izquierda:  { x: 0.40, y: 0.52 },
+        cadera_derecha:    { x: 0.60, y: 0.52 },
+        rodilla_izquierda: { x: 0.32, y: 0.70 },
+        rodilla_derecha:   { x: 0.68, y: 0.70 },
+        tobillo_izquierdo: { x: 0.25, y: 0.90 },
+        tobillo_derecho:   { x: 0.75, y: 0.90 },
       },
     },
     {
       id: 'manos-cielo',
-      nombre: 'Manos al Cielo',
-      emoji: '🙌',
+      nombre: '🙌 Manos al Cielo',
       descripcion: '¡Levanta ambas manos!',
-      esqueleto: {
-        nariz: { x: 0.50, y: 0.15 },
-        hombro_izquierdo: { x: 0.40, y: 0.30 },
-        hombro_derecho: { x: 0.60, y: 0.30 },
-        codo_izquierdo: { x: 0.38, y: 0.18 },
-        codo_derecho: { x: 0.62, y: 0.18 },
-        muneca_izquierda: { x: 0.36, y: 0.05 },
-        muneca_derecha: { x: 0.64, y: 0.05 },
-        cadera_izquierda: { x: 0.43, y: 0.55 },
-        cadera_derecha: { x: 0.57, y: 0.55 },
-        rodilla_izquierda: { x: 0.43, y: 0.73 },
-        rodilla_derecha: { x: 0.57, y: 0.73 },
+      angulos: {
+        codo_izquierdo:   { a: 'hombro_izquierdo',  m: 'codo_izquierdo',   b: 'muneca_izquierda',  objetivo: 170 },
+        codo_derecho:     { a: 'hombro_derecho',     m: 'codo_derecho',     b: 'muneca_derecha',    objetivo: 170 },
+        hombro_izquierdo: { a: 'cadera_izquierda',   m: 'hombro_izquierdo', b: 'codo_izquierdo',    objetivo: 170 },
+        hombro_derecho:   { a: 'cadera_derecha',     m: 'hombro_derecho',   b: 'codo_derecho',      objetivo: 170 },
+        rodilla_izquierda:{ a: 'cadera_izquierda',   m: 'rodilla_izquierda',b: 'tobillo_izquierdo', objetivo: 175 },
+        rodilla_derecha:  { a: 'cadera_derecha',     m: 'rodilla_derecha',  b: 'tobillo_derecho',   objetivo: 175 },
+      },
+      silueta: {
+        nariz:             { x: 0.50, y: 0.12 },
+        hombro_izquierdo:  { x: 0.40, y: 0.30 },
+        hombro_derecho:    { x: 0.60, y: 0.30 },
+        codo_izquierdo:    { x: 0.38, y: 0.16 },
+        codo_derecho:      { x: 0.62, y: 0.16 },
+        muneca_izquierda:  { x: 0.36, y: 0.03 },
+        muneca_derecha:    { x: 0.64, y: 0.03 },
+        cadera_izquierda:  { x: 0.43, y: 0.54 },
+        cadera_derecha:    { x: 0.57, y: 0.54 },
+        rodilla_izquierda: { x: 0.43, y: 0.72 },
+        rodilla_derecha:   { x: 0.57, y: 0.72 },
         tobillo_izquierdo: { x: 0.43, y: 0.91 },
-        tobillo_derecho: { x: 0.57, y: 0.91 },
+        tobillo_derecho:   { x: 0.57, y: 0.91 },
       },
     },
     {
       id: 'cangrejo',
-      nombre: 'Cangrejo',
-      emoji: '🦀',
-      descripcion: '¡Abre los brazos a los lados!',
-      esqueleto: {
-        nariz: { x: 0.50, y: 0.12 },
-        hombro_izquierdo: { x: 0.35, y: 0.28 },
-        hombro_derecho: { x: 0.65, y: 0.28 },
-        codo_izquierdo: { x: 0.18, y: 0.28 },
-        codo_derecho: { x: 0.82, y: 0.28 },
-        muneca_izquierda: { x: 0.05, y: 0.28 },
-        muneca_derecha: { x: 0.95, y: 0.28 },
-        cadera_izquierda: { x: 0.42, y: 0.55 },
-        cadera_derecha: { x: 0.58, y: 0.55 },
-        rodilla_izquierda: { x: 0.42, y: 0.73 },
-        rodilla_derecha: { x: 0.58, y: 0.73 },
+      nombre: '🦀 Cangrejo',
+      descripcion: '¡Brazos extendidos a los lados!',
+      angulos: {
+        codo_izquierdo:   { a: 'hombro_izquierdo',  m: 'codo_izquierdo',   b: 'muneca_izquierda',  objetivo: 170 },
+        codo_derecho:     { a: 'hombro_derecho',     m: 'codo_derecho',     b: 'muneca_derecha',    objetivo: 170 },
+        hombro_izquierdo: { a: 'cadera_izquierda',   m: 'hombro_izquierdo', b: 'codo_izquierdo',    objetivo: 90  },
+        hombro_derecho:   { a: 'cadera_derecha',     m: 'hombro_derecho',   b: 'codo_derecho',      objetivo: 90  },
+        rodilla_izquierda:{ a: 'cadera_izquierda',   m: 'rodilla_izquierda',b: 'tobillo_izquierdo', objetivo: 175 },
+        rodilla_derecha:  { a: 'cadera_derecha',     m: 'rodilla_derecha',  b: 'tobillo_derecho',   objetivo: 175 },
+      },
+      silueta: {
+        nariz:             { x: 0.50, y: 0.11 },
+        hombro_izquierdo:  { x: 0.35, y: 0.28 },
+        hombro_derecho:    { x: 0.65, y: 0.28 },
+        codo_izquierdo:    { x: 0.16, y: 0.28 },
+        codo_derecho:      { x: 0.84, y: 0.28 },
+        muneca_izquierda:  { x: 0.02, y: 0.28 },
+        muneca_derecha:    { x: 0.98, y: 0.28 },
+        cadera_izquierda:  { x: 0.42, y: 0.54 },
+        cadera_derecha:    { x: 0.58, y: 0.54 },
+        rodilla_izquierda: { x: 0.42, y: 0.72 },
+        rodilla_derecha:   { x: 0.58, y: 0.72 },
         tobillo_izquierdo: { x: 0.42, y: 0.91 },
-        tobillo_derecho: { x: 0.58, y: 0.91 },
+        tobillo_derecho:   { x: 0.58, y: 0.91 },
       },
     },
     {
       id: 'rayo',
-      nombre: 'Rayo',
-      emoji: '⚡',
+      nombre: '⚡ Rayo',
       descripcion: '¡Brazo derecho arriba, izquierdo abajo!',
-      esqueleto: {
-        nariz: { x: 0.50, y: 0.12 },
-        hombro_izquierdo: { x: 0.40, y: 0.28 },
-        hombro_derecho: { x: 0.60, y: 0.28 },
-        codo_izquierdo: { x: 0.38, y: 0.45 },
-        codo_derecho: { x: 0.70, y: 0.15 },
-        muneca_izquierda: { x: 0.36, y: 0.62 },
-        muneca_derecha: { x: 0.78, y: 0.03 },
-        cadera_izquierda: { x: 0.43, y: 0.55 },
-        cadera_derecha: { x: 0.57, y: 0.55 },
-        rodilla_izquierda: { x: 0.43, y: 0.73 },
-        rodilla_derecha: { x: 0.57, y: 0.73 },
+      angulos: {
+        codo_izquierdo:   { a: 'hombro_izquierdo',  m: 'codo_izquierdo',   b: 'muneca_izquierda',  objetivo: 165 },
+        codo_derecho:     { a: 'hombro_derecho',     m: 'codo_derecho',     b: 'muneca_derecha',    objetivo: 165 },
+        hombro_izquierdo: { a: 'cadera_izquierda',   m: 'hombro_izquierdo', b: 'codo_izquierdo',    objetivo: 50  },
+        hombro_derecho:   { a: 'cadera_derecha',     m: 'hombro_derecho',   b: 'codo_derecho',      objetivo: 160 },
+        rodilla_izquierda:{ a: 'cadera_izquierda',   m: 'rodilla_izquierda',b: 'tobillo_izquierdo', objetivo: 175 },
+        rodilla_derecha:  { a: 'cadera_derecha',     m: 'rodilla_derecha',  b: 'tobillo_derecho',   objetivo: 175 },
+      },
+      silueta: {
+        nariz:             { x: 0.50, y: 0.11 },
+        hombro_izquierdo:  { x: 0.40, y: 0.28 },
+        hombro_derecho:    { x: 0.60, y: 0.28 },
+        codo_izquierdo:    { x: 0.38, y: 0.44 },
+        codo_derecho:      { x: 0.72, y: 0.14 },
+        muneca_izquierda:  { x: 0.36, y: 0.60 },
+        muneca_derecha:    { x: 0.82, y: 0.02 },
+        cadera_izquierda:  { x: 0.43, y: 0.54 },
+        cadera_derecha:    { x: 0.57, y: 0.54 },
+        rodilla_izquierda: { x: 0.43, y: 0.72 },
+        rodilla_derecha:   { x: 0.57, y: 0.72 },
         tobillo_izquierdo: { x: 0.43, y: 0.91 },
-        tobillo_derecho: { x: 0.57, y: 0.91 },
+        tobillo_derecho:   { x: 0.57, y: 0.91 },
       },
     },
     {
       id: 'victoria',
-      nombre: 'Victoria',
-      emoji: '🧘',
+      nombre: '✌️ Victoria',
       descripcion: '¡Forma una V con los brazos!',
-      esqueleto: {
-        nariz: { x: 0.50, y: 0.12 },
-        hombro_izquierdo: { x: 0.40, y: 0.28 },
-        hombro_derecho: { x: 0.60, y: 0.28 },
-        codo_izquierdo: { x: 0.28, y: 0.18 },
-        codo_derecho: { x: 0.72, y: 0.18 },
-        muneca_izquierda: { x: 0.18, y: 0.08 },
-        muneca_derecha: { x: 0.82, y: 0.08 },
-        cadera_izquierda: { x: 0.43, y: 0.55 },
-        cadera_derecha: { x: 0.57, y: 0.55 },
-        rodilla_izquierda: { x: 0.43, y: 0.73 },
-        rodilla_derecha: { x: 0.57, y: 0.73 },
+      angulos: {
+        codo_izquierdo:   { a: 'hombro_izquierdo',  m: 'codo_izquierdo',   b: 'muneca_izquierda',  objetivo: 165 },
+        codo_derecho:     { a: 'hombro_derecho',     m: 'codo_derecho',     b: 'muneca_derecha',    objetivo: 165 },
+        hombro_izquierdo: { a: 'cadera_izquierda',   m: 'hombro_izquierdo', b: 'codo_izquierdo',    objetivo: 145 },
+        hombro_derecho:   { a: 'cadera_derecha',     m: 'hombro_derecho',   b: 'codo_derecho',      objetivo: 145 },
+        rodilla_izquierda:{ a: 'cadera_izquierda',   m: 'rodilla_izquierda',b: 'tobillo_izquierdo', objetivo: 175 },
+        rodilla_derecha:  { a: 'cadera_derecha',     m: 'rodilla_derecha',  b: 'tobillo_derecho',   objetivo: 175 },
+      },
+      silueta: {
+        nariz:             { x: 0.50, y: 0.11 },
+        hombro_izquierdo:  { x: 0.40, y: 0.28 },
+        hombro_derecho:    { x: 0.60, y: 0.28 },
+        codo_izquierdo:    { x: 0.26, y: 0.16 },
+        codo_derecho:      { x: 0.74, y: 0.16 },
+        muneca_izquierda:  { x: 0.15, y: 0.05 },
+        muneca_derecha:    { x: 0.85, y: 0.05 },
+        cadera_izquierda:  { x: 0.43, y: 0.54 },
+        cadera_derecha:    { x: 0.57, y: 0.54 },
+        rodilla_izquierda: { x: 0.43, y: 0.72 },
+        rodilla_derecha:   { x: 0.57, y: 0.72 },
         tobillo_izquierdo: { x: 0.43, y: 0.91 },
-        tobillo_derecho: { x: 0.57, y: 0.91 },
+        tobillo_derecho:   { x: 0.57, y: 0.91 },
       },
     },
   ],
 };
 
-// Qué joints conectar con líneas al dibujar el esqueleto
+// Conexiones para dibujar el esqueleto con líneas
 const CONEXIONES = [
-  ['nariz', 'hombro_izquierdo'],
-  ['nariz', 'hombro_derecho'],
+  ['nariz', 'hombro_izquierdo'], ['nariz', 'hombro_derecho'],
   ['hombro_izquierdo', 'hombro_derecho'],
-  ['hombro_izquierdo', 'codo_izquierdo'],
-  ['codo_izquierdo', 'muneca_izquierda'],
-  ['hombro_derecho', 'codo_derecho'],
-  ['codo_derecho', 'muneca_derecha'],
-  ['hombro_izquierdo', 'cadera_izquierda'],
-  ['hombro_derecho', 'cadera_derecha'],
+  ['hombro_izquierdo', 'codo_izquierdo'], ['codo_izquierdo', 'muneca_izquierda'],
+  ['hombro_derecho', 'codo_derecho'],     ['codo_derecho', 'muneca_derecha'],
+  ['hombro_izquierdo', 'cadera_izquierda'], ['hombro_derecho', 'cadera_derecha'],
   ['cadera_izquierda', 'cadera_derecha'],
-  ['cadera_izquierda', 'rodilla_izquierda'],
-  ['rodilla_izquierda', 'tobillo_izquierdo'],
-  ['cadera_derecha', 'rodilla_derecha'],
-  ['rodilla_derecha', 'tobillo_derecho'],
+  ['cadera_izquierda', 'rodilla_izquierda'], ['rodilla_izquierda', 'tobillo_izquierdo'],
+  ['cadera_derecha', 'rodilla_derecha'],     ['rodilla_derecha', 'tobillo_derecho'],
 ];
 
 export class DuroMuroScene extends Phaser.Scene {
@@ -149,115 +199,151 @@ export class DuroMuroScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    // Estado del juego
-    this.rondaActual = 0;
-    this.puntaje = 0;
-    this.esqueletoActual = null; // Último esqueleto recibido del backend
-    this.juegoActivo = false;
-    this.validando = false;      // Evita validar dos veces por ronda
+    // Estado
+    this.rondaActual   = 0;
+    this.puntaje       = 0;
+    this.esqueleto     = null; // Último esqueleto recibido del backend
+    this.juegoActivo   = false;
+    this.validando     = false;
+    this.posesRonda    = Phaser.Utils.Array.Shuffle([...CONFIG.poses])
+                          .slice(0, CONFIG.totalRondas);
 
-    // Mezclar poses aleatoriamente para cada partida
-    this.posesRonda = Phaser.Utils.Array.Shuffle([...CONFIG.poses])
-      .slice(0, CONFIG.totalRondas);
+    // ── Fondo degradado oscuro ────────────────────────────────────
+    const bg = this.add.graphics();
+    bg.fillGradientStyle(0x0d0d2e, 0x0d0d2e, 0x1a0a2e, 0x1a0a2e, 1);
+    bg.fillRect(0, 0, width, height);
 
-    // ── Fondo ──────────────────────────────────────────────────
-    this.add.rectangle(0, 0, width, height, 0x0d0d1a).setOrigin(0);
+    // ── Estrellas de fondo animadas ───────────────────────────────
+    this._crearEstrellas(width, height);
 
-    // ── Gráficos del esqueleto del jugador (se redibuja cada frame) ──
-    // Depth 5 → detrás del muro para que el muro se vea encima
-    this.graficosEsqueleto = this.add.graphics().setDepth(5);
+    // ── Gráficos reutilizables (se limpian y redibujan cada frame)
+    this.grafMuro      = this.add.graphics().setDepth(10);
+    this.grafEsqueleto = this.add.graphics().setDepth(5);
+    this.grafFeedback  = this.add.graphics().setDepth(6);
 
-    // ── Gráficos del muro (se redibuja en cada frame del tween) ──
-    // Depth 10 → encima del esqueleto
-    this.graficosMuro = this.add.graphics().setDepth(10);
-
-    // ── UI — Puntaje (esquina superior izquierda) ──────────────
-    this.textoPuntaje = this.add.text(30, 30, 'Puntos: 0', {
-      fontSize: '32px',
+    // ── UI — Puntaje ──────────────────────────────────────────────
+    this.textoPuntaje = this.add.text(30, 30, '0', {
+      fontSize: '64px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#fdbf2c',
-      stroke: '#000',
-      strokeThickness: 4,
+      stroke: '#000000',
+      strokeThickness: 6,
     }).setDepth(20);
 
-    // ── UI — Ronda (esquina superior derecha) ──────────────────
-    this.textoRonda = this.add.text(width - 30, 30, `Ronda 0/${CONFIG.totalRondas}`, {
-      fontSize: '32px',
-      fontFamily: 'Fredoka, sans-serif',
-      color: '#3dc9a1',
-      stroke: '#000',
-      strokeThickness: 4,
-    }).setOrigin(1, 0).setDepth(20);
-
-    // ── UI — Timer (centro arriba) ─────────────────────────────
-    this.textoTimer = this.add.text(width / 2, 30, '', {
-      fontSize: '52px',
-      fontFamily: 'Fredoka, sans-serif',
-      color: '#ffffff',
-      stroke: '#000',
-      strokeThickness: 5,
-    }).setOrigin(0.5, 0).setDepth(20);
-
-    // ── UI — Instrucción de pose (abajo al centro) ─────────────
-    this.textoInstruccion = this.add.text(width / 2, height - 40, '', {
-      fontSize: '36px',
-      fontFamily: 'Fredoka, sans-serif',
-      color: '#ffffff',
-      stroke: '#000',
-      strokeThickness: 5,
-      backgroundColor: '#00000088',
-      padding: { x: 20, y: 10 },
-    }).setOrigin(0.5, 1).setDepth(20);
-
-    // ── UI — Aviso sin jugador ─────────────────────────────────
-    this.textoSinJugador = this.add.text(width / 2, height - 120, '👤 Buscando jugador...', {
-      fontSize: '28px',
+    this.add.text(30, 24, 'PUNTOS', {
+      fontSize: '20px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff88',
+    }).setOrigin(0, 1).setDepth(20);
+
+    // ── UI — Ronda ────────────────────────────────────────────────
+    this.textoRonda = this.add.text(width - 30, 30, `1/${CONFIG.totalRondas}`, {
+      fontSize: '40px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#3dc9a1',
+      stroke: '#000000',
+      strokeThickness: 5,
+    }).setOrigin(1, 0).setDepth(20);
+
+    this.add.text(width - 30, 24, 'RONDA', {
+      fontSize: '20px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#ffffff88',
+    }).setOrigin(1, 1).setDepth(20);
+
+    // ── UI — Timer ────────────────────────────────────────────────
+    this.textoTimer = this.add.text(width / 2, 30, '', {
+      fontSize: '56px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 6,
+    }).setOrigin(0.5, 0).setDepth(20);
+
+    // ── UI — Instrucción de pose ──────────────────────────────────
+    this.textoInstruccion = this.add.text(width / 2, height - 30, '', {
+      fontSize: '38px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 5,
+      backgroundColor: '#00000099',
+      padding: { x: 24, y: 12 },
+    }).setOrigin(0.5, 1).setDepth(20);
+
+    // ── UI — Aviso sin jugador ────────────────────────────────────
+    this.textoSinJugador = this.add.text(width / 2, height / 2, '👤 Buscando jugador...', {
+      fontSize: '32px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#ffffff66',
     }).setOrigin(0.5).setDepth(20).setVisible(false);
 
-    // ── Escuchar mensajes del sensor ───────────────────────────
+    // ── Escuchar WebSocket ────────────────────────────────────────
     this._wsHandler = this._onWsMessage.bind(this);
     window.addEventListener('ws-message', this._wsHandler);
 
-    // ── Arrancar con cuenta regresiva ──────────────────────────
-    this._mostrarCuentaRegresiva();
+    // ── Arrancar ──────────────────────────────────────────────────
+    this._cuentaRegresiva();
   }
 
-  // ─── Cuenta regresiva antes de empezar ───────────────────────────────────
-  _mostrarCuentaRegresiva() {
+  // ─── Estrellas de fondo ───────────────────────────────────────────────────
+  _crearEstrellas(width, height) {
+    for (let i = 0; i < 80; i++) {
+      const x     = Phaser.Math.Between(0, width);
+      const y     = Phaser.Math.Between(0, height);
+      const r     = Phaser.Math.FloatBetween(0.5, 2.5);
+      const alpha = Phaser.Math.FloatBetween(0.15, 0.6);
+      const circ  = this.add.circle(x, y, r, 0xffffff, alpha).setDepth(1);
+
+      this.tweens.add({
+        targets: circ,
+        alpha: 0.05,
+        duration: Phaser.Math.Between(800, 3000),
+        yoyo: true,
+        repeat: -1,
+        delay: Phaser.Math.Between(0, 2000),
+      });
+    }
+  }
+
+  // ─── Cuenta regresiva ─────────────────────────────────────────────────────
+  _cuentaRegresiva() {
     const { width, height } = this.scale;
-    const numeros = ['3', '2', '1', '¡YA!'];
+    this.juegoActivo = false;
+
+    const pasos = ['3', '2', '1', '¡YA!'];
+    const colores = ['#fa804f', '#fdbf2c', '#3dc9a1', '#ffffff'];
     let i = 0;
 
     const mostrar = () => {
-      const texto = this.add.text(width / 2, height / 2, numeros[i], {
-        fontSize: '180px',
+      const texto = this.add.text(width / 2, height / 2, pasos[i], {
+        fontSize: '200px',
         fontFamily: 'Fredoka, sans-serif',
-        color: '#ffffff',
-        stroke: '#9c4eb3',
-        strokeThickness: 14,
-      }).setOrigin(0.5).setDepth(30).setAlpha(0);
+        color: colores[i],
+        stroke: '#000000',
+        strokeThickness: 16,
+      }).setOrigin(0.5).setDepth(30).setAlpha(0).setScale(0.3);
 
       this.tweens.add({
         targets: texto,
-        alpha: { from: 0, to: 1 },
-        scale: { from: 0.3, to: 1 },
-        duration: 300,
+        alpha: 1,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 250,
+        ease: 'Back.easeOut',
         onComplete: () => {
-          this.time.delayedCall(600, () => {
+          this.time.delayedCall(550, () => {
             this.tweens.add({
               targets: texto,
               alpha: 0,
+              scaleX: 1.4,
+              scaleY: 1.4,
               duration: 200,
               onComplete: () => {
                 texto.destroy();
                 i++;
-                if (i < numeros.length) {
-                  mostrar();
-                } else {
-                  this._iniciarRonda();
-                }
+                if (i < pasos.length) mostrar();
+                else this._iniciarRonda();
               },
             });
           });
@@ -268,372 +354,443 @@ export class DuroMuroScene extends Phaser.Scene {
     mostrar();
   }
 
-  // ─── Iniciar una ronda ────────────────────────────────────────────────────
+  // ─── Iniciar ronda ────────────────────────────────────────────────────────
   _iniciarRonda() {
     if (this.rondaActual >= CONFIG.totalRondas) {
       this._finDePartida();
       return;
     }
 
-    const { width, height } = this.scale;
-
-    this.validando = false;
-    this.juegoActivo = true;
-    this.tiempoRestante = CONFIG.duracionPorPose;
+    this.validando       = false;
+    this.juegoActivo     = true;
+    this.tiempoRestante  = CONFIG.duracionPorPose;
+    this._escalaMuro     = { v: 0.12 }; // Empieza pequeño (lejos)
 
     const pose = this.posesRonda[this.rondaActual];
     this.rondaActual++;
+    this._poseActual = pose;
 
     // Actualizar UI
-    this.textoRonda.setText(`Ronda ${this.rondaActual}/${CONFIG.totalRondas}`);
+    this.textoRonda.setText(`${this.rondaActual}/${CONFIG.totalRondas}`);
     this.textoTimer.setText(`${this.tiempoRestante}`).setColor('#ffffff');
-    this.textoInstruccion.setText(`${pose.emoji}  ${pose.descripcion}`);
+    this.textoInstruccion.setText(pose.descripcion);
 
-    // Limpiar muro anterior y dibujarlo pequeño (lejos)
-    this.graficosMuro.clear();
-    this._dibujarMuro(pose, 0.15);
-
-    // Animar el muro acercándose — de escala 0.15 a 1.0 en duracionPorPose segundos
-    // Usamos un objeto auxiliar porque Phaser solo tween-ea propiedades de objetos
-    this._tweenMuro = { escala: 0.15 };
+    // Animar el muro acercándose
     this.tweens.add({
-      targets: this._tweenMuro,
-      escala: 1.0,
+      targets: this._escalaMuro,
+      v: 1.0,
       duration: CONFIG.duracionPorPose * 1000,
       ease: 'Linear',
-      onUpdate: () => {
-        this.graficosMuro.clear();
-        this._dibujarMuro(pose, this._tweenMuro.escala);
-      },
       onComplete: () => {
-        // El muro llegó — validar si el jugador encajó
         if (!this.validando) this._validarPose(pose);
       },
     });
 
-    // Timer de cuenta regresiva (1 tick por segundo)
+    // Timer por segundo
     this._timerRonda = this.time.addEvent({
       delay: 1000,
+      loop: true,
       callback: () => {
         if (!this.juegoActivo) return;
         this.tiempoRestante--;
         this.textoTimer.setText(`${this.tiempoRestante}`);
 
-        // Últimos 3 segundos → color rojo y shake
         if (this.tiempoRestante <= 3 && this.tiempoRestante > 0) {
           this.textoTimer.setColor('#fa804f');
-          this.cameras.main.shake(60, 0.002);
+          this.cameras.main.shake(80, 0.003);
         }
       },
-      loop: true,
     });
   }
 
-  // ─── Dibujar el muro con la silueta de la pose ───────────────────────────
-  // escala va de 0 (lejos/pequeño) a 1 (cerca/ocupa toda la pantalla)
-  _dibujarMuro(pose, escala) {
+  // ─── Update — cada frame ──────────────────────────────────────────────────
+  update() {
     const { width, height } = this.scale;
 
-    const cx = width / 2;
-    const cy = height / 2;
-    const muroW = width * escala;
-    const muroH = height * escala;
+    // Redibujar muro
+    this.grafMuro.clear();
+    if (this._poseActual && this._escalaMuro) {
+      this._dibujarMuro(this._poseActual, this._escalaMuro.v);
+    }
 
-    // Fondo del muro
-    this.graficosMuro.fillStyle(0x9c4eb3, 0.88);
-    this.graficosMuro.fillRect(cx - muroW / 2, cy - muroH / 2, muroW, muroH);
+    // Redibujar esqueleto del jugador
+    this.grafEsqueleto.clear();
+    this.grafFeedback.clear();
 
-    // Borde del muro
-    this.graficosMuro.lineStyle(Math.max(2, 4 * escala), 0xfdbf2c, 1);
-    this.graficosMuro.strokeRect(cx - muroW / 2, cy - muroH / 2, muroW, muroH);
+    if (this.esqueleto) {
+      this.textoSinJugador.setVisible(false);
+      this._dibujarEsqueleto(
+        this.grafEsqueleto,
+        this.esqueleto,
+        0, 0, width, height,
+        C.verde, 5, 10,
+      );
 
-    // Silueta de la pose dentro del muro (blanca)
-    this._dibujarEsqueleto(
-      this.graficosMuro,
-      pose.esqueleto,
-      cx - muroW / 2,  // origen X del área del muro
-      cy - muroH / 2,  // origen Y del área del muro
-      muroW,
-      muroH,
-      0xffffff,                   // color blanco
-      Math.max(1, 3 * escala),    // grosor de línea escalado
-      Math.max(2, 8 * escala),    // radio de los puntos escalado
-    );
+      // Feedback visual en tiempo real — qué joints están bien
+      if (this.juegoActivo && this._poseActual) {
+        this._dibujarFeedbackTiempoReal(this._poseActual);
+      }
+    } else if (this.juegoActivo) {
+      this.textoSinJugador.setVisible(true);
+    }
   }
 
-  // ─── Dibujar un esqueleto con líneas y puntos ─────────────────────────────
-  // Reutilizable tanto para la silueta del muro como para el jugador real
+  // ─── Dibujar el muro que se acerca ───────────────────────────────────────
+  _dibujarMuro(pose, escala) {
+    const { width, height } = this.scale;
+    const cx    = width / 2;
+    const cy    = height / 2;
+    const muroW = width  * escala;
+    const muroH = height * escala;
+    const x0    = cx - muroW / 2;
+    const y0    = cy - muroH / 2;
+
+    // Sombra del muro
+    this.grafMuro.fillStyle(0x000000, 0.3);
+    this.grafMuro.fillRect(x0 + 8, y0 + 8, muroW, muroH);
+
+    // Cuerpo del muro — gradiente simulado con dos rectángulos
+    this.grafMuro.fillStyle(C.purpura, 0.92);
+    this.grafMuro.fillRect(x0, y0, muroW, muroH);
+
+    // Borde superior más claro (efecto de luz)
+    this.grafMuro.fillStyle(0xb96fd0, 0.6);
+    this.grafMuro.fillRect(x0, y0, muroW, muroH * 0.08);
+
+    // Borde del muro — color amarillo brandbook
+    const grosorBorde = Math.max(3, 6 * escala);
+    this.grafMuro.lineStyle(grosorBorde, C.amarillo, 1);
+    this.grafMuro.strokeRect(x0, y0, muroW, muroH);
+
+    // Líneas decorativas del muro (efecto ladrillo sutil)
+    if (escala > 0.3) {
+      const alpha = Math.min(1, (escala - 0.3) * 3);
+      this.grafMuro.lineStyle(1, 0x000000, 0.15 * alpha);
+      for (let fy = y0 + muroH * 0.15; fy < y0 + muroH; fy += muroH * 0.12) {
+        this.grafMuro.beginPath();
+        this.grafMuro.moveTo(x0, fy);
+        this.grafMuro.lineTo(x0 + muroW, fy);
+        this.grafMuro.strokePath();
+      }
+    }
+
+    // Silueta del hueco dentro del muro (color blanco)
+    this._dibujarEsqueleto(
+      this.grafMuro,
+      pose.silueta,
+      x0, y0, muroW, muroH,
+      C.blanco,
+      Math.max(2, 5 * escala),
+      Math.max(3, 9 * escala),
+    );
+
+    // Nombre de la pose en el muro (solo cuando es suficientemente grande)
+    if (escala > 0.4) {
+      const alpha = Math.min(1, (escala - 0.4) * 5);
+      this.grafMuro.fillStyle(C.amarillo, alpha * 0.9);
+    }
+  }
+
+  // ─── Dibujar esqueleto genérico ───────────────────────────────────────────
+  // offsetX/Y = esquina superior izquierda del área donde se dibuja
+  // areaW/H   = tamaño del área (las coords normalizadas se multiplican por esto)
   _dibujarEsqueleto(graphics, esqueleto, offsetX, offsetY, areaW, areaH, color, grosor, radio) {
-    // Dibujar líneas entre joints conectados
+    // Líneas entre joints
     graphics.lineStyle(grosor, color, 0.9);
     CONEXIONES.forEach(([a, b]) => {
       if (!esqueleto[a] || !esqueleto[b]) return;
-      const x1 = offsetX + esqueleto[a].x * areaW;
-      const y1 = offsetY + esqueleto[a].y * areaH;
-      const x2 = offsetX + esqueleto[b].x * areaW;
-      const y2 = offsetY + esqueleto[b].y * areaH;
       graphics.beginPath();
-      graphics.moveTo(x1, y1);
-      graphics.lineTo(x2, y2);
+      graphics.moveTo(offsetX + esqueleto[a].x * areaW, offsetY + esqueleto[a].y * areaH);
+      graphics.lineTo(offsetX + esqueleto[b].x * areaW, offsetY + esqueleto[b].y * areaH);
       graphics.strokePath();
     });
 
-    // Dibujar círculo en cada joint
+    // Círculos en cada joint
     graphics.fillStyle(color, 1);
-    Object.values(esqueleto).forEach((punto) => {
-      const x = offsetX + punto.x * areaW;
-      const y = offsetY + punto.y * areaH;
-      graphics.fillCircle(x, y, radio);
+    Object.values(esqueleto).forEach((p) => {
+      graphics.fillCircle(
+        offsetX + p.x * areaW,
+        offsetY + p.y * areaH,
+        radio,
+      );
     });
   }
 
-  // ─── Update — se llama cada frame ────────────────────────────────────────
-  // Aquí redibujamos el esqueleto del jugador con los datos más recientes
-  update() {
-    this.graficosEsqueleto.clear();
-    if (!this.esqueletoActual) return;
-
+  // ─── Feedback visual en tiempo real ──────────────────────────────────────
+  // Muestra círculos verdes/rojos en los joints del jugador según si encajan
+  _dibujarFeedbackTiempoReal(pose) {
+    if (!this.esqueleto) return;
     const { width, height } = this.scale;
 
-    // El esqueleto del jugador ocupa toda la pantalla (offsetX=0, offsetY=0)
-    this._dibujarEsqueleto(
-      this.graficosEsqueleto,
-      this.esqueletoActual,
-      0, 0,
-      width, height,
-      0x3dc9a1,  // verde agua
-      4,
-      10,
-    );
+    Object.entries(pose.angulos).forEach(([nombreJoint, def]) => {
+      const encaja = this._evaluarAngulo(def, this.esqueleto);
+      const punto  = this.esqueleto[nombreJoint];
+      if (!punto) return;
+
+      const px = punto.x * width;
+      const py = punto.y * height;
+
+      this.grafFeedback.fillStyle(encaja ? C.verde : C.naranja, 0.85);
+      this.grafFeedback.fillCircle(px, py, 14);
+
+      // Borde blanco para contraste
+      this.grafFeedback.lineStyle(2, C.blanco, 0.7);
+      this.grafFeedback.strokeCircle(px, py, 14);
+    });
   }
 
-  // ─── Recibir datos del WebSocket ──────────────────────────────────────────
-  _onWsMessage(event) {
-    const data = event.detail;
+  // ─── Calcular ángulo entre 3 puntos ──────────────────────────────────────
+  // Calcula el ángulo en el punto "m" (medio) formado por los puntos a → m → b
+  // Devuelve el ángulo en grados (0-180)
+  _calcularAngulo(puntoA, puntoM, puntoB) {
+    const ax = puntoA.x - puntoM.x;
+    const ay = puntoA.y - puntoM.y;
+    const bx = puntoB.x - puntoM.x;
+    const by = puntoB.y - puntoM.y;
 
-    // Solo procesar mensajes del puerto 8080 (cámara)
-    if (data.port !== 8080) return;
-    // Solo procesar si el backend está en modo "poses"
-    if (data.juego_activo !== 'poses') return;
+    const dot      = ax * bx + ay * by;
+    const magA     = Math.sqrt(ax * ax + ay * ay);
+    const magB     = Math.sqrt(bx * bx + by * by);
 
-    if (!data.jugador_detectado) {
-      // No hay nadie frente a la cámara
-      this.esqueletoActual = null;
-      this.textoSinJugador.setVisible(true);
-      return;
-    }
+    if (magA === 0 || magB === 0) return 0;
 
-    this.textoSinJugador.setVisible(false);
-
-    // Guardar el esqueleto más reciente para compararlo al final
-    if (data.poses?.esqueleto) {
-      this.esqueletoActual = data.poses.esqueleto;
-    }
+    const cosAngulo = Math.max(-1, Math.min(1, dot / (magA * magB)));
+    return (Math.acos(cosAngulo) * 180) / Math.PI;
   }
 
-  // ─── Nueva Función: Normalizar Esqueleto ─────────────────────────────────
-  _normalizarEsqueleto(esqueleto) {
-    if (!esqueleto.cadera_izquierda || !esqueleto.cadera_derecha ||
-      !esqueleto.hombro_izquierdo || !esqueleto.hombro_derecho) {
-      return null; // Si el sensor no ve el torso completo, no podemos normalizar
-    }
+  // ─── Evaluar si un ángulo encaja con la pose ──────────────────────────────
+  _evaluarAngulo(def, esqueleto) {
+    const pA = esqueleto[def.a];
+    const pM = esqueleto[def.m];
+    const pB = esqueleto[def.b];
+    if (!pA || !pM || !pB) return false;
 
-    // 1. Encontrar el centro (punto medio entre las caderas)
-    const centroX = (esqueleto.cadera_izquierda.x + esqueleto.cadera_derecha.x) / 2;
-    const centroY = (esqueleto.cadera_izquierda.y + esqueleto.cadera_derecha.y) / 2;
-
-    // 2. Medir el "tamaño" del jugador usando su tronco (distancia hombros-caderas)
-    const hombrosY = (esqueleto.hombro_izquierdo.y + esqueleto.hombro_derecho.y) / 2;
-    const alturaTronco = Math.abs(centroY - hombrosY) || 0.1;
-
-    // 3. Crear un nuevo esqueleto relativo
-    const normalizado = {};
-    for (const [articulacion, punto] of Object.entries(esqueleto)) {
-      normalizado[articulacion] = {
-        x: (punto.x - centroX) / alturaTronco,
-        y: (punto.y - centroY) / alturaTronco
-      };
-    }
-
-    return normalizado;
+    const anguloActual = this._calcularAngulo(pA, pM, pB);
+    return Math.abs(anguloActual - def.objetivo) <= CONFIG.toleranciaAngulo;
   }
 
-  // ─── Validar si el jugador adoptó la pose al llegar el muro ─────────────
-  // ─── Validar si el jugador adoptó la pose al llegar el muro ─────────────
+  // ─── Validar pose al llegar el muro ──────────────────────────────────────
   _validarPose(pose) {
     if (this.validando) return;
-    this.validando = true;
+    this.validando   = true;
     this.juegoActivo = false;
 
-    // Detener timer y animación del muro
     this._timerRonda?.destroy();
     this.tweens.killAll();
 
-    if (!this.esqueletoActual) {
-      this._mostrarResultado(false, 'No se detectó ningún jugador');
+    if (!this.esqueleto) {
+      this._mostrarResultado(false, 0, Object.keys(pose.angulos).length, '¡No te detecté!');
       return;
     }
 
-    // 👇 Transformamos ambos esqueletos a nuestra nueva regla de medición
-    const objetivoNormalizado = this._normalizarEsqueleto(pose.esqueleto);
-    const jugadorNormalizado = this._normalizarEsqueleto(this.esqueletoActual);
+    const angulos      = Object.values(pose.angulos);
+    const totalAngulos = angulos.length;
+    let   aciertos     = 0;
 
-    if (!objetivoNormalizado || !jugadorNormalizado) {
-      this._mostrarResultado(false, 'Jugador fuera de cuadro');
-      return;
-    }
-
-    const jointsImportantes = [
-      'muneca_izquierda', 'muneca_derecha',
-      'codo_izquierdo', 'codo_derecho',
-      'tobillo_izquierdo', 'tobillo_derecho',
-    ];
-
-    let aciertos = 0;
-
-    // 👇 NUEVA TOLERANCIA: Como ahora medimos usando el tronco del jugador como regla, 
-    // un valor de 0.6 significa "el error puede ser hasta el 60% del tamaño del tronco".
-    // Esto es mucho más indulgente y natural que las coordenadas absolutas.
-    const toleranciaRelativa = 0.6;
-
-    jointsImportantes.forEach((joint) => {
-      const objetivo = objetivoNormalizado[joint];
-      const jugador = jugadorNormalizado[joint];
-      if (!objetivo || !jugador) return;
-
-      const distancia = Math.sqrt(
-        Math.pow(jugador.x - objetivo.x, 2) +
-        Math.pow(jugador.y - objetivo.y, 2)
-      );
-
-      console.log(`[POSE] ${joint}: dist=${distancia.toFixed(2)}`);
-      if (distancia <= toleranciaRelativa) aciertos++;
+    angulos.forEach((def) => {
+      if (this._evaluarAngulo(def, this.esqueleto)) aciertos++;
     });
 
-    const umbral = Math.ceil(jointsImportantes.length * 0.5);
-    const exito = aciertos >= umbral;
+    const porcentaje = aciertos / totalAngulos;
+    const exito      = porcentaje >= CONFIG.umbralExito;
 
     if (exito) {
-      this.puntaje += 100 + aciertos * 20;
-      this.textoPuntaje.setText(`Puntos: ${this.puntaje}`);
+      // Más aciertos = más puntos (máximo 500 por ronda)
+      const bonus = Math.round(porcentaje * 500);
+      this.puntaje += bonus;
+      this.textoPuntaje.setText(`${this.puntaje}`);
     }
 
-    this._mostrarResultado(
-      exito,
-      exito
-        ? `¡${aciertos}/${jointsImportantes.length} joints encajaron!`
-        : `Solo ${aciertos}/${jointsImportantes.length} joints — ¡la próxima!`,
-    );
+    this._mostrarResultado(exito, aciertos, totalAngulos);
   }
 
   // ─── Mostrar resultado de la ronda ───────────────────────────────────────
-  _mostrarResultado(exito, mensaje) {
+  _mostrarResultado(exito, aciertos, total, mensajeExtra = null) {
     const { width, height } = this.scale;
 
-    // Flash de color en toda la pantalla
-    const flash = this.add.rectangle(0, 0, width, height, exito ? 0x3dc9a1 : 0xff4444, 0.4)
-      .setOrigin(0).setDepth(25);
+    // Flash de pantalla
+    const flash = this.add.rectangle(0, 0, width, height,
+      exito ? C.verde : C.naranja, 0.35).setOrigin(0).setDepth(25);
 
-    const textoResultado = this.add.text(
-      width / 2, height / 2 - 50,
-      exito ? '✅ ¡ENCAJASTE!' : '❌ ¡FALLASTE!',
-      {
-        fontSize: '80px',
-        fontFamily: 'Fredoka, sans-serif',
-        color: '#ffffff',
-        stroke: '#000',
-        strokeThickness: 8,
-      }
-    ).setOrigin(0.5).setDepth(26).setAlpha(0);
+    // Texto principal
+    const emoji   = exito ? '🎉' : '😅';
+    const mensaje = exito ? '¡ATRAVESASTE!' : '¡FALLASTE!';
+    const color   = exito ? '#3dc9a1' : '#fa804f';
 
-    const textoDetalle = this.add.text(width / 2, height / 2 + 60, mensaje, {
-      fontSize: '34px',
+    const textoGrande = this.add.text(width / 2, height / 2 - 60, `${emoji} ${mensaje}`, {
+      fontSize: '88px',
+      fontFamily: 'Fredoka, sans-serif',
+      color,
+      stroke: '#000000',
+      strokeThickness: 10,
+    }).setOrigin(0.5).setDepth(26).setAlpha(0).setScale(0.5);
+
+    // Texto de detalle
+    const detalle = mensajeExtra ?? `${aciertos} de ${total} posiciones correctas`;
+    const textoDetalle = this.add.text(width / 2, height / 2 + 50, detalle, {
+      fontSize: '36px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff',
-      stroke: '#000',
-      strokeThickness: 4,
+      stroke: '#000000',
+      strokeThickness: 5,
     }).setOrigin(0.5).setDepth(26).setAlpha(0);
 
+    // Animación de entrada
     this.tweens.add({
-      targets: [textoResultado, textoDetalle],
+      targets: textoGrande,
+      alpha: 1,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 400,
+      ease: 'Back.easeOut',
+    });
+
+    this.tweens.add({
+      targets: textoDetalle,
       alpha: 1,
       duration: 300,
-      onComplete: () => {
-        this.cameras.main.shake(200, exito ? 0.008 : 0.015);
+      delay: 200,
+    });
 
-        // Esperar 2 segundos y pasar a la siguiente ronda
-        this.time.delayedCall(2000, () => {
-          this.tweens.add({
-            targets: [flash, textoResultado, textoDetalle],
-            alpha: 0,
-            duration: 300,
-            onComplete: () => {
-              flash.destroy();
-              textoResultado.destroy();
-              textoDetalle.destroy();
-              this.graficosMuro.clear();
-              this._iniciarRonda();
-            },
-          });
-        });
-      },
+    // Shake de cámara
+    this.cameras.main.shake(300, exito ? 0.01 : 0.02);
+
+    // Confeti si fue exitoso
+    if (exito) this._confeti(width, height);
+
+    // Esperar y pasar a siguiente ronda
+    this.time.delayedCall(2200, () => {
+      this.tweens.add({
+        targets: [flash, textoGrande, textoDetalle],
+        alpha: 0,
+        duration: 300,
+        onComplete: () => {
+          flash.destroy();
+          textoGrande.destroy();
+          textoDetalle.destroy();
+          this.grafMuro.clear();
+          this._escalaMuro = null;
+          this._poseActual = null;
+          this._iniciarRonda();
+        },
+      });
     });
   }
 
-  // ─── Pantalla de fin de partida ───────────────────────────────────────────
+  // ─── Confeti de celebración ───────────────────────────────────────────────
+  _confeti(width, height) {
+    const colores = [C.purpura, C.verde, C.naranja, C.amarillo, C.azul, C.blanco];
+    for (let i = 0; i < 6; i++) {
+      this.time.delayedCall(i * 120, () => {
+        colores.forEach((color) => {
+          const emitter = this.add.particles(
+            Phaser.Math.Between(width * 0.2, width * 0.8),
+            Phaser.Math.Between(0, height * 0.4),
+            '__DEFAULT',
+            {
+              speed:     { min: 150, max: 400 },
+              angle:     { min: 0, max: 360 },
+              scale:     { start: 0.6, end: 0 },
+              tint:      color,
+              lifespan:  900,
+              quantity:  5,
+              gravityY:  250,
+              emitting:  false,
+            },
+          );
+          emitter.explode(5);
+          this.time.delayedCall(1100, () => emitter.destroy());
+        });
+      });
+    }
+  }
+
+  // ─── Fin de partida ───────────────────────────────────────────────────────
   _finDePartida() {
     this.juegoActivo = false;
     const { width, height } = this.scale;
 
-    this.graficosMuro.clear();
+    this.grafMuro.clear();
     this.textoInstruccion.setVisible(false);
     this.textoTimer.setVisible(false);
 
-    // Overlay oscuro
-    this.add.rectangle(0, 0, width, height, 0x000000, 0.75)
+    this._confeti(width, height);
+
+    // Overlay
+    this.add.rectangle(0, 0, width, height, 0x000000, 0.78)
       .setOrigin(0).setDepth(30);
 
-    // Panel central
-    this.add.rectangle(width / 2, height / 2, 520, 360, 0x1a0a2e)
-      .setDepth(31).setStrokeStyle(4, 0x9c4eb3);
+    // Panel
+    this.add.rectangle(width / 2, height / 2, 560, 400, 0x1a0a2e)
+      .setDepth(31)
+      .setStrokeStyle(5, C.purpura);
 
-    this.add.text(width / 2, height / 2 - 120, '🎉 ¡Fin del juego!', {
-      fontSize: '48px',
+    // Borde decorativo interno
+    this.add.rectangle(width / 2, height / 2, 540, 380, 0x000000, 0)
+      .setDepth(31)
+      .setStrokeStyle(2, C.amarillo);
+
+    this.add.text(width / 2, height / 2 - 145, '🏆 ¡Fin del Juego!', {
+      fontSize: '52px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#fdbf2c',
-      stroke: '#000',
-      strokeThickness: 5,
+      stroke: '#000000',
+      strokeThickness: 6,
     }).setOrigin(0.5).setDepth(32);
 
-    this.add.text(width / 2, height / 2 - 30, 'Tu puntaje:', {
+    this.add.text(width / 2, height / 2 - 50, 'Tu puntaje final:', {
       fontSize: '28px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff',
     }).setOrigin(0.5).setDepth(32);
 
-    this.add.text(width / 2, height / 2 + 60, `${this.puntaje}`, {
-      fontSize: '96px',
+    this.add.text(width / 2, height / 2 + 55, `${this.puntaje}`, {
+      fontSize: '110px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#3dc9a1',
-      stroke: '#000',
-      strokeThickness: 7,
+      stroke: '#000000',
+      strokeThickness: 8,
     }).setOrigin(0.5).setDepth(32);
 
-    const btn = this.add.rectangle(width / 2, height / 2 + 155, 300, 65, 0x9c4eb3)
-      .setDepth(32).setInteractive({ cursor: 'pointer' });
+    // Botón jugar de nuevo
+    const btn = this.add.rectangle(width / 2, height / 2 + 165, 320, 70, C.purpura)
+      .setDepth(32)
+      .setInteractive({ cursor: 'pointer' });
 
-    this.add.text(width / 2, height / 2 + 155, '🔄 Jugar de nuevo', {
-      fontSize: '26px',
+    this.add.text(width / 2, height / 2 + 165, '🔄 Jugar de nuevo', {
+      fontSize: '28px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff',
     }).setOrigin(0.5).setDepth(33);
 
     btn.on('pointerdown', () => this.scene.restart());
-    btn.on('pointerover', () => btn.setFillColor(0x7a3690));
-    btn.on('pointerout', () => btn.setFillColor(0x9c4eb3));
+    btn.on('pointerover',  () => {
+      btn.setFillColor(0x7a3690);
+      this.tweens.add({ targets: btn, scaleX: 1.05, scaleY: 1.05, duration: 100 });
+    });
+    btn.on('pointerout', () => {
+      btn.setFillColor(C.purpura);
+      this.tweens.add({ targets: btn, scaleX: 1, scaleY: 1, duration: 100 });
+    });
   }
 
-  // ─── Limpieza al salir de la escena ──────────────────────────────────────
+  // ─── WebSocket ────────────────────────────────────────────────────────────
+  _onWsMessage(event) {
+    const data = event.detail;
+    if (data.port !== 8080)          return;
+    if (data.juego_activo !== 'poses') return;
+
+    if (!data.jugador_detectado) {
+      this.esqueleto = null;
+      return;
+    }
+
+    if (data.poses?.esqueleto) {
+      this.esqueleto = data.poses.esqueleto;
+    }
+  }
+
+  // ─── Cleanup ──────────────────────────────────────────────────────────────
   shutdown() {
     window.removeEventListener('ws-message', this._wsHandler);
     this._timerRonda?.destroy();
