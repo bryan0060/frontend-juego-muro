@@ -13,7 +13,7 @@ import * as Phaser from 'phaser';
 const CONFIG = {
   totalRondas: 5,
   duracionPorPose: 10,  // segundos por ronda
-  tolerancia: 0.18,     // margen de error para validar poses (en coords normalizadas 0-1)
+  tolerancia: 0.28,     // margen de error para validar poses (en coords normalizadas 0-1)
   poses: [
     {
       id: 'estrella',
@@ -21,19 +21,19 @@ const CONFIG = {
       emoji: '⭐',
       descripcion: '¡Abre los brazos y las piernas!',
       esqueleto: {
-        nariz:             { x: 0.50, y: 0.12 },
-        hombro_izquierdo:  { x: 0.35, y: 0.28 },
-        hombro_derecho:    { x: 0.65, y: 0.28 },
-        codo_izquierdo:    { x: 0.20, y: 0.18 },
-        codo_derecho:      { x: 0.80, y: 0.18 },
-        muneca_izquierda:  { x: 0.08, y: 0.10 },
-        muneca_derecha:    { x: 0.92, y: 0.10 },
-        cadera_izquierda:  { x: 0.42, y: 0.55 },
-        cadera_derecha:    { x: 0.58, y: 0.55 },
+        nariz: { x: 0.50, y: 0.12 },
+        hombro_izquierdo: { x: 0.35, y: 0.28 },
+        hombro_derecho: { x: 0.65, y: 0.28 },
+        codo_izquierdo: { x: 0.20, y: 0.18 },
+        codo_derecho: { x: 0.80, y: 0.18 },
+        muneca_izquierda: { x: 0.08, y: 0.10 },
+        muneca_derecha: { x: 0.92, y: 0.10 },
+        cadera_izquierda: { x: 0.42, y: 0.55 },
+        cadera_derecha: { x: 0.58, y: 0.55 },
         rodilla_izquierda: { x: 0.35, y: 0.73 },
-        rodilla_derecha:   { x: 0.65, y: 0.73 },
+        rodilla_derecha: { x: 0.65, y: 0.73 },
         tobillo_izquierdo: { x: 0.28, y: 0.91 },
-        tobillo_derecho:   { x: 0.72, y: 0.91 },
+        tobillo_derecho: { x: 0.72, y: 0.91 },
       },
     },
     {
@@ -42,19 +42,19 @@ const CONFIG = {
       emoji: '🙌',
       descripcion: '¡Levanta ambas manos!',
       esqueleto: {
-        nariz:             { x: 0.50, y: 0.15 },
-        hombro_izquierdo:  { x: 0.40, y: 0.30 },
-        hombro_derecho:    { x: 0.60, y: 0.30 },
-        codo_izquierdo:    { x: 0.38, y: 0.18 },
-        codo_derecho:      { x: 0.62, y: 0.18 },
-        muneca_izquierda:  { x: 0.36, y: 0.05 },
-        muneca_derecha:    { x: 0.64, y: 0.05 },
-        cadera_izquierda:  { x: 0.43, y: 0.55 },
-        cadera_derecha:    { x: 0.57, y: 0.55 },
+        nariz: { x: 0.50, y: 0.15 },
+        hombro_izquierdo: { x: 0.40, y: 0.30 },
+        hombro_derecho: { x: 0.60, y: 0.30 },
+        codo_izquierdo: { x: 0.38, y: 0.18 },
+        codo_derecho: { x: 0.62, y: 0.18 },
+        muneca_izquierda: { x: 0.36, y: 0.05 },
+        muneca_derecha: { x: 0.64, y: 0.05 },
+        cadera_izquierda: { x: 0.43, y: 0.55 },
+        cadera_derecha: { x: 0.57, y: 0.55 },
         rodilla_izquierda: { x: 0.43, y: 0.73 },
-        rodilla_derecha:   { x: 0.57, y: 0.73 },
+        rodilla_derecha: { x: 0.57, y: 0.73 },
         tobillo_izquierdo: { x: 0.43, y: 0.91 },
-        tobillo_derecho:   { x: 0.57, y: 0.91 },
+        tobillo_derecho: { x: 0.57, y: 0.91 },
       },
     },
     {
@@ -63,19 +63,19 @@ const CONFIG = {
       emoji: '🦀',
       descripcion: '¡Abre los brazos a los lados!',
       esqueleto: {
-        nariz:             { x: 0.50, y: 0.12 },
-        hombro_izquierdo:  { x: 0.35, y: 0.28 },
-        hombro_derecho:    { x: 0.65, y: 0.28 },
-        codo_izquierdo:    { x: 0.18, y: 0.28 },
-        codo_derecho:      { x: 0.82, y: 0.28 },
-        muneca_izquierda:  { x: 0.05, y: 0.28 },
-        muneca_derecha:    { x: 0.95, y: 0.28 },
-        cadera_izquierda:  { x: 0.42, y: 0.55 },
-        cadera_derecha:    { x: 0.58, y: 0.55 },
+        nariz: { x: 0.50, y: 0.12 },
+        hombro_izquierdo: { x: 0.35, y: 0.28 },
+        hombro_derecho: { x: 0.65, y: 0.28 },
+        codo_izquierdo: { x: 0.18, y: 0.28 },
+        codo_derecho: { x: 0.82, y: 0.28 },
+        muneca_izquierda: { x: 0.05, y: 0.28 },
+        muneca_derecha: { x: 0.95, y: 0.28 },
+        cadera_izquierda: { x: 0.42, y: 0.55 },
+        cadera_derecha: { x: 0.58, y: 0.55 },
         rodilla_izquierda: { x: 0.42, y: 0.73 },
-        rodilla_derecha:   { x: 0.58, y: 0.73 },
+        rodilla_derecha: { x: 0.58, y: 0.73 },
         tobillo_izquierdo: { x: 0.42, y: 0.91 },
-        tobillo_derecho:   { x: 0.58, y: 0.91 },
+        tobillo_derecho: { x: 0.58, y: 0.91 },
       },
     },
     {
@@ -84,19 +84,19 @@ const CONFIG = {
       emoji: '⚡',
       descripcion: '¡Brazo derecho arriba, izquierdo abajo!',
       esqueleto: {
-        nariz:             { x: 0.50, y: 0.12 },
-        hombro_izquierdo:  { x: 0.40, y: 0.28 },
-        hombro_derecho:    { x: 0.60, y: 0.28 },
-        codo_izquierdo:    { x: 0.38, y: 0.45 },
-        codo_derecho:      { x: 0.70, y: 0.15 },
-        muneca_izquierda:  { x: 0.36, y: 0.62 },
-        muneca_derecha:    { x: 0.78, y: 0.03 },
-        cadera_izquierda:  { x: 0.43, y: 0.55 },
-        cadera_derecha:    { x: 0.57, y: 0.55 },
+        nariz: { x: 0.50, y: 0.12 },
+        hombro_izquierdo: { x: 0.40, y: 0.28 },
+        hombro_derecho: { x: 0.60, y: 0.28 },
+        codo_izquierdo: { x: 0.38, y: 0.45 },
+        codo_derecho: { x: 0.70, y: 0.15 },
+        muneca_izquierda: { x: 0.36, y: 0.62 },
+        muneca_derecha: { x: 0.78, y: 0.03 },
+        cadera_izquierda: { x: 0.43, y: 0.55 },
+        cadera_derecha: { x: 0.57, y: 0.55 },
         rodilla_izquierda: { x: 0.43, y: 0.73 },
-        rodilla_derecha:   { x: 0.57, y: 0.73 },
+        rodilla_derecha: { x: 0.57, y: 0.73 },
         tobillo_izquierdo: { x: 0.43, y: 0.91 },
-        tobillo_derecho:   { x: 0.57, y: 0.91 },
+        tobillo_derecho: { x: 0.57, y: 0.91 },
       },
     },
     {
@@ -105,19 +105,19 @@ const CONFIG = {
       emoji: '🧘',
       descripcion: '¡Forma una V con los brazos!',
       esqueleto: {
-        nariz:             { x: 0.50, y: 0.12 },
-        hombro_izquierdo:  { x: 0.40, y: 0.28 },
-        hombro_derecho:    { x: 0.60, y: 0.28 },
-        codo_izquierdo:    { x: 0.28, y: 0.18 },
-        codo_derecho:      { x: 0.72, y: 0.18 },
-        muneca_izquierda:  { x: 0.18, y: 0.08 },
-        muneca_derecha:    { x: 0.82, y: 0.08 },
-        cadera_izquierda:  { x: 0.43, y: 0.55 },
-        cadera_derecha:    { x: 0.57, y: 0.55 },
+        nariz: { x: 0.50, y: 0.12 },
+        hombro_izquierdo: { x: 0.40, y: 0.28 },
+        hombro_derecho: { x: 0.60, y: 0.28 },
+        codo_izquierdo: { x: 0.28, y: 0.18 },
+        codo_derecho: { x: 0.72, y: 0.18 },
+        muneca_izquierda: { x: 0.18, y: 0.08 },
+        muneca_derecha: { x: 0.82, y: 0.08 },
+        cadera_izquierda: { x: 0.43, y: 0.55 },
+        cadera_derecha: { x: 0.57, y: 0.55 },
         rodilla_izquierda: { x: 0.43, y: 0.73 },
-        rodilla_derecha:   { x: 0.57, y: 0.73 },
+        rodilla_derecha: { x: 0.57, y: 0.73 },
         tobillo_izquierdo: { x: 0.43, y: 0.91 },
-        tobillo_derecho:   { x: 0.57, y: 0.91 },
+        tobillo_derecho: { x: 0.57, y: 0.91 },
       },
     },
   ],
@@ -431,6 +431,34 @@ export class DuroMuroScene extends Phaser.Scene {
     }
   }
 
+  // ─── Nueva Función: Normalizar Esqueleto ─────────────────────────────────
+  _normalizarEsqueleto(esqueleto) {
+    if (!esqueleto.cadera_izquierda || !esqueleto.cadera_derecha ||
+      !esqueleto.hombro_izquierdo || !esqueleto.hombro_derecho) {
+      return null; // Si el sensor no ve el torso completo, no podemos normalizar
+    }
+
+    // 1. Encontrar el centro (punto medio entre las caderas)
+    const centroX = (esqueleto.cadera_izquierda.x + esqueleto.cadera_derecha.x) / 2;
+    const centroY = (esqueleto.cadera_izquierda.y + esqueleto.cadera_derecha.y) / 2;
+
+    // 2. Medir el "tamaño" del jugador usando su tronco (distancia hombros-caderas)
+    const hombrosY = (esqueleto.hombro_izquierdo.y + esqueleto.hombro_derecho.y) / 2;
+    const alturaTronco = Math.abs(centroY - hombrosY) || 0.1;
+
+    // 3. Crear un nuevo esqueleto relativo
+    const normalizado = {};
+    for (const [articulacion, punto] of Object.entries(esqueleto)) {
+      normalizado[articulacion] = {
+        x: (punto.x - centroX) / alturaTronco,
+        y: (punto.y - centroY) / alturaTronco
+      };
+    }
+
+    return normalizado;
+  }
+
+  // ─── Validar si el jugador adoptó la pose al llegar el muro ─────────────
   // ─── Validar si el jugador adoptó la pose al llegar el muro ─────────────
   _validarPose(pose) {
     if (this.validando) return;
@@ -446,41 +474,46 @@ export class DuroMuroScene extends Phaser.Scene {
       return;
     }
 
-    // Los joints más representativos para detectar la pose
-    // (muñecas y codos definen la posición de los brazos,
-    //  tobillos definen la posición de las piernas)
+    // 👇 Transformamos ambos esqueletos a nuestra nueva regla de medición
+    const objetivoNormalizado = this._normalizarEsqueleto(pose.esqueleto);
+    const jugadorNormalizado = this._normalizarEsqueleto(this.esqueletoActual);
+
+    if (!objetivoNormalizado || !jugadorNormalizado) {
+      this._mostrarResultado(false, 'Jugador fuera de cuadro');
+      return;
+    }
+
     const jointsImportantes = [
-      'muneca_izquierda',
-      'muneca_derecha',
-      'codo_izquierdo',
-      'codo_derecho',
-      'tobillo_izquierdo',
-      'tobillo_derecho',
+      'muneca_izquierda', 'muneca_derecha',
+      'codo_izquierdo', 'codo_derecho',
+      'tobillo_izquierdo', 'tobillo_derecho',
     ];
 
     let aciertos = 0;
 
+    // 👇 NUEVA TOLERANCIA: Como ahora medimos usando el tronco del jugador como regla, 
+    // un valor de 0.6 significa "el error puede ser hasta el 60% del tamaño del tronco".
+    // Esto es mucho más indulgente y natural que las coordenadas absolutas.
+    const toleranciaRelativa = 0.6;
+
     jointsImportantes.forEach((joint) => {
-      const objetivo = pose.esqueleto[joint];
-      const jugador  = this.esqueletoActual[joint];
+      const objetivo = objetivoNormalizado[joint];
+      const jugador = jugadorNormalizado[joint];
       if (!objetivo || !jugador) return;
 
-      // Distancia euclidiana entre la posición del jugador y la posición objetivo
-      // Como las coords son normalizadas (0-1), la distancia máxima posible es ~1.41
       const distancia = Math.sqrt(
         Math.pow(jugador.x - objetivo.x, 2) +
         Math.pow(jugador.y - objetivo.y, 2)
       );
 
-      if (distancia <= CONFIG.tolerancia) aciertos++;
+      console.log(`[POSE] ${joint}: dist=${distancia.toFixed(2)}`);
+      if (distancia <= toleranciaRelativa) aciertos++;
     });
 
-    // Necesita acertar al menos el 60% de los joints importantes
-    const umbral = Math.ceil(jointsImportantes.length * 0.6);
-    const exito  = aciertos >= umbral;
+    const umbral = Math.ceil(jointsImportantes.length * 0.5);
+    const exito = aciertos >= umbral;
 
     if (exito) {
-      // Más aciertos = más puntos
       this.puntaje += 100 + aciertos * 20;
       this.textoPuntaje.setText(`Puntos: ${this.puntaje}`);
     }
@@ -596,8 +629,8 @@ export class DuroMuroScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(33);
 
     btn.on('pointerdown', () => this.scene.restart());
-    btn.on('pointerover',  () => btn.setFillColor(0x7a3690));
-    btn.on('pointerout',   () => btn.setFillColor(0x9c4eb3));
+    btn.on('pointerover', () => btn.setFillColor(0x7a3690));
+    btn.on('pointerout', () => btn.setFillColor(0x9c4eb3));
   }
 
   // ─── Limpieza al salir de la escena ──────────────────────────────────────
