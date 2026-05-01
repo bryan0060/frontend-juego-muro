@@ -13,6 +13,10 @@ export class BootScene extends Phaser.Scene {
   preload() {
     const { width, height } = this.scale;
 
+    // Imagenes juego Duro contra el Muro
+    this.load.image('duro_muro_fondo', 'assets/images/duro-muro/fondo.jpg');
+    this.load.image('duro_muro_textura', 'assets/images/duro-muro/muro.jpg');
+
     // Pantalla de carga
     const loadingText = this.add.text(width / 2, height / 2, 'Cargando...', {
       fontSize: '32px',
