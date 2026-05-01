@@ -5,6 +5,7 @@ import { DuroMuroScene } from './scenes/DuroMuroScene';
 
 import { MagicBoardScene } from './scenes/MagicBoardScene';
 import { JustDanceScene } from './scenes/JustDanceScene';
+import { AnimalesScene } from './scenes/AnimalesScene';
 
 
 export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
@@ -32,5 +33,5 @@ export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
     },
   },
 
-  scene: [BootScene, SoccerScene, DuroMuroScene, MagicBoardScene, JustDanceScene],
+  scene: [BootScene, SoccerScene, DuroMuroScene, MagicBoardScene, JustDanceScene, AnimalesScene],
 });
