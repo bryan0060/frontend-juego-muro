@@ -4,232 +4,189 @@ export class SubwaySurfersScene extends Phaser.Scene {
   constructor() {
     super('SubwaySurfersScene');
     this.player = null;
-    this.lanes = [-240, 0, 240]; 
+    this.lanes = [-350, 0, 350]; // Ajustados a la perspectiva de la nueva imagen
     this.currentLane = 1;
     this.isJumping = false;
     this.isSliding = false;
-    this.gameSpeed = 10;
+    this.gameSpeed = 7;
     this.score = 0;
     this.isGameOver = false;
-    this.stars = [];
-    this.speedLines = [];
+    this.nextDifficultyScore = 1500;
   }
 
   preload() {
-    this.load.image('ship', 'https://labs.phaser.io/assets/sprites/shmup-ship.png');
-    this.load.image('mine', 'https://labs.phaser.io/assets/sprites/spin-wheel.png');
-    this.load.image('debris', 'https://labs.phaser.io/assets/sprites/asteroid.png');
-    this.load.image('gem', 'https://labs.phaser.io/assets/sprites/diamond.png');
+    // Escenario Base Generado
+    this.load.image('background_mall', 'assets/images/subway/scenario_base.png');
+    
+    // Assets de marca
+    this.load.image('player', 'assets/images/subway/ada.jpeg');
+    this.load.image('logo_game', 'assets/images/subway/image26.png');
+    this.load.image('obs_castle', 'assets/images/subway/image74.png');
+    this.load.image('obs_rainbow', 'assets/images/subway/image27.png');
+    this.load.image('obs_valla', 'assets/images/subway/image73.png');
+    this.load.image('sun', 'assets/images/subway/image64.png');
     this.load.image('fire', 'https://labs.phaser.io/assets/particles/muzzleflash3.png');
-    this.load.image('line', 'https://labs.phaser.io/assets/sprites/white_pixel.png');
   }
 
   create() {
     const { width, height } = this.scale;
     this.isGameOver = false;
     this.score = 0;
-    this.gameSpeed = 10;
+    this.gameSpeed = 7;
     this.currentLane = 1;
 
-    // --- 1. FONDO DINÁMICO ---
-    this.add.rectangle(0, 0, width, height, 0x010105).setOrigin(0);
-    
-    // Campo de estrellas (Parallax)
-    for (let i = 0; i < 200; i++) {
-      const x = Phaser.Math.Between(0, width);
-      const y = Phaser.Math.Between(0, height);
-      const s = this.add.circle(x, y, Phaser.Math.FloatBetween(0.5, 2), 0xffffff, Phaser.Math.FloatBetween(0.2, 0.8));
-      this.stars.push({ obj: s, speed: Phaser.Math.FloatBetween(2, 12) });
-    }
-
-    // Líneas de velocidad en los bordes
-    for (let i = 0; i < 20; i++) {
-        const line = this.add.rectangle(
-            Phaser.Math.Between(0, width), 
-            Phaser.Math.Between(0, height), 
-            2, Phaser.Math.Between(50, 150), 0x00ffff, 0.2
-        );
-        this.speedLines.push(line);
-    }
-
-    // --- 2. CARRILES DE ENERGÍA ---
-    this.laneGraphics = this.add.graphics();
-    this._drawEnergyLanes();
-
-    // --- 3. NAVE ESPACIAL (CORREGIDA) ---
-    this.playerContainer = this.add.container(width / 2 + this.lanes[this.currentLane], height - 180);
-    
-    this.thruster = this.add.particles(0, 40, 'fire', { // Ajustado a la base de la nave
-      speed: { min: 100, max: 200 },
-      angle: { min: 85, max: 95 },
-      scale: { start: 0.5, end: 0 },
-      alpha: { start: 0.8, end: 0 },
-      lifespan: 500,
-      blendMode: 'ADD'
-    });
-    this.playerContainer.add(this.thruster);
-
-    this.player = this.add.sprite(0, 0, 'ship')
-      .setScale(2)
-      .setAngle(0); // Ahora está orientada correctamente (arriba)
-    this.playerContainer.add(this.player);
-    this.playerContainer.setDepth(20);
-
-    // --- 4. GRUPOS ---
-    this.obstacles = this.add.group();
-    this.collectibles = this.add.group();
-
-    // --- 5. UI ---
+    // 1. UI (Siempre al frente)
     this._createUI();
 
-    // --- 6. CICLO ---
-    this.spawnTimer = this.time.addEvent({ delay: 900, callback: () => this._spawnCycle(), loop: true });
-    
-    this.input.on('pointerdown', (p) => this._handleInput(p.x, p.y));
-    window.addEventListener('ws-message', (e) => {
-        if (!this.isGameOver) this._handleInput(e.detail.x, e.detail.y);
+    // 2. Fondo del Mall (Imagen Generada de alta calidad)
+    this.add.image(width / 2, height / 2, 'background_mall')
+        .setDisplaySize(width, height)
+        .setDepth(0);
+
+    // 3. Personaje y Contenedores
+    // Ubicado un poco más abajo para que coincida con el inicio de los carriles
+    this.playerContainer = this.add.container(width / 2 + this.lanes[this.currentLane], height - 100);
+    this.jumpContainer = this.add.container(0, 0);
+    this.playerContainer.add(this.jumpContainer);
+
+    this.player = this.add.sprite(0, 0, 'player').setScale(0.45).setOrigin(0.5);
+    this.jumpContainer.add(this.player);
+    this.playerContainer.setDepth(50);
+
+    // 4. Logo en la esquina
+    this.add.image(width - 250, 100, 'logo_game').setScale(0.4).setDepth(100);
+
+    // 5. Timers
+    this.spawnTimer = this.time.addEvent({ delay: 1000, callback: () => this._spawnCycle(), loop: true });
+    this.timeScoreTimer = this.time.addEvent({ delay: 500, callback: () => this._updateScore(), loop: true });
+
+    // 6. Líneas de movimiento en el suelo (para simular avance)
+    this.floorStrips = this.add.group();
+    this.time.addEvent({
+        delay: 200,
+        callback: () => this._spawnFloorStrip(),
+        loop: true
     });
+
+    // 7. Controles
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.input.keyboard.on('keydown-LEFT', () => this._setLane(Math.max(0, this.currentLane - 1)));
+    this.input.keyboard.on('keydown-RIGHT', () => this._setLane(Math.min(2, this.currentLane + 1)));
+    this.input.keyboard.on('keydown-UP', () => this._jump());
+    this.input.keyboard.on('keydown-DOWN', () => this._slide());
+  }
+
+  _updateScore() {
+    if (this.isGameOver) return;
+    this.score += Math.floor(this.gameSpeed / 2);
+    this.scoreText.setText(this.score);
+    if (this.score >= this.nextDifficultyScore) {
+        this.nextDifficultyScore += 1500;
+        this.gameSpeed += 0.8;
+        this.cameras.main.flash(400, 255, 255, 255, 0.05);
+    }
+  }
+
+  _createUI() {
+    const { width } = this.scale;
+    this.scoreText = this.add.text(width / 2, 80, '0', {
+      fontSize: '110px', color: '#ffffff', stroke: '#9c4eb3', strokeThickness: 10
+    }).setOrigin(0.5).setDepth(100);
   }
 
   update() {
     if (this.isGameOver) return;
+    
+    const horizonY = this.scale.height * 0.45;
+    
+    // Actualizar líneas de reflejo en el suelo (Sensación de avance)
+    this.floorStrips.getChildren().forEach(strip => {
+        strip.y += this.gameSpeed * 1.5;
+        const progress = (strip.y - horizonY) / (this.scale.height - horizonY);
+        const targetX = this.scale.width / 2 + this.lanes[strip.lane];
+        const startX = this.scale.width / 2 + (this.lanes[strip.lane] * 0.02);
+        strip.x = Phaser.Math.Linear(startX, targetX, progress);
+        
+        strip.scaleX = 0.1 + progress * 2;
+        strip.alpha = Phaser.Math.Clamp(progress * 2, 0, 0.4);
 
-    // Movimiento estrellas y líneas
-    this.stars.forEach(s => {
-      s.obj.y += s.speed;
-      if (s.obj.y > this.scale.height) s.obj.y = 0;
+        if (strip.y > this.scale.height + 100) strip.destroy();
     });
 
-    this.speedLines.forEach(l => {
-        l.y += this.gameSpeed * 2;
-        if (l.y > this.scale.height) {
-            l.y = -200;
-            l.x = Phaser.Math.Between(0, this.scale.width);
-        }
-    });
-
-    this._updateObjects(this.obstacles, true);
-    this._updateObjects(this.collectibles, false);
-
-    this.gameSpeed += 0.003;
-  }
-
-  _drawEnergyLanes() {
-    const { width, height } = this.scale;
-    const horizonY = height * 0.2;
-    const centerX = width / 2;
-    this.laneGraphics.clear();
-    [-480, -160, 160, 480].forEach(xOff => {
-      this.laneGraphics.lineStyle(15, 0x00ffff, 0.1);
-      this.laneGraphics.beginPath();
-      this.laneGraphics.moveTo(centerX + (xOff * 0.01), horizonY);
-      this.laneGraphics.lineTo(centerX + xOff, height);
-      this.laneGraphics.strokePath();
-      this.laneGraphics.lineStyle(3, 0x00ffff, 0.4);
-      this.laneGraphics.beginPath();
-      this.laneGraphics.moveTo(centerX + (xOff * 0.01), horizonY);
-      this.laneGraphics.lineTo(centerX + xOff, height);
-      this.laneGraphics.strokePath();
-    });
-  }
-
-  _createUI() {
-    const { width, height } = this.scale;
-    this.scoreText = this.add.text(width / 2, 100, '0', {
-      fontSize: '100px', fontFamily: 'Orbitron', color: '#00ffff',
-      stroke: '#004488', strokeThickness: 10
-    }).setOrigin(0.5).setDepth(100);
-  }
-
-  _updateObjects(group, isObstacle) {
-    group.getChildren().forEach(obj => {
+    const objs = [];
+    if (this.obstacles) objs.push(...this.obstacles.getChildren());
+    if (this.collectibles) objs.push(...this.collectibles.getChildren());
+    
+    objs.forEach(obj => {
       obj.y += this.gameSpeed;
-      const horizonY = this.scale.height * 0.2;
+      // Interpolación basada en el punto de fuga de la imagen
       const progress = (obj.y - horizonY) / (this.scale.height - horizonY);
+      
+      // Perspectiva corregida para la imagen de fondo
+      const startX = this.scale.width / 2 + (this.lanes[obj.lane] * 0.02);
       const targetX = this.scale.width / 2 + this.lanes[obj.lane];
-      const startX = this.scale.width / 2 + (this.lanes[obj.lane] * 0.01);
       obj.x = Phaser.Math.Linear(startX, targetX, progress);
       
-      obj.setScale(0.1 + progress * 3.5);
+      obj.setScale(0.01 + progress * 0.8);
       obj.setAlpha(Phaser.Math.Clamp(progress * 4, 0, 1));
-      
-      if (isObstacle) {
-          obj.angle += obj.rotSpeed || 2;
-          // Brillo pulsante para minas
-          if (obj.texture.key === 'mine') {
-              obj.setAlpha(0.6 + Math.sin(this.time.now / 100) * 0.4);
-          }
-      }
 
-      if (obj.y > this.scale.height + 150) {
-        obj.destroy();
-        if (isObstacle) { this.score += 10; this.scoreText.setText(this.score); }
-      }
+      if (obj.y > this.scale.height + 200) obj.destroy();
 
+      // Colisiones
       const dist = Phaser.Math.Distance.Between(obj.x, obj.y, this.playerContainer.x, this.playerContainer.y);
-      if (dist < 85 && obj.lane === this.currentLane) {
-        if (isObstacle) { if (!this.isJumping) this._gameOver(); }
-        else { this._collectGem(obj); }
+      if (dist < 80 && obj.lane === this.currentLane) {
+        if (this.obstacles && this.obstacles.contains(obj)) {
+            if (!this.isJumping) this._gameOver();
+        } else {
+            this._collectSun(obj);
+        }
       }
     });
   }
 
   _spawnCycle() {
+    if (this.isGameOver) return;
     const lane = Phaser.Math.Between(0, 2);
-    if (Phaser.Math.Between(0, 10) > 3) this._spawnObstacle(lane);
+    if (Phaser.Math.Between(0, 10) > 4) this._spawnObstacle(lane);
     else this._spawnCollectible(lane);
   }
 
   _spawnObstacle(lane) {
-    const type = Phaser.Math.Between(0, 1) === 0 ? 'mine' : 'debris';
-    const obs = this.add.sprite(this.scale.width / 2, this.scale.height * 0.2, type);
+    if (!this.obstacles) this.obstacles = this.add.group();
+    const type = Phaser.Math.RND.pick(['obs_castle', 'obs_rainbow', 'obs_valla']);
+    const obs = this.add.sprite(this.scale.width / 2, this.scale.height * 0.45, type);
     obs.lane = lane;
-    obs.rotSpeed = Phaser.Math.FloatBetween(1, 5);
-    if (type === 'mine') obs.setTint(0xff0000);
-    else obs.setTint(0x888888);
     this.obstacles.add(obs);
   }
 
   _spawnCollectible(lane) {
-    const gem = this.add.sprite(this.scale.width / 2, this.scale.height * 0.2, 'gem');
-    gem.lane = lane;
-    gem.setTint(0xFCBE2C);
-    this.collectibles.add(gem);
+    if (!this.collectibles) this.collectibles = this.add.group();
+    const sun = this.add.sprite(this.scale.width / 2, this.scale.height * 0.45, 'sun');
+    sun.lane = lane;
+    this.collectibles.add(sun);
   }
 
-  _handleInput(x, y) {
-    if (this.isGameOver) return;
-    const { width, height } = this.scale;
-    if (y < height * 0.3) this._jump();
-    else if (y > height * 0.7) this._slide();
-    else {
-      if (x < width * 0.35) this._moveLane(-1);
-      else if (x > width * 0.65) this._moveLane(1);
-      else this.currentLane = 1;
-    }
-  }
-
-  _moveLane(dir) {
-    let next = this.currentLane + dir;
-    if (next >= 0 && next <= 2) {
-      this.currentLane = next;
-      this.tweens.add({
-        targets: this.playerContainer,
-        x: this.scale.width / 2 + this.lanes[this.currentLane],
-        duration: 150,
-        ease: 'Back.easeOut'
-      });
-    }
+  _setLane(lane) {
+    if (this.currentLane === lane) return;
+    this.currentLane = lane;
+    this.tweens.add({
+      targets: this.playerContainer,
+      x: this.scale.width / 2 + this.lanes[lane],
+      duration: 150,
+      ease: 'Power2'
+    });
   }
 
   _jump() {
     if (this.isJumping) return;
     this.isJumping = true;
     this.tweens.add({
-      targets: this.playerContainer,
-      y: this.playerContainer.y - 220,
-      duration: 400, yoyo: true, ease: 'Cubic.easeOut',
-      onComplete: () => this.isJumping = false
+      targets: this.jumpContainer,
+      y: -280,
+      duration: 400,
+      yoyo: true,
+      ease: 'Cubic.easeOut',
+      onComplete: () => { this.isJumping = false; this.jumpContainer.y = 0; }
     });
   }
 
@@ -238,58 +195,69 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.isSliding = true;
     this.tweens.add({
       targets: this.player,
-      scaleX: 1, scaleY: 3,
-      duration: 150, yoyo: true, hold: 400,
-      onComplete: () => this.isSliding = false
+      scaleY: 0.15,
+      duration: 150,
+      yoyo: true,
+      hold: 600,
+      onComplete: () => { this.isSliding = false; this.player.scaleY = 0.45; }
     });
   }
 
-  _collectGem(gem) {
-    gem.destroy();
-    this.score += 500;
+  _collectSun(sun) {
+    sun.destroy();
+    this.score += 50;
     this.scoreText.setText(this.score);
-    this.cameras.main.flash(100, 252, 190, 44, 0.2);
+    this.tweens.add({ targets: this.scoreText, scale: 1.2, duration: 100, yoyo: true });
+  }
+
+  _spawnFloorStrip() {
+    if (this.isGameOver) return;
+    const lane = Phaser.Math.Between(0, 2);
+    const horizonY = this.scale.height * 0.45;
+    
+    const strip = this.add.rectangle(this.scale.width / 2, horizonY, 100, 10, 0xffffff, 0.3);
+    strip.lane = lane;
+    this.floorStrips.add(strip);
   }
 
   _gameOver() {
+    if (this.isGameOver) return;
     this.isGameOver = true;
-    this.thruster.stop();
-    this.spawnTimer.remove();
-    this.cameras.main.shake(600, 0.05);
-
+    
+    this.cameras.main.shake(600, 0.03);
     const { width, height } = this.scale;
     
-    // Panel de Game Over
+    // Panel de Game Over estilizado
     const panel = this.add.container(width / 2, height / 2).setDepth(200);
     
-    const bg = this.add.rectangle(0, 0, 600, 400, 0x000000, 0.8)
-        .setStrokeStyle(4, 0x00ffff);
+    const bg = this.add.rectangle(0, 0, 700, 500, 0x9c4eb3, 0.95)
+        .setStrokeStyle(4, 0xffffff);
     panel.add(bg);
 
-    const title = this.add.text(0, -100, 'SISTEMA CRÍTICO', {
-        fontSize: '60px', fontFamily: 'Orbitron', color: '#ff0044'
+    const title = this.add.text(0, -120, '¡FIN DEL JUEGO!', { 
+        fontSize: '75px', color: '#ffffff', fontWeight: 'bold' 
     }).setOrigin(0.5);
     panel.add(title);
 
-    const scoreFinal = this.add.text(0, -20, `SCORE: ${this.score}`, {
-        fontSize: '40px', fontFamily: 'Orbitron', color: '#ffffff'
+    const scoreFinal = this.add.text(0, 10, `PUNTUACIÓN: ${this.score}`, { 
+        fontSize: '45px', color: '#ffffff' 
     }).setOrigin(0.5);
     panel.add(scoreFinal);
 
-    // Botón Reiniciar
-    const btn = this.add.container(0, 100);
-    const btnBg = this.add.rectangle(0, 0, 300, 80, 0x00ffff)
+    // Botón Reintentar
+    const btn = this.add.container(0, 140);
+    const btnBg = this.add.rectangle(0, 0, 350, 90, 0xffffff)
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => this.scene.restart());
     
-    const btnText = this.add.text(0, 0, 'REINTENTAR', {
-        fontSize: '32px', fontFamily: 'Orbitron', color: '#000000', fontWeight: 'bold'
+    const btnText = this.add.text(0, 0, 'REINTENTAR', { 
+        fontSize: '32px', color: '#9c4eb3', fontWeight: 'bold' 
     }).setOrigin(0.5);
     
     btn.add([btnBg, btnText]);
     panel.add(btn);
 
-    // Animación de entrada del panel
+    // Animación de entrada
     panel.setScale(0);
     this.tweens.add({
         targets: panel,
