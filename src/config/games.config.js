@@ -23,7 +23,7 @@ export const GAMES = [
     wsPort: 8080,
     wsPath: '/ws',
     wsJuego: 'esquive',
-    disponible: false,
+    disponible: true,
   },
   {
     id: 'animales',
