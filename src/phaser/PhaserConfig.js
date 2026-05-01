@@ -28,10 +28,10 @@ export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
     height: window.innerHeight,
   },
   callbacks: {
-    postBoot: (game) => {
-      game.registry.set('escenaInicial', escenaInicial);
-    },
+  preBoot: (game) => {
+    game.registry.set('escenaInicial', escenaInicial);
   },
+},
 
   scene: [BootScene, SoccerScene, DuroMuroScene, MagicBoardScene, JustDanceScene, AnimalesScene],
 });

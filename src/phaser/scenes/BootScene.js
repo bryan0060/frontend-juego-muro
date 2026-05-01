@@ -45,7 +45,8 @@ export class BootScene extends Phaser.Scene {
 
   create() {
     // Leer la escena inicial definida desde React
-    const escenaInicial = this.registry.get('escenaInicial') || 'BasketballScene';
+    const escenaInicial = this.registry.get('escenaInicial') || 'SoccerScene';
+
     this.scene.start(escenaInicial);
   }
 }
