@@ -6,6 +6,12 @@ import { DuroMuroScene } from './scenes/DuroMuroScene';
 import { MagicBoardScene } from './scenes/MagicBoardScene';
 import { JustDanceScene } from './scenes/JustDanceScene';
 
+import { SubwaySurfersScene } from './scenes/SubwaySurfersScene';
+
+
+import { AnimalesScene } from './scenes/AnimalesScene';
+
+
 
 export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
   type: Phaser.AUTO,
@@ -27,10 +33,10 @@ export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
     height: window.innerHeight,
   },
   callbacks: {
-  preBoot: (game) => {
-    game.registry.set('escenaInicial', escenaInicial);
+    preBoot: (game) => {
+      game.registry.set('escenaInicial', escenaInicial);
+    },
   },
-},
 
-  scene: [BootScene, SoccerScene, DuroMuroScene, MagicBoardScene, JustDanceScene],
+  scene: [BootScene, SoccerScene, DuroMuroScene, MagicBoardScene, JustDanceScene, SubwaySurfersScene, AnimalesScene],
 });
