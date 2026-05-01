@@ -32,11 +32,21 @@ export class BootScene extends Phaser.Scene {
     this.load.image('ball', 'assets/images/futbol/Balon.png');
     this.load.image('fans_bg', 'assets/images/futbol/hinchas.png');
     this.load.image('neon_stage', 'assets/images/neon_stage.png');
+
+    // Juego Animales (Protege el Hada)
+    this.load.image('scenery_bosque', 'assets/images/animales/bosque.png');
+    this.load.image('scenery_desierto', 'assets/images/animales/desierto.png');
+    this.load.image('scenery_hielo', 'assets/images/animales/hielo.png');
+    this.load.image('scenery_pantano', 'assets/images/animales/pantano.png');
+    this.load.image('jaula_hada', 'assets/images/animales/jaula_hada.png');
+    this.load.image('lobo', 'assets/images/animales/lobo.png');
+    this.load.audio('sonido_bosque', 'assets/audio/sonidos%20de%20animales/bosque.mp3');
   }
 
   create() {
     // Leer la escena inicial definida desde React
-    const escenaInicial = this.registry.get('escenaInicial') || 'BasketballScene';
+    const escenaInicial = this.registry.get('escenaInicial') || 'SoccerScene';
+
     this.scene.start(escenaInicial);
   }
 }

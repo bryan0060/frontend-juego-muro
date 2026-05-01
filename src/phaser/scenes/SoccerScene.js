@@ -17,7 +17,7 @@ export class SoccerScene extends Phaser.Scene {
       ],
 
       boxesNeutral: [
-        { ox: -50, oy: -140, w: 100, h: 280 }
+        { ox: -60, oy: -150, w: 120, h: 320 } // Más ancha y alta para cubrir centro
       ],
 
       goalTop: 40,
@@ -36,6 +36,7 @@ export class SoccerScene extends Phaser.Scene {
     this.score = 0;
     this.cpuScore = 0;
     this.shots = 0;
+    this.shotResults = []; // Registro de resultados: true=gol, false=fallo
 
     // El fondo se construye en _buildGraphics para mayor control de capas
     this.phase = 'aim';
@@ -254,30 +255,49 @@ export class SoccerScene extends Phaser.Scene {
   _createBroadcastScoreboard() {
     const W = this.W;
     const cx = W / 2;
-    const cy = 60; // Altura del marcador
+    const cy = 50; 
 
     this.scoreboardGraphics = this.add.graphics().setDepth(100);
     
-    // Texto de equipos y puntajes
-    this.scoreJUG = this.add.text(cx - 150, cy, '0', {
-      fontSize: '38px', fontFamily: 'Arial Black', color: '#ffffff'
-    }).setOrigin(0.5).setDepth(101);
+    // 1. Textos centrales
+    this.teamJUG = this.add.text(cx - 85, cy - 8, 'JUG', {
+      fontSize: '22px', fontFamily: 'Arial Black', color: '#ffffff'
+    }).setOrigin(0.5).setDepth(102);
 
-    this.scoreCPU = this.add.text(cx + 150, cy, '0', {
-      fontSize: '38px', fontFamily: 'Arial Black', color: '#ffffff'
-    }).setOrigin(0.5).setDepth(101);
+    this.shotsCounterText = this.add.text(cx, cy - 8, '0/5', {
+      fontSize: '24px', fontFamily: 'Arial Black', color: '#00ff00'
+    }).setOrigin(0.5).setDepth(102);
 
-    this.teamJUG = this.add.text(cx - 75, cy, 'JUG', {
-      fontSize: '18px', fontFamily: 'Arial Black', color: '#ffffff'
-    }).setOrigin(0.5).setDepth(101);
+    this.teamCPU = this.add.text(cx + 85, cy - 8, 'CPU', {
+      fontSize: '22px', fontFamily: 'Arial Black', color: '#ffffff'
+    }).setOrigin(0.5).setDepth(102);
 
-    this.teamCPU = this.add.text(cx + 75, cy, 'CPU', {
-      fontSize: '18px', fontFamily: 'Arial Black', color: '#ffffff'
-    }).setOrigin(0.5).setDepth(101);
+    // 2. Puntajes con fondo "texturizado" (rectángulos de color por ahora)
+    this.scoreJUG = this.add.text(cx - 160, cy, '0', {
+      fontSize: '44px', fontFamily: 'Arial Black', color: '#ffffff'
+    }).setOrigin(0.5).setDepth(102);
 
-    this.shotsCounterText = this.add.text(cx, cy + 5, '0/5', {
-      fontSize: '22px', fontFamily: 'Arial Black', color: '#00ff00'
-    }).setOrigin(0.5).setDepth(101);
+    this.scoreCPU = this.add.text(cx + 160, cy, '0', {
+      fontSize: '44px', fontFamily: 'Arial Black', color: '#ffffff'
+    }).setOrigin(0.5).setDepth(102);
+
+    // 3. Texto "GOAL" y estrella decorativa
+    this.goalLabel = this.add.text(cx - 245, cy + 10, 'GOAL', {
+      fontSize: '12px', fontFamily: 'Arial Black', color: '#ffffff'
+    }).setOrigin(0.5).setDepth(102);
+
+    // 4. Indicadores de balones en la extensión inferior
+    this.shotIndicators = [];
+    const spacing = 35;
+    const startX = cx - (spacing * (SoccerScene.MAX_SHOTS - 1)) / 2;
+    
+    for (let i = 0; i < SoccerScene.MAX_SHOTS; i++) {
+      const ball = this.add.sprite(startX + i * spacing, cy + 45, 'ball')
+        .setScale(0.018)
+        .setDepth(102)
+        .setAlpha(0.2); 
+      this.shotIndicators.push(ball);
+    }
 
     this._drawScoreboardGraphics();
   }
@@ -286,49 +306,131 @@ export class SoccerScene extends Phaser.Scene {
     const g = this.scoreboardGraphics;
     g.clear();
     const cx = this.W / 2;
-    const cy = 60;
+    const cy = 50;
 
-    // 1. Barra central negra (fondo de nombres y tiempo)
-    g.fillStyle(0x1a1a1a, 0.9);
-    // x1, y1, x2, y2, x3, y3, x4, y4 (Trapecio central)
+    // --- 1. FONDO CENTRAL (NEGRO) ---
+    g.fillStyle(0x111111, 0.95);
+    // Rectángulo principal
+    g.fillRect(cx - 120, cy - 25, 240, 40);
+    // Extensión inferior (Trapecio para los balones)
     g.fillPoints([
-      { x: cx - 180, y: cy - 25 },
-      { x: cx + 180, y: cy - 25 },
-      { x: cx + 200, y: cy + 25 },
-      { x: cx - 200, y: cy + 25 }
+      { x: cx - 110, y: cy + 15 },
+      { x: cx + 110, y: cy + 15 },
+      { x: cx + 90, y: cy + 75 },
+      { x: cx - 90, y: cy + 75 }
     ], true);
 
-    // 2. Bloque Score Izquierdo (Verde)
+    // --- 2. BLOQUES DE PUNTAJE (BROWN/GRAY) ---
+    // Izquierda (Jugador) - Marrón
+    g.fillStyle(0x795548, 1);
+    g.fillRect(cx - 195, cy - 25, 70, 60);
+    // Derecha (CPU) - Gris
+    g.fillStyle(0x616161, 1);
+    g.fillRect(cx + 125, cy - 25, 70, 60);
+
+    // --- 3. ALAS VERDES (PARALELOGRAMOS) ---
     g.fillStyle(0x2e7d32, 1);
+    // Izquierda
     g.fillPoints([
-      { x: cx - 240, y: cy - 25 },
-      { x: cx - 180, y: cy - 25 },
-      { x: cx - 200, y: cy + 25 },
-      { x: cx - 260, y: cy + 25 }
+      { x: cx - 290, y: cy - 25 },
+      { x: cx - 195, y: cy - 25 },
+      { x: cx - 195, y: cy + 35 },
+      { x: cx - 260, y: cy + 35 }
+    ], true);
+    // Derecha
+    g.fillPoints([
+      { x: cx + 195, y: cy - 25 },
+      { x: cx + 290, y: cy - 25 },
+      { x: cx + 260, y: cy + 35 },
+      { x: cx + 195, y: cy + 35 }
     ], true);
 
-    // 3. Bloque Score Derecho (Verde)
-    g.fillStyle(0x2e7d32, 1);
-    g.fillPoints([
-      { x: cx + 180, y: cy - 25 },
-      { x: cx + 240, y: cy - 25 },
-      { x: cx + 260, y: cy + 25 },
-      { x: cx + 200, y: cy + 25 }
-    ], true);
-
-    // 4. Detalle superior (decoración verde)
+    // --- 4. DETALLES Y ACENTOS ---
+    // Barra verde superior
     g.fillStyle(0x4caf50, 1);
-    g.fillRect(cx - 60, cy - 35, 120, 10);
-    
-    // Bordes
-    g.lineStyle(2, 0xffffff, 0.3);
-    g.strokeRect(cx - 60, cy - 35, 120, 10);
+    g.fillRect(cx - 50, cy - 35, 100, 8);
+
+    // Estrella en el ala izquierda
+    const sx = cx - 245;
+    const sy = cy - 5;
+    g.fillStyle(0xffd700, 1);
+    this._drawStar(g, sx, sy, 5, 18, 8);
+
+    // Bordes sutiles
+    g.lineStyle(2, 0xffffff, 0.1);
+    g.strokeRect(cx - 120, cy - 25, 240, 40);
+  }
+
+  _drawStar(graphics, cx, cy, spikes, outerRadius, innerRadius) {
+    let rot = Math.PI / 2 * 3;
+    let x = cx;
+    let y = cy;
+    let step = Math.PI / spikes;
+
+    graphics.beginPath();
+    graphics.moveTo(cx, cy - outerRadius);
+    for (let i = 0; i < spikes; i++) {
+      x = cx + Math.cos(rot) * outerRadius;
+      y = cy + Math.sin(rot) * outerRadius;
+      graphics.lineTo(x, y);
+      rot += step;
+
+      x = cx + Math.cos(rot) * innerRadius;
+      y = cy + Math.sin(rot) * innerRadius;
+      graphics.lineTo(x, y);
+      rot += step;
+    }
+    graphics.lineTo(cx, cy - outerRadius);
+    graphics.closePath();
+    graphics.fillPath();
   }
 
   _updateHUDStats() {
     if (this.scoreJUG) this.scoreJUG.setText(this.score);
     if (this.scoreCPU) this.scoreCPU.setText(this.cpuScore);
     if (this.shotsCounterText) this.shotsCounterText.setText(`${this.shots}/${SoccerScene.MAX_SHOTS}`);
+
+    // Actualizar indicadores de balones
+    this.shotIndicators.forEach((indicator, i) => {
+      if (i < this.shotResults.length) {
+        const isGoal = this.shotResults[i];
+        indicator.setAlpha(1);
+        
+        if (isGoal) {
+          indicator.setTint(0x00ff00);
+          // Efecto de brillo si es gol (usando una sombra interna simulada con tint)
+          if (!indicator.getData('glowing')) {
+            indicator.setData('glowing', true);
+            this.tweens.add({
+              targets: indicator,
+              alpha: 0.6,
+              duration: 400,
+              yoyo: true,
+              repeat: -1
+            });
+          }
+        } else {
+          indicator.setTint(0x444444); // Gris oscuro para fallos (según imagen)
+        }
+        
+        // Efecto de pulso si es el último tiro registrado
+        if (i === this.shotResults.length - 1 && !indicator.getData('animated')) {
+          indicator.setData('animated', true);
+          this.tweens.add({
+            targets: indicator,
+            scale: 0.024,
+            duration: 250,
+            yoyo: true,
+            ease: 'Back.easeOut'
+          });
+        }
+      } else {
+        indicator.setAlpha(0.2);
+        indicator.clearTint();
+        indicator.setData('animated', false);
+        indicator.setData('glowing', false);
+      }
+    });
   }
 
   // ─── Input ───────────────────────────────────────────────────────
@@ -367,11 +469,11 @@ export class SoccerScene extends Phaser.Scene {
       this.W / 2 + this.W * 0.5
     );
 
-    const jumpPower = Phaser.Math.Clamp(
-      Math.max(120, (this.H * 0.75 - ty) * 0.9),
-      0,
-      350
-    );
+    const isLowShot = ty > this.H * 0.7; // Detectar si el tiro es bajo
+
+    const jumpPower = isLowShot 
+      ? Phaser.Math.Between(0, 50) // Si es bajo, apenas salta
+      : Phaser.Math.Clamp(Math.max(120, (this.H * 0.75 - ty) * 0.9), 0, 350);
 
     const reactionTime = Math.max(240, 380 - (this.score * 40));
 
@@ -404,6 +506,7 @@ export class SoccerScene extends Phaser.Scene {
     const cx = this.W / 2;
     const isFlipped = this.keeperSprite.flipX;
     const isNeutral = this.keeperSprite.texture.key === 'keeper_neutral';
+    const isLowShot = ty > this.H * 0.7; // Definir aquí también
     const activeBoxes = isNeutral
       ? this.hitbox.boxesNeutral
       : this.hitbox.boxesSide;
@@ -415,7 +518,7 @@ export class SoccerScene extends Phaser.Scene {
       const bLeft = keeperDest + ox;
       const bRight = bLeft + box.w;
       const bTop = this.keeperContainer.y + box.oy;
-      const bBot = bTop + box.h;
+      const bBot = bTop + box.h + (isLowShot ? 100 : 0); // Extender hitbox hacia abajo si es tiro bajo
 
       return tx > bLeft && tx < bRight && ty > bTop && ty < bBot;
     });
@@ -429,6 +532,7 @@ export class SoccerScene extends Phaser.Scene {
     if (inGoal && !blocked) {
       this._showResult('GOL!', '#4CAF50');
       this.score++;
+      this.shotResults.push(true);
       this.sound.play('gol'); // Sonido de gol
       this.cameras.main.shake(250, 0.012);
       this.particles.setPosition(tx, ty);
@@ -436,11 +540,11 @@ export class SoccerScene extends Phaser.Scene {
     } else {
       this._showResult('ATAJADO', '#f44336');
       this.cpuScore++;
+      this.shotResults.push(false);
     }
 
     this._updateHUDStats();
 
-    window.dispatchEvent(new CustomEvent('laser-impact', { detail: { x: tx, y: ty } }));
   }
 
   // ─── Loop de actualización (debug) ───────────────────────────────
@@ -575,6 +679,7 @@ export class SoccerScene extends Phaser.Scene {
     this.score = 0;
     this.cpuScore = 0;
     this.shots = 0;
+    this.shotResults = [];
     this._updateHUDStats();
     this.messageText.setAlpha(0).setFontSize('48px');
     this.hintText.setText('APUNTA Y DISPARA').setAlpha(1);
