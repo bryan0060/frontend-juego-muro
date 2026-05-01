@@ -545,7 +545,6 @@ export class SoccerScene extends Phaser.Scene {
 
     this._updateHUDStats();
 
-    window.dispatchEvent(new CustomEvent('laser-impact', { detail: { x: tx, y: ty } }));
   }
 
   // ─── Loop de actualización (debug) ───────────────────────────────

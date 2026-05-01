@@ -28,12 +28,12 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
     const container = gameContainerRef.current;
     if (!container || gameRef.current) return;
 
-    // Montar Phaser
     const config = createPhaserConfig(container, escenaInicial);
     gameRef.current = new Phaser.Game(config);
 
-    // Conectar WebSocket al puerto, path y juego del juego activo
-    if (import.meta.env.DEV) {
+    const forceWS = import.meta.env.VITE_FORCE_WS === 'true';
+
+    if (!forceWS && import.meta.env.DEV) {
       const cleanup = initMockWebSocket(wsPort);
       gameRef.current._mockCleanup = cleanup;
     } else {
