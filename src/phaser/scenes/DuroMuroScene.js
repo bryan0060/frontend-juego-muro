@@ -180,15 +180,15 @@ const CONFIG = {
 };
 
 const CONEXIONES = [
+  // Torso — línea vertical del centro
+  ['hombro_izquierdo', 'cadera_izquierda'], // lado izquierdo como referencia del torso
+
   // Brazos
   ['hombro_izquierdo', 'codo_izquierdo'],
   ['codo_izquierdo', 'muneca_izquierda'],
   ['hombro_derecho', 'codo_derecho'],
   ['codo_derecho', 'muneca_derecha'],
-  // Torso
-  ['hombro_izquierdo', 'cadera_izquierda'],
-  ['hombro_derecho', 'cadera_derecha'],
-  ['cadera_izquierda', 'cadera_derecha'],
+
   // Piernas
   ['cadera_izquierda', 'rodilla_izquierda'],
   ['rodilla_izquierda', 'tobillo_izquierdo'],
@@ -488,7 +488,7 @@ export class DuroMuroScene extends Phaser.Scene {
     if (this.esqueleto) {
       this.textoSinJugador.setVisible(false);
 
-      const esqueletoNorm = this._normalizarEsqueleto(this.esqueleto, width, height);
+      const esqueletoNorm = this.esqueleto; // El backend ya lo normaliza
 
       this._dibujarEsqueleto(
         this.grafEsqueleto,
@@ -625,159 +625,178 @@ export class DuroMuroScene extends Phaser.Scene {
   // ─── Dibujar esqueleto como muñeco de luz ─────────────────────────────────
   // No dibuja palitos — dibuja un personaje neón con proporciones humanas
   _dibujarEsqueleto(graphics, esqueleto, offsetX, offsetY, areaW, areaH, color, grosor, radio) {
-
-    graphics.lineStyle(grosor, color, 1);
-    // Agregar esto:
-    if (graphics.defaultStrokeStyle) {
-      graphics.defaultStrokeStyle.lineCap = 'round';
-      graphics.defaultStrokeStyle.lineJoin = 'round';
-    }
-
-    // ── Calcular cabeza como círculo sólido ───────────────────
-    // MediaPipe solo manda la nariz — calculamos el centro real
-    // de la cabeza como punto encima de los hombros
+    const hIzq = esqueleto['hombro_izquierdo'];
+    const hDer = esqueleto['hombro_derecho'];
+    const cIzq = esqueleto['cadera_izquierda'];
+    const cDer = esqueleto['cadera_derecha'];
     const nariz = esqueleto['nariz'];
-    const hombroIzq = esqueleto['hombro_izquierdo'];
-    const hombroDer = esqueleto['hombro_derecho'];
 
-    let cabeza = nariz;
-    if (hombroIzq && hombroDer && nariz) {
-      // Centro de hombros
-      const cxHombros = (hombroIzq.x + hombroDer.x) / 2;
-      const cyHombros = (hombroIzq.y + hombroDer.y) / 2;
-      // La cabeza está encima de los hombros — calculamos la distancia
-      const distNarizHombros = Math.sqrt(
+    // Puntos calculados del centro del cuerpo
+    const cxHombros = hIzq && hDer ? (hIzq.x + hDer.x) / 2 : null;
+    const cyHombros = hIzq && hDer ? (hIzq.y + hDer.y) / 2 : null;
+    const cxCaderas = cIzq && cDer ? (cIzq.x + cDer.x) / 2 : null;
+    const cyCaderas = cIzq && cDer ? (cIzq.y + cDer.y) / 2 : null;
+
+    // Cabeza calculada
+    let cabeza = null;
+    if (cxHombros !== null && nariz) {
+      const distNH = Math.sqrt(
         Math.pow(nariz.x - cxHombros, 2) +
         Math.pow(nariz.y - cyHombros, 2)
       );
-      // Centro de cabeza = punto medio entre nariz y hombros, ligeramente arriba
       cabeza = {
         x: cxHombros + (nariz.x - cxHombros) * 0.3,
-        y: cyHombros - distNarizHombros * 0.4,
+        y: cyHombros - distNH * 0.4,
       };
     }
 
-    // ── Radio de la cabeza proporcional al ancho de hombros ──
-    let radioCabeza = radio * 2.5;
-    if (hombroIzq && hombroDer) {
-      const anchoHombros = Math.abs(hombroDer.x - hombroIzq.x) * areaW;
-      radioCabeza = Math.min(Math.max(radio * 2, anchoHombros * 0.28), 40);
+    graphics.lineStyle(grosor, color, 1);
+
+    // ── Torso — línea vertical centro ────────────────────────
+    if (cxHombros !== null && cxCaderas !== null) {
+      graphics.beginPath();
+      graphics.moveTo(offsetX + cxHombros * areaW, offsetY + cyHombros * areaH);
+      graphics.lineTo(offsetX + cxCaderas * areaW, offsetY + cyCaderas * areaH);
+      graphics.strokePath();
     }
 
-    // ── Glow exterior del cuerpo ──────────────────────────────
-    // Capa 1 — más difusa
-    graphics.lineStyle(grosor * 4, color, 0.08);
-    CONEXIONES.forEach(([a, b]) => {
-      if (!esqueleto[a] || !esqueleto[b]) return;
-      graphics.beginPath();
-      graphics.moveTo(offsetX + esqueleto[a].x * areaW, offsetY + esqueleto[a].y * areaH);
-      graphics.lineTo(offsetX + esqueleto[b].x * areaW, offsetY + esqueleto[b].y * areaH);
-      graphics.strokePath();
-    });
+    // ── Brazos desde centro de hombros ───────────────────────
+    if (cxHombros !== null) {
+      const ox = offsetX + cxHombros * areaW;
+      const oy = offsetY + cyHombros * areaH;
 
-    // Capa 2 — glow medio
-    graphics.lineStyle(grosor * 2.5, color, 0.18);
-    CONEXIONES.forEach(([a, b]) => {
-      if (!esqueleto[a] || !esqueleto[b]) return;
-      graphics.beginPath();
-      graphics.moveTo(offsetX + esqueleto[a].x * areaW, offsetY + esqueleto[a].y * areaH);
-      graphics.lineTo(offsetX + esqueleto[b].x * areaW, offsetY + esqueleto[b].y * areaH);
-      graphics.strokePath();
-    });
+      const codoIzq = esqueleto['codo_izquierdo'];
+      const munecaIzq = esqueleto['muneca_izquierda'];
+      const codoDer = esqueleto['codo_derecho'];
+      const munecaDer = esqueleto['muneca_derecha'];
 
-    // ── Líneas principales del cuerpo ─────────────────────────
-    graphics.lineStyle(grosor, color, 1);
-    CONEXIONES.forEach(([a, b]) => {
-      if (!esqueleto[a] || !esqueleto[b]) return;
-      graphics.beginPath();
-      graphics.moveTo(offsetX + esqueleto[a].x * areaW, offsetY + esqueleto[a].y * areaH);
-      graphics.lineTo(offsetX + esqueleto[b].x * areaW, offsetY + esqueleto[b].y * areaH);
-      graphics.strokePath();
-    });
+      if (codoIzq) {
+        graphics.beginPath();
+        graphics.moveTo(ox, oy);
+        graphics.lineTo(offsetX + codoIzq.x * areaW, offsetY + codoIzq.y * areaH);
+        graphics.strokePath();
+      }
+      if (codoIzq && munecaIzq) {
+        graphics.beginPath();
+        graphics.moveTo(offsetX + codoIzq.x * areaW, offsetY + codoIzq.y * areaH);
+        graphics.lineTo(offsetX + munecaIzq.x * areaW, offsetY + munecaIzq.y * areaH);
+        graphics.strokePath();
+      }
+      if (codoDer) {
+        graphics.beginPath();
+        graphics.moveTo(ox, oy);
+        graphics.lineTo(offsetX + codoDer.x * areaW, offsetY + codoDer.y * areaH);
+        graphics.strokePath();
+      }
+      if (codoDer && munecaDer) {
+        graphics.beginPath();
+        graphics.moveTo(offsetX + codoDer.x * areaW, offsetY + codoDer.y * areaH);
+        graphics.lineTo(offsetX + munecaDer.x * areaW, offsetY + munecaDer.y * areaH);
+        graphics.strokePath();
+      }
+    }
 
-    // ── Joints — círculos en cada articulación ────────────────
+    // ── Piernas desde centro de caderas ──────────────────────
+    if (cxCaderas !== null) {
+      const ox = offsetX + cxCaderas * areaW;
+      const oy = offsetY + cyCaderas * areaH;
+
+      const rodIzq = esqueleto['rodilla_izquierda'];
+      const tobIzq = esqueleto['tobillo_izquierdo'];
+      const rodDer = esqueleto['rodilla_derecha'];
+      const tobDer = esqueleto['tobillo_derecho'];
+
+      if (rodIzq) {
+        graphics.beginPath();
+        graphics.moveTo(ox, oy);
+        graphics.lineTo(offsetX + rodIzq.x * areaW, offsetY + rodIzq.y * areaH);
+        graphics.strokePath();
+      }
+      if (rodIzq && tobIzq) {
+        graphics.beginPath();
+        graphics.moveTo(offsetX + rodIzq.x * areaW, offsetY + rodIzq.y * areaH);
+        graphics.lineTo(offsetX + tobIzq.x * areaW, offsetY + tobIzq.y * areaH);
+        graphics.strokePath();
+      }
+      if (rodDer) {
+        graphics.beginPath();
+        graphics.moveTo(ox, oy);
+        graphics.lineTo(offsetX + rodDer.x * areaW, offsetY + rodDer.y * areaH);
+        graphics.strokePath();
+      }
+      if (rodDer && tobDer) {
+        graphics.beginPath();
+        graphics.moveTo(offsetX + rodDer.x * areaW, offsetY + rodDer.y * areaH);
+        graphics.lineTo(offsetX + tobDer.x * areaW, offsetY + tobDer.y * areaH);
+        graphics.strokePath();
+      }
+    }
+
+    // ── Joints ────────────────────────────────────────────────
     graphics.fillStyle(color, 1);
-    Object.entries(esqueleto).forEach(([nombre, p]) => {
-      if (nombre === 'nariz') return; // La nariz la reemplazamos con la cabeza
-      const px = offsetX + p.x * areaW;
-      const py = offsetY + p.y * areaH;
-      // Joints de manos y pies un poco más grandes
-      const esManoOpie = nombre.includes('muneca') || nombre.includes('tobillo');
-      const r = esManoOpie ? radio * 1.4 : radio;
-      graphics.fillCircle(px, py, r);
-      // Borde blanco en cada joint
-      graphics.lineStyle(2, 0xffffff, 0.5);
-      graphics.strokeCircle(px, py, r);
+    ['codo_izquierdo', 'codo_derecho', 'muneca_izquierda', 'muneca_derecha',
+      'rodilla_izquierda', 'rodilla_derecha', 'tobillo_izquierdo', 'tobillo_derecho'
+    ].forEach((nombre) => {
+      const p = esqueleto[nombre];
+      if (!p) return;
+      graphics.fillCircle(offsetX + p.x * areaW, offsetY + p.y * areaH, radio);
     });
 
-    // ── Cabeza como círculo sólido ────────────────────────────
-    if (cabeza) {
+    // ── Cabeza ────────────────────────────────────────────────
+    if (cabeza && hIzq && hDer) {
+      const anchoHombros = Math.abs(hDer.x - hIzq.x) * areaW;
+      const radioCabeza = Math.min(Math.max(radio * 2, anchoHombros * 0.18), 35);
       const cx = offsetX + cabeza.x * areaW;
       const cy = offsetY + cabeza.y * areaH;
 
-      // Glow de la cabeza
-      graphics.fillStyle(color, 0.15);
-      graphics.fillCircle(cx, cy, radioCabeza * 1.6);
-      graphics.fillStyle(color, 0.25);
-      graphics.fillCircle(cx, cy, radioCabeza * 1.3);
+      // Glow
+      graphics.fillStyle(color, 0.2);
+      graphics.fillCircle(cx, cy, radioCabeza * 1.4);
 
       // Cabeza sólida
       graphics.fillStyle(color, 1);
       graphics.fillCircle(cx, cy, radioCabeza);
 
-      // Borde blanco brillante
-      graphics.lineStyle(3, 0xffffff, 0.7);
+      // Borde blanco
+      graphics.lineStyle(3, 0xffffff, 0.6);
       graphics.strokeCircle(cx, cy, radioCabeza);
     }
   }
 
-  // ─── Normalizar esqueleto al área visible ─────────────────────────────────
-  _normalizarEsqueleto(esqueleto, width, height) {
-    const puntos = Object.values(esqueleto);
-
-    const xs = puntos.map(p => p.x);
-    const ys = puntos.map(p => p.y);
-
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
-
-    const rangoX = maxX - minX || 1;
-    const rangoY = maxY - minY || 1;
-    const margen = 0.08;
-
-    const normalizado = {};
-    Object.entries(esqueleto).forEach(([nombre, punto]) => {
-      normalizado[nombre] = {
-        x: margen + ((punto.x - minX) / rangoX) * (1 - margen * 2),
-        y: margen + ((punto.y - minY) / rangoY) * (1 - margen * 2),
-        confidence: punto.confidence,
-      };
-    });
-
-    return normalizado;
-  }
 
   // ─── Feedback en tiempo real ──────────────────────────────────────────────
   _dibujarFeedback(pose, esqueletoNorm) {
-    if (!esqueletoNorm) return;
-    const { width, height } = this.scale;
+  if (!esqueletoNorm) return;
+  const { width, height } = this.scale;
 
-    Object.entries(pose.angulos).forEach(([nombreJoint, def]) => {
-      const encaja = this._evaluarAngulo(def, esqueletoNorm);
-      const punto = esqueletoNorm[nombreJoint];
-      if (!punto) return;
+  // Centro de hombros para el feedback
+  const hIzq = esqueletoNorm['hombro_izquierdo'];
+  const hDer = esqueletoNorm['hombro_derecho'];
+  const esqueletoAjustado = { ...esqueletoNorm };
 
-      const px = punto.x * width;
-      const py = punto.y * height;
-
-      this.grafFeedback.fillStyle(encaja ? C.verde : C.naranja, 0.85);
-      this.grafFeedback.fillCircle(px, py, 16);
-      this.grafFeedback.lineStyle(3, C.blanco, 0.8);
-      this.grafFeedback.strokeCircle(px, py, 16);
-    });
+  if (hIzq && hDer) {
+    const centroHombros = {
+      x: (hIzq.x + hDer.x) / 2,
+      y: (hIzq.y + hDer.y) / 2,
+    };
+    esqueletoAjustado['hombro_izquierdo'] = centroHombros;
+    esqueletoAjustado['hombro_derecho']   = centroHombros;
   }
+
+  Object.entries(pose.angulos).forEach(([nombreJoint, def]) => {
+    const encaja = this._evaluarAngulo(def, esqueletoNorm);
+    const punto  = esqueletoAjustado[nombreJoint];
+    if (!punto) return;
+
+    const px = punto.x * width;
+    const py = punto.y * height;
+
+    this.grafFeedback.fillStyle(encaja ? C.verde : C.naranja, 0.85);
+    this.grafFeedback.fillCircle(px, py, 16);
+    this.grafFeedback.lineStyle(3, C.blanco, 0.8);
+    this.grafFeedback.strokeCircle(px, py, 16);
+  });
+}
 
   // ─── Ángulos ──────────────────────────────────────────────────────────────
   _calcularAngulo(pA, pM, pB) {
