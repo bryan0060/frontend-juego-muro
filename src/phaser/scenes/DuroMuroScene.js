@@ -2,194 +2,197 @@
  * DuroMuroScene.js — "Duro contra el Muro"
  *
  * Juego tipo "Hole in the Wall".
- * Valida poses comparando ÁNGULOS de articulaciones,
- * no posiciones absolutas — funciona sin importar
- * la distancia del jugador a la cámara.
- *
- * Modo: 1 jugador (2 jugadores pendiente de soporte en backend)
- * Puerto: 8080 — Cámara de reconocimiento corporal
+ * - Fondo de escenario TV con efecto Ken Burns y luces
+ * - Muro con imagen real y hueco de silueta usando RenderTexture
+ * - Validación por ángulos de articulaciones
+ * - Feedback en tiempo real con colores del brandbook
  */
 
 import * as Phaser from 'phaser';
 
-// ─── Paleta de colores Parke Tr3s ─────────────────────────────────────────────
 const C = {
-  purpura:    0x9c4eb3,
-  verde:      0x3dc9a1,
-  naranja:    0xfa804f,
-  amarillo:   0xfdbf2c,
-  azul:       0x40c0dd,
-  blanco:     0xffffff,
-  negro:      0x000000,
-  oscuro:     0x0d0d1a,
+  purpura: 0x9c4eb3,
+  verde: 0x3dc9a1,
+  naranja: 0xfa804f,
+  amarillo: 0xfdbf2c,
+  azul: 0x40c0dd,
+  blanco: 0xffffff,
+  negro: 0x000000,
+  oscuro: 0x0d0d1a,
 };
 
-// ─── Configuración del juego ──────────────────────────────────────────────────
 const CONFIG = {
-  totalRondas:      5,
-  duracionPorPose:  8,    // segundos que tiene el jugador
-  toleranciaAngulo: 25,   // grados de tolerancia por articulación
-  umbralExito:      0.60, // necesita acertar el 60% de los ángulos evaluados
+  totalRondas: 5,
+  duracionPorPose: 8,
+  toleranciaAngulo: 25,
+  umbralExito: 0.60,
   poses: [
     {
       id: 'estrella',
       nombre: '⭐ Estrella',
       descripcion: '¡Abre brazos y piernas!',
-      // Ángulos objetivo en grados para cada articulación
-      // Cada ángulo se calcula como: punto_medio visto desde punto_a hacia punto_b
       angulos: {
-        codo_izquierdo:   { a: 'hombro_izquierdo',  m: 'codo_izquierdo',   b: 'muneca_izquierda',  objetivo: 160 },
-        codo_derecho:     { a: 'hombro_derecho',     m: 'codo_derecho',     b: 'muneca_derecha',    objetivo: 160 },
-        hombro_izquierdo: { a: 'cadera_izquierda',   m: 'hombro_izquierdo', b: 'codo_izquierdo',    objetivo: 135 },
-        hombro_derecho:   { a: 'cadera_derecha',     m: 'hombro_derecho',   b: 'codo_derecho',      objetivo: 135 },
-        rodilla_izquierda:{ a: 'cadera_izquierda',   m: 'rodilla_izquierda',b: 'tobillo_izquierdo', objetivo: 165 },
-        rodilla_derecha:  { a: 'cadera_derecha',     m: 'rodilla_derecha',  b: 'tobillo_derecho',   objetivo: 165 },
-        cadera_izquierda: { a: 'hombro_izquierdo',   m: 'cadera_izquierda', b: 'rodilla_izquierda', objetivo: 145 },
-        cadera_derecha:   { a: 'hombro_derecho',     m: 'cadera_derecha',   b: 'rodilla_derecha',   objetivo: 145 },
+        codo_izquierdo: { a: 'hombro_izquierdo', m: 'codo_izquierdo', b: 'muneca_izquierda', objetivo: 160 },
+        codo_derecho: { a: 'hombro_derecho', m: 'codo_derecho', b: 'muneca_derecha', objetivo: 160 },
+        hombro_izquierdo: { a: 'cadera_izquierda', m: 'hombro_izquierdo', b: 'codo_izquierdo', objetivo: 135 },
+        hombro_derecho: { a: 'cadera_derecha', m: 'hombro_derecho', b: 'codo_derecho', objetivo: 135 },
+        rodilla_izquierda: { a: 'cadera_izquierda', m: 'rodilla_izquierda', b: 'tobillo_izquierdo', objetivo: 165 },
+        rodilla_derecha: { a: 'cadera_derecha', m: 'rodilla_derecha', b: 'tobillo_derecho', objetivo: 165 },
       },
-      // Silueta visual del muro (coordenadas normalizadas 0-1)
       silueta: {
-        nariz:             { x: 0.50, y: 0.10 },
-        hombro_izquierdo:  { x: 0.35, y: 0.28 },
-        hombro_derecho:    { x: 0.65, y: 0.28 },
-        codo_izquierdo:    { x: 0.18, y: 0.18 },
-        codo_derecho:      { x: 0.82, y: 0.18 },
-        muneca_izquierda:  { x: 0.05, y: 0.08 },
-        muneca_derecha:    { x: 0.95, y: 0.08 },
-        cadera_izquierda:  { x: 0.40, y: 0.52 },
-        cadera_derecha:    { x: 0.60, y: 0.52 },
+        nariz: { x: 0.50, y: 0.10 },
+        hombro_izquierdo: { x: 0.35, y: 0.28 },
+        hombro_derecho: { x: 0.65, y: 0.28 },
+        codo_izquierdo: { x: 0.18, y: 0.18 },
+        codo_derecho: { x: 0.82, y: 0.18 },
+        muneca_izquierda: { x: 0.05, y: 0.08 },
+        muneca_derecha: { x: 0.95, y: 0.08 },
+        cadera_izquierda: { x: 0.40, y: 0.52 },
+        cadera_derecha: { x: 0.60, y: 0.52 },
         rodilla_izquierda: { x: 0.32, y: 0.70 },
-        rodilla_derecha:   { x: 0.68, y: 0.70 },
+        rodilla_derecha: { x: 0.68, y: 0.70 },
         tobillo_izquierdo: { x: 0.25, y: 0.90 },
-        tobillo_derecho:   { x: 0.75, y: 0.90 },
+        tobillo_derecho: { x: 0.75, y: 0.90 },
       },
+      imagenKey: 'pose_estrella',
+
     },
     {
       id: 'manos-cielo',
       nombre: '🙌 Manos al Cielo',
       descripcion: '¡Levanta ambas manos!',
       angulos: {
-        codo_izquierdo:   { a: 'hombro_izquierdo',  m: 'codo_izquierdo',   b: 'muneca_izquierda',  objetivo: 170 },
-        codo_derecho:     { a: 'hombro_derecho',     m: 'codo_derecho',     b: 'muneca_derecha',    objetivo: 170 },
-        hombro_izquierdo: { a: 'cadera_izquierda',   m: 'hombro_izquierdo', b: 'codo_izquierdo',    objetivo: 170 },
-        hombro_derecho:   { a: 'cadera_derecha',     m: 'hombro_derecho',   b: 'codo_derecho',      objetivo: 170 },
-        rodilla_izquierda:{ a: 'cadera_izquierda',   m: 'rodilla_izquierda',b: 'tobillo_izquierdo', objetivo: 175 },
-        rodilla_derecha:  { a: 'cadera_derecha',     m: 'rodilla_derecha',  b: 'tobillo_derecho',   objetivo: 175 },
+        codo_izquierdo: { a: 'hombro_izquierdo', m: 'codo_izquierdo', b: 'muneca_izquierda', objetivo: 170 },
+        codo_derecho: { a: 'hombro_derecho', m: 'codo_derecho', b: 'muneca_derecha', objetivo: 170 },
+        hombro_izquierdo: { a: 'cadera_izquierda', m: 'hombro_izquierdo', b: 'codo_izquierdo', objetivo: 170 },
+        hombro_derecho: { a: 'cadera_derecha', m: 'hombro_derecho', b: 'codo_derecho', objetivo: 170 },
+        rodilla_izquierda: { a: 'cadera_izquierda', m: 'rodilla_izquierda', b: 'tobillo_izquierdo', objetivo: 175 },
+        rodilla_derecha: { a: 'cadera_derecha', m: 'rodilla_derecha', b: 'tobillo_derecho', objetivo: 175 },
       },
       silueta: {
-        nariz:             { x: 0.50, y: 0.12 },
-        hombro_izquierdo:  { x: 0.40, y: 0.30 },
-        hombro_derecho:    { x: 0.60, y: 0.30 },
-        codo_izquierdo:    { x: 0.38, y: 0.16 },
-        codo_derecho:      { x: 0.62, y: 0.16 },
-        muneca_izquierda:  { x: 0.36, y: 0.03 },
-        muneca_derecha:    { x: 0.64, y: 0.03 },
-        cadera_izquierda:  { x: 0.43, y: 0.54 },
-        cadera_derecha:    { x: 0.57, y: 0.54 },
+        nariz: { x: 0.50, y: 0.12 },
+        hombro_izquierdo: { x: 0.40, y: 0.30 },
+        hombro_derecho: { x: 0.60, y: 0.30 },
+        codo_izquierdo: { x: 0.38, y: 0.16 },
+        codo_derecho: { x: 0.62, y: 0.16 },
+        muneca_izquierda: { x: 0.36, y: 0.03 },
+        muneca_derecha: { x: 0.64, y: 0.03 },
+        cadera_izquierda: { x: 0.43, y: 0.54 },
+        cadera_derecha: { x: 0.57, y: 0.54 },
         rodilla_izquierda: { x: 0.43, y: 0.72 },
-        rodilla_derecha:   { x: 0.57, y: 0.72 },
+        rodilla_derecha: { x: 0.57, y: 0.72 },
         tobillo_izquierdo: { x: 0.43, y: 0.91 },
-        tobillo_derecho:   { x: 0.57, y: 0.91 },
+        tobillo_derecho: { x: 0.57, y: 0.91 },
       },
+      imagenKey: 'pose_manos_cielo',
+
     },
     {
       id: 'cangrejo',
       nombre: '🦀 Cangrejo',
       descripcion: '¡Brazos extendidos a los lados!',
       angulos: {
-        codo_izquierdo:   { a: 'hombro_izquierdo',  m: 'codo_izquierdo',   b: 'muneca_izquierda',  objetivo: 170 },
-        codo_derecho:     { a: 'hombro_derecho',     m: 'codo_derecho',     b: 'muneca_derecha',    objetivo: 170 },
-        hombro_izquierdo: { a: 'cadera_izquierda',   m: 'hombro_izquierdo', b: 'codo_izquierdo',    objetivo: 90  },
-        hombro_derecho:   { a: 'cadera_derecha',     m: 'hombro_derecho',   b: 'codo_derecho',      objetivo: 90  },
-        rodilla_izquierda:{ a: 'cadera_izquierda',   m: 'rodilla_izquierda',b: 'tobillo_izquierdo', objetivo: 175 },
-        rodilla_derecha:  { a: 'cadera_derecha',     m: 'rodilla_derecha',  b: 'tobillo_derecho',   objetivo: 175 },
+        codo_izquierdo: { a: 'hombro_izquierdo', m: 'codo_izquierdo', b: 'muneca_izquierda', objetivo: 170 },
+        codo_derecho: { a: 'hombro_derecho', m: 'codo_derecho', b: 'muneca_derecha', objetivo: 170 },
+        hombro_izquierdo: { a: 'cadera_izquierda', m: 'hombro_izquierdo', b: 'codo_izquierdo', objetivo: 90 },
+        hombro_derecho: { a: 'cadera_derecha', m: 'hombro_derecho', b: 'codo_derecho', objetivo: 90 },
+        rodilla_izquierda: { a: 'cadera_izquierda', m: 'rodilla_izquierda', b: 'tobillo_izquierdo', objetivo: 175 },
+        rodilla_derecha: { a: 'cadera_derecha', m: 'rodilla_derecha', b: 'tobillo_derecho', objetivo: 175 },
       },
       silueta: {
-        nariz:             { x: 0.50, y: 0.11 },
-        hombro_izquierdo:  { x: 0.35, y: 0.28 },
-        hombro_derecho:    { x: 0.65, y: 0.28 },
-        codo_izquierdo:    { x: 0.16, y: 0.28 },
-        codo_derecho:      { x: 0.84, y: 0.28 },
-        muneca_izquierda:  { x: 0.02, y: 0.28 },
-        muneca_derecha:    { x: 0.98, y: 0.28 },
-        cadera_izquierda:  { x: 0.42, y: 0.54 },
-        cadera_derecha:    { x: 0.58, y: 0.54 },
+        nariz: { x: 0.50, y: 0.11 },
+        hombro_izquierdo: { x: 0.35, y: 0.28 },
+        hombro_derecho: { x: 0.65, y: 0.28 },
+        codo_izquierdo: { x: 0.16, y: 0.28 },
+        codo_derecho: { x: 0.84, y: 0.28 },
+        muneca_izquierda: { x: 0.02, y: 0.28 },
+        muneca_derecha: { x: 0.98, y: 0.28 },
+        cadera_izquierda: { x: 0.42, y: 0.54 },
+        cadera_derecha: { x: 0.58, y: 0.54 },
         rodilla_izquierda: { x: 0.42, y: 0.72 },
-        rodilla_derecha:   { x: 0.58, y: 0.72 },
+        rodilla_derecha: { x: 0.58, y: 0.72 },
         tobillo_izquierdo: { x: 0.42, y: 0.91 },
-        tobillo_derecho:   { x: 0.58, y: 0.91 },
+        tobillo_derecho: { x: 0.58, y: 0.91 },
       },
+      imagenKey: 'pose_cangrejo',
+
     },
     {
       id: 'rayo',
       nombre: '⚡ Rayo',
       descripcion: '¡Brazo derecho arriba, izquierdo abajo!',
       angulos: {
-        codo_izquierdo:   { a: 'hombro_izquierdo',  m: 'codo_izquierdo',   b: 'muneca_izquierda',  objetivo: 165 },
-        codo_derecho:     { a: 'hombro_derecho',     m: 'codo_derecho',     b: 'muneca_derecha',    objetivo: 165 },
-        hombro_izquierdo: { a: 'cadera_izquierda',   m: 'hombro_izquierdo', b: 'codo_izquierdo',    objetivo: 50  },
-        hombro_derecho:   { a: 'cadera_derecha',     m: 'hombro_derecho',   b: 'codo_derecho',      objetivo: 160 },
-        rodilla_izquierda:{ a: 'cadera_izquierda',   m: 'rodilla_izquierda',b: 'tobillo_izquierdo', objetivo: 175 },
-        rodilla_derecha:  { a: 'cadera_derecha',     m: 'rodilla_derecha',  b: 'tobillo_derecho',   objetivo: 175 },
+        codo_izquierdo: { a: 'hombro_izquierdo', m: 'codo_izquierdo', b: 'muneca_izquierda', objetivo: 165 },
+        codo_derecho: { a: 'hombro_derecho', m: 'codo_derecho', b: 'muneca_derecha', objetivo: 165 },
+        hombro_izquierdo: { a: 'cadera_izquierda', m: 'hombro_izquierdo', b: 'codo_izquierdo', objetivo: 50 },
+        hombro_derecho: { a: 'cadera_derecha', m: 'hombro_derecho', b: 'codo_derecho', objetivo: 160 },
+        rodilla_izquierda: { a: 'cadera_izquierda', m: 'rodilla_izquierda', b: 'tobillo_izquierdo', objetivo: 175 },
+        rodilla_derecha: { a: 'cadera_derecha', m: 'rodilla_derecha', b: 'tobillo_derecho', objetivo: 175 },
       },
       silueta: {
-        nariz:             { x: 0.50, y: 0.11 },
-        hombro_izquierdo:  { x: 0.40, y: 0.28 },
-        hombro_derecho:    { x: 0.60, y: 0.28 },
-        codo_izquierdo:    { x: 0.38, y: 0.44 },
-        codo_derecho:      { x: 0.72, y: 0.14 },
-        muneca_izquierda:  { x: 0.36, y: 0.60 },
-        muneca_derecha:    { x: 0.82, y: 0.02 },
-        cadera_izquierda:  { x: 0.43, y: 0.54 },
-        cadera_derecha:    { x: 0.57, y: 0.54 },
+        nariz: { x: 0.50, y: 0.11 },
+        hombro_izquierdo: { x: 0.40, y: 0.28 },
+        hombro_derecho: { x: 0.60, y: 0.28 },
+        codo_izquierdo: { x: 0.38, y: 0.44 },
+        codo_derecho: { x: 0.72, y: 0.14 },
+        muneca_izquierda: { x: 0.36, y: 0.60 },
+        muneca_derecha: { x: 0.82, y: 0.02 },
+        cadera_izquierda: { x: 0.43, y: 0.54 },
+        cadera_derecha: { x: 0.57, y: 0.54 },
         rodilla_izquierda: { x: 0.43, y: 0.72 },
-        rodilla_derecha:   { x: 0.57, y: 0.72 },
+        rodilla_derecha: { x: 0.57, y: 0.72 },
         tobillo_izquierdo: { x: 0.43, y: 0.91 },
-        tobillo_derecho:   { x: 0.57, y: 0.91 },
+        tobillo_derecho: { x: 0.57, y: 0.91 },
       },
+      imagenKey: 'pose_rayo',
+
     },
     {
-      id: 'victoria',
-      nombre: '✌️ Victoria',
-      descripcion: '¡Forma una V con los brazos!',
+      id: 'biceps',
+      nombre: '💪 Bíceps',
+      descripcion: '¡Muestra tus músculos!',
       angulos: {
-        codo_izquierdo:   { a: 'hombro_izquierdo',  m: 'codo_izquierdo',   b: 'muneca_izquierda',  objetivo: 165 },
-        codo_derecho:     { a: 'hombro_derecho',     m: 'codo_derecho',     b: 'muneca_derecha',    objetivo: 165 },
-        hombro_izquierdo: { a: 'cadera_izquierda',   m: 'hombro_izquierdo', b: 'codo_izquierdo',    objetivo: 145 },
-        hombro_derecho:   { a: 'cadera_derecha',     m: 'hombro_derecho',   b: 'codo_derecho',      objetivo: 145 },
-        rodilla_izquierda:{ a: 'cadera_izquierda',   m: 'rodilla_izquierda',b: 'tobillo_izquierdo', objetivo: 175 },
-        rodilla_derecha:  { a: 'cadera_derecha',     m: 'rodilla_derecha',  b: 'tobillo_derecho',   objetivo: 175 },
+        codo_izquierdo: { a: 'hombro_izquierdo', m: 'codo_izquierdo', b: 'muneca_izquierda', objetivo: 90 },
+        codo_derecho: { a: 'hombro_derecho', m: 'codo_derecho', b: 'muneca_derecha', objetivo: 90 },
+        hombro_izquierdo: { a: 'cadera_izquierda', m: 'hombro_izquierdo', b: 'codo_izquierdo', objetivo: 90 },
+        hombro_derecho: { a: 'cadera_derecha', m: 'hombro_derecho', b: 'codo_derecho', objetivo: 90 },
+        rodilla_izquierda: { a: 'cadera_izquierda', m: 'rodilla_izquierda', b: 'tobillo_izquierdo', objetivo: 175 },
+        rodilla_derecha: { a: 'cadera_derecha', m: 'rodilla_derecha', b: 'tobillo_derecho', objetivo: 175 },
       },
       silueta: {
-        nariz:             { x: 0.50, y: 0.11 },
-        hombro_izquierdo:  { x: 0.40, y: 0.28 },
-        hombro_derecho:    { x: 0.60, y: 0.28 },
-        codo_izquierdo:    { x: 0.26, y: 0.16 },
-        codo_derecho:      { x: 0.74, y: 0.16 },
-        muneca_izquierda:  { x: 0.15, y: 0.05 },
-        muneca_derecha:    { x: 0.85, y: 0.05 },
-        cadera_izquierda:  { x: 0.43, y: 0.54 },
-        cadera_derecha:    { x: 0.57, y: 0.54 },
-        rodilla_izquierda: { x: 0.43, y: 0.72 },
-        rodilla_derecha:   { x: 0.57, y: 0.72 },
-        tobillo_izquierdo: { x: 0.43, y: 0.91 },
-        tobillo_derecho:   { x: 0.57, y: 0.91 },
+        nariz: { x: 0.50, y: 0.11 },
+        hombro_izquierdo: { x: 0.35, y: 0.28 },
+        hombro_derecho: { x: 0.65, y: 0.28 },
+        codo_izquierdo: { x: 0.20, y: 0.28 },
+        codo_derecho: { x: 0.80, y: 0.28 },
+        muneca_izquierda: { x: 0.20, y: 0.42 },
+        muneca_derecha: { x: 0.80, y: 0.42 },
+        cadera_izquierda: { x: 0.42, y: 0.54 },
+        cadera_derecha: { x: 0.58, y: 0.54 },
+        rodilla_izquierda: { x: 0.42, y: 0.72 },
+        rodilla_derecha: { x: 0.58, y: 0.72 },
+        tobillo_izquierdo: { x: 0.42, y: 0.91 },
+        tobillo_derecho: { x: 0.58, y: 0.91 },
       },
+      imagenKey: 'pose_biceps',
     },
   ],
 };
 
-// Conexiones para dibujar el esqueleto con líneas
 const CONEXIONES = [
   ['nariz', 'hombro_izquierdo'], ['nariz', 'hombro_derecho'],
   ['hombro_izquierdo', 'hombro_derecho'],
   ['hombro_izquierdo', 'codo_izquierdo'], ['codo_izquierdo', 'muneca_izquierda'],
-  ['hombro_derecho', 'codo_derecho'],     ['codo_derecho', 'muneca_derecha'],
+  ['hombro_derecho', 'codo_derecho'], ['codo_derecho', 'muneca_derecha'],
   ['hombro_izquierdo', 'cadera_izquierda'], ['hombro_derecho', 'cadera_derecha'],
   ['cadera_izquierda', 'cadera_derecha'],
   ['cadera_izquierda', 'rodilla_izquierda'], ['rodilla_izquierda', 'tobillo_izquierdo'],
-  ['cadera_derecha', 'rodilla_derecha'],     ['rodilla_derecha', 'tobillo_derecho'],
+  ['cadera_derecha', 'rodilla_derecha'], ['rodilla_derecha', 'tobillo_derecho'],
 ];
+
+// Grosor de líneas y radio de puntos del esqueleto en el hueco
+const GROSOR_SILUETA = 28;
+const RADIO_SILUETA = 22;
 
 export class DuroMuroScene extends Phaser.Scene {
   constructor() {
@@ -199,148 +202,209 @@ export class DuroMuroScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    // Estado
-    this.rondaActual   = 0;
-    this.puntaje       = 0;
-    this.esqueleto     = null; // Último esqueleto recibido del backend
-    this.juegoActivo   = false;
-    this.validando     = false;
-    this.posesRonda    = Phaser.Utils.Array.Shuffle([...CONFIG.poses])
-                          .slice(0, CONFIG.totalRondas);
+    this.rondaActual = 0;
+    this.puntaje = 0;
+    this.esqueleto = null;
+    this.juegoActivo = false;
+    this.validando = false;
+    this.posesRonda = Phaser.Utils.Array.Shuffle([...CONFIG.poses])
+      .slice(0, CONFIG.totalRondas);
+    this._escalaMuro = null;
+    this._poseActual = null;
 
-    // ── Fondo degradado oscuro ────────────────────────────────────
-    const bg = this.add.graphics();
-    bg.fillGradientStyle(0x0d0d2e, 0x0d0d2e, 0x1a0a2e, 0x1a0a2e, 1);
-    bg.fillRect(0, 0, width, height);
+    // ── Fondo escenario TV ────────────────────────────────────
+    this.imgFondo = this.add.image(width / 2, height / 2, 'duro_muro_fondo')
+      .setDisplaySize(width * 1.1, height * 1.1)
+      .setDepth(0);
 
-    // ── Estrellas de fondo animadas ───────────────────────────────
-    this._crearEstrellas(width, height);
+    // Efecto Ken Burns — zoom lento infinito
+    this.tweens.add({
+      targets: this.imgFondo,
+      scaleX: this.imgFondo.scaleX * 1.15, // ← Más zoom (era 1.06)
+      scaleY: this.imgFondo.scaleY * 1.15,
+      duration: 6000,                       // ← Más rápido (era 12000)
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
 
-    // ── Gráficos reutilizables (se limpian y redibujan cada frame)
-    this.grafMuro      = this.add.graphics().setDepth(10);
+    // Overlay oscuro sobre el fondo para que el juego se lea bien
+    this.add.rectangle(0, 0, width, height, 0x000000, 0.20)
+      .setOrigin(0).setDepth(1);
+
+
+    // ── Luces de estudio parpadeantes ─────────────────────────
+    this._crearLucesEstudio(width, height);
+
+    // ── RenderTexture para el muro con hueco ──────────────────
+    // Se recrea en cada ronda con _actualizarMuro()
+    this.rtMuro = this.add.renderTexture(0, 0, width, height)
+      .setDepth(10);
+
+    // Gráficos auxiliares para dibujar dentro del RenderTexture
+    this._grafAux = this.add.graphics().setVisible(false).setDepth(99);
+
+    // ── Esqueleto del jugador ─────────────────────────────────
     this.grafEsqueleto = this.add.graphics().setDepth(5);
-    this.grafFeedback  = this.add.graphics().setDepth(6);
+    this.grafFeedback = this.add.graphics().setDepth(6);
 
-    // ── UI — Puntaje ──────────────────────────────────────────────
-    this.textoPuntaje = this.add.text(30, 30, '0', {
-      fontSize: '64px',
+    // ── UI ────────────────────────────────────────────────────
+    this._crearUI(width, height);
+
+    // ── WebSocket ─────────────────────────────────────────────
+    this._wsHandler = this._onWsMessage.bind(this);
+    window.addEventListener('ws-message', this._wsHandler);
+
+    // ── Arrancar ──────────────────────────────────────────────
+    this._cuentaRegresiva();
+  }
+
+  // ─── Luces de estudio ─────────────────────────────────────────────────────
+  _crearLucesEstudio(width, height) {
+    const coloresLuz = [C.purpura, C.azul, C.verde, C.amarillo, C.naranja];
+
+    // Focos en la parte superior
+    for (let i = 0; i < 8; i++) {
+      const x = (width / 9) * (i + 1);
+      const color = coloresLuz[i % coloresLuz.length];
+      const luz = this.add.ellipse(x, 0, 40, 80, color, 0.15).setDepth(2);
+
+      this.tweens.add({
+        targets: luz,
+        alpha: { from: 0.05, to: 0.25 },
+        duration: Phaser.Math.Between(600, 1800),
+        yoyo: true,
+        repeat: -1,
+        delay: Phaser.Math.Between(0, 1500),
+        ease: 'Sine.easeInOut',
+      });
+    }
+
+    // Destellos de esquinas
+    const esquinas = [
+      { x: 0, y: 0 },
+      { x: width, y: 0 },
+      { x: 0, y: height },
+      { x: width, y: height },
+    ];
+
+    esquinas.forEach(({ x, y }, i) => {
+      const destello = this.add.ellipse(x, y, 200, 200,
+        coloresLuz[i], 0.08).setDepth(2);
+
+      this.tweens.add({
+        targets: destello,
+        alpha: { from: 0.03, to: 0.15 },
+        duration: Phaser.Math.Between(1000, 2500),
+        yoyo: true,
+        repeat: -1,
+        delay: Phaser.Math.Between(0, 1000),
+      });
+    });
+  }
+
+  // ─── UI ───────────────────────────────────────────────────────────────────
+  _crearUI(width, height) {
+    // Panel puntaje
+    this.add.rectangle(30, 30, 180, 80, 0x000000, 0.55)
+      .setOrigin(0).setDepth(20)
+      .setStrokeStyle(2, C.amarillo);
+
+    this.add.text(120, 38, 'PUNTOS', {
+      fontSize: '18px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#ffffff88',
+    }).setOrigin(0.5, 0).setDepth(21);
+
+    this.textoPuntaje = this.add.text(120, 68, '0', {
+      fontSize: '46px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#fdbf2c',
       stroke: '#000000',
-      strokeThickness: 6,
-    }).setDepth(20);
+      strokeThickness: 5,
+    }).setOrigin(0.5, 0.5).setDepth(21);
 
-    this.add.text(30, 24, 'PUNTOS', {
-      fontSize: '20px',
+    // Panel ronda
+    this.add.rectangle(width - 30, 30, 180, 80, 0x000000, 0.55)
+      .setOrigin(1, 0).setDepth(20)
+      .setStrokeStyle(2, C.verde);
+
+    this.add.text(width - 120, 38, 'RONDA', {
+      fontSize: '18px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff88',
-    }).setOrigin(0, 1).setDepth(20);
+    }).setOrigin(0.5, 0).setDepth(21);
 
-    // ── UI — Ronda ────────────────────────────────────────────────
-    this.textoRonda = this.add.text(width - 30, 30, `1/${CONFIG.totalRondas}`, {
-      fontSize: '40px',
+    this.textoRonda = this.add.text(width - 120, 68,
+      `1/${CONFIG.totalRondas}`, {
+      fontSize: '46px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#3dc9a1',
       stroke: '#000000',
       strokeThickness: 5,
-    }).setOrigin(1, 0).setDepth(20);
+    }).setOrigin(0.5, 0.5).setDepth(21);
 
-    this.add.text(width - 30, 24, 'RONDA', {
-      fontSize: '20px',
+    // Timer central
+    this.textoTimer = this.add.text(width / 2, 40, '', {
+      fontSize: '72px',
       fontFamily: 'Fredoka, sans-serif',
-      color: '#ffffff88',
-    }).setOrigin(1, 1).setDepth(20);
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 8,
+    }).setOrigin(0.5, 0).setDepth(21);
 
-    // ── UI — Timer ────────────────────────────────────────────────
-    this.textoTimer = this.add.text(width / 2, 30, '', {
-      fontSize: '56px',
+    // Instrucción abajo
+    this.textoInstruccion = this.add.text(width / 2, height - 30, '', {
+      fontSize: '40px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 6,
-    }).setOrigin(0.5, 0).setDepth(20);
-
-    // ── UI — Instrucción de pose ──────────────────────────────────
-    this.textoInstruccion = this.add.text(width / 2, height - 30, '', {
-      fontSize: '38px',
-      fontFamily: 'Fredoka, sans-serif',
-      color: '#ffffff',
-      stroke: '#000000',
-      strokeThickness: 5,
       backgroundColor: '#00000099',
-      padding: { x: 24, y: 12 },
-    }).setOrigin(0.5, 1).setDepth(20);
+      padding: { x: 28, y: 14 },
+    }).setOrigin(0.5, 1).setDepth(21);
 
-    // ── UI — Aviso sin jugador ────────────────────────────────────
-    this.textoSinJugador = this.add.text(width / 2, height / 2, '👤 Buscando jugador...', {
-      fontSize: '32px',
+    // Sin jugador
+    this.textoSinJugador = this.add.text(width / 2, height / 2,
+      '👤 Buscando jugador...', {
+      fontSize: '34px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff66',
-    }).setOrigin(0.5).setDepth(20).setVisible(false);
-
-    // ── Escuchar WebSocket ────────────────────────────────────────
-    this._wsHandler = this._onWsMessage.bind(this);
-    window.addEventListener('ws-message', this._wsHandler);
-
-    // ── Arrancar ──────────────────────────────────────────────────
-    this._cuentaRegresiva();
-  }
-
-  // ─── Estrellas de fondo ───────────────────────────────────────────────────
-  _crearEstrellas(width, height) {
-    for (let i = 0; i < 80; i++) {
-      const x     = Phaser.Math.Between(0, width);
-      const y     = Phaser.Math.Between(0, height);
-      const r     = Phaser.Math.FloatBetween(0.5, 2.5);
-      const alpha = Phaser.Math.FloatBetween(0.15, 0.6);
-      const circ  = this.add.circle(x, y, r, 0xffffff, alpha).setDepth(1);
-
-      this.tweens.add({
-        targets: circ,
-        alpha: 0.05,
-        duration: Phaser.Math.Between(800, 3000),
-        yoyo: true,
-        repeat: -1,
-        delay: Phaser.Math.Between(0, 2000),
-      });
-    }
+    }).setOrigin(0.5).setDepth(21).setVisible(false);
   }
 
   // ─── Cuenta regresiva ─────────────────────────────────────────────────────
   _cuentaRegresiva() {
     const { width, height } = this.scale;
     this.juegoActivo = false;
+    this.rtMuro.clear();
 
     const pasos = ['3', '2', '1', '¡YA!'];
     const colores = ['#fa804f', '#fdbf2c', '#3dc9a1', '#ffffff'];
     let i = 0;
 
     const mostrar = () => {
-      const texto = this.add.text(width / 2, height / 2, pasos[i], {
-        fontSize: '200px',
+      const t = this.add.text(width / 2, height / 2, pasos[i], {
+        fontSize: '220px',
         fontFamily: 'Fredoka, sans-serif',
         color: colores[i],
         stroke: '#000000',
-        strokeThickness: 16,
+        strokeThickness: 18,
       }).setOrigin(0.5).setDepth(30).setAlpha(0).setScale(0.3);
 
       this.tweens.add({
-        targets: texto,
-        alpha: 1,
-        scaleX: 1,
-        scaleY: 1,
+        targets: t,
+        alpha: 1, scaleX: 1, scaleY: 1,
         duration: 250,
         ease: 'Back.easeOut',
         onComplete: () => {
           this.time.delayedCall(550, () => {
             this.tweens.add({
-              targets: texto,
-              alpha: 0,
-              scaleX: 1.4,
-              scaleY: 1.4,
+              targets: t,
+              alpha: 0, scaleX: 1.5, scaleY: 1.5,
               duration: 200,
               onComplete: () => {
-                texto.destroy();
+                t.destroy();
                 i++;
                 if (i < pasos.length) mostrar();
                 else this._iniciarRonda();
@@ -354,6 +418,7 @@ export class DuroMuroScene extends Phaser.Scene {
     mostrar();
   }
 
+
   // ─── Iniciar ronda ────────────────────────────────────────────────────────
   _iniciarRonda() {
     if (this.rondaActual >= CONFIG.totalRondas) {
@@ -361,32 +426,31 @@ export class DuroMuroScene extends Phaser.Scene {
       return;
     }
 
-    this.validando       = false;
-    this.juegoActivo     = true;
-    this.tiempoRestante  = CONFIG.duracionPorPose;
-    this._escalaMuro     = { v: 0.12 }; // Empieza pequeño (lejos)
+    this.validando = false;
+    this.juegoActivo = true;
+    this.tiempoRestante = CONFIG.duracionPorPose;
+    this._escalaMuro = { v: 0.12 };
 
     const pose = this.posesRonda[this.rondaActual];
     this.rondaActual++;
     this._poseActual = pose;
 
-    // Actualizar UI
     this.textoRonda.setText(`${this.rondaActual}/${CONFIG.totalRondas}`);
     this.textoTimer.setText(`${this.tiempoRestante}`).setColor('#ffffff');
     this.textoInstruccion.setText(pose.descripcion);
 
-    // Animar el muro acercándose
-    this.tweens.add({
+    // Muro se acerca
+    this._tweenMuro = this.tweens.add({
       targets: this._escalaMuro,
       v: 1.0,
       duration: CONFIG.duracionPorPose * 1000,
       ease: 'Linear',
       onComplete: () => {
-        if (!this.validando) this._validarPose(pose);
+        if (!this.validando) this._validarPose(this._poseActual);
       },
     });
 
-    // Timer por segundo
+    // Timer
     this._timerRonda = this.time.addEvent({
       delay: 1000,
       loop: true,
@@ -394,7 +458,6 @@ export class DuroMuroScene extends Phaser.Scene {
         if (!this.juegoActivo) return;
         this.tiempoRestante--;
         this.textoTimer.setText(`${this.tiempoRestante}`);
-
         if (this.tiempoRestante <= 3 && this.tiempoRestante > 0) {
           this.textoTimer.setColor('#fa804f');
           this.cameras.main.shake(80, 0.003);
@@ -403,17 +466,16 @@ export class DuroMuroScene extends Phaser.Scene {
     });
   }
 
-  // ─── Update — cada frame ──────────────────────────────────────────────────
+  // ─── Update ───────────────────────────────────────────────────────────────
   update() {
     const { width, height } = this.scale;
 
-    // Redibujar muro
-    this.grafMuro.clear();
+    // Redibujar muro con hueco en cada frame
     if (this._poseActual && this._escalaMuro) {
-      this._dibujarMuro(this._poseActual, this._escalaMuro.v);
+      this._dibujarMuroConHueco(this._poseActual, this._escalaMuro.v);
     }
 
-    // Redibujar esqueleto del jugador
+    // Esqueleto del jugador
     this.grafEsqueleto.clear();
     this.grafFeedback.clear();
 
@@ -425,77 +487,130 @@ export class DuroMuroScene extends Phaser.Scene {
         0, 0, width, height,
         C.verde, 5, 10,
       );
-
-      // Feedback visual en tiempo real — qué joints están bien
       if (this.juegoActivo && this._poseActual) {
-        this._dibujarFeedbackTiempoReal(this._poseActual);
+        this._dibujarFeedback(this._poseActual);
       }
     } else if (this.juegoActivo) {
       this.textoSinJugador.setVisible(true);
     }
   }
 
-  // ─── Dibujar el muro que se acerca ───────────────────────────────────────
-  _dibujarMuro(pose, escala) {
+  // ─── Muro con hueco usando RenderTexture ──────────────────────────────────
+  // Así funciona la técnica:
+  // 1. Limpiamos el RenderTexture
+  // 2. Dibujamos la imagen del muro escalada
+  // 3. Dibujamos la silueta encima con blendMode ERASE
+  //    → Eso "borra" los píxeles del muro donde está la silueta
+  //    → Resultado: un hueco real con la forma del cuerpo
+  // ─── Muro con hueco usando GeometryMask ──────────────────────
+  _dibujarMuroConHueco(pose, escala) {
     const { width, height } = this.scale;
-    const cx    = width / 2;
-    const cy    = height / 2;
-    const muroW = width  * escala;
+    const cx = width / 2;
+    const cy = height / 2;
+    const muroW = width * escala;
     const muroH = height * escala;
-    const x0    = cx - muroW / 2;
-    const y0    = cy - muroH / 2;
+    const x0 = cx - muroW / 2;
+    const y0 = cy - muroH / 2;
 
-    // Sombra del muro
-    this.grafMuro.fillStyle(0x000000, 0.3);
-    this.grafMuro.fillRect(x0 + 8, y0 + 8, muroW, muroH);
+    this._limpiarMuro();
 
-    // Cuerpo del muro — gradiente simulado con dos rectángulos
-    this.grafMuro.fillStyle(C.purpura, 0.92);
-    this.grafMuro.fillRect(x0, y0, muroW, muroH);
+    // ── Sombra ────────────────────────────────────────────────
+    this._muroSombra = this.add.rectangle(
+      cx + 10, cy + 10, muroW, muroH, 0x000000, 0.35
+    ).setDepth(9);
 
-    // Borde superior más claro (efecto de luz)
-    this.grafMuro.fillStyle(0xb96fd0, 0.6);
-    this.grafMuro.fillRect(x0, y0, muroW, muroH * 0.08);
+    // ── Imagen del muro ───────────────────────────────────────
+    this._muroImg = this.add.image(cx, cy, 'duro_muro_textura')
+      .setDisplaySize(muroW, muroH)
+      .setDepth(10);
 
-    // Borde del muro — color amarillo brandbook
-    const grosorBorde = Math.max(3, 6 * escala);
-    this.grafMuro.lineStyle(grosorBorde, C.amarillo, 1);
-    this.grafMuro.strokeRect(x0, y0, muroW, muroH);
+    // ── Glow neón — capas de la silueta con alpha y escala ────
+    // 5 capas: de más grande/transparente a más pequeña/opaca
+    // El color azul del brandbook simula luz neón
+    const capasGlow = [
+      { extra: 1.22, alpha: 0.08, tint: 0x40c0dd },
+      { extra: 1.16, alpha: 0.15, tint: 0x40c0dd },
+      { extra: 1.10, alpha: 0.28, tint: 0x40c0dd },
+      { extra: 1.05, alpha: 0.50, tint: 0x40c0dd },
+      { extra: 1.02, alpha: 0.70, tint: 0x40c0dd },
+      { extra: 1.01, alpha: 0.40, tint: 0xffffff }, // ← Capa blanca = brillo puro
+    ];
 
-    // Líneas decorativas del muro (efecto ladrillo sutil)
-    if (escala > 0.3) {
-      const alpha = Math.min(1, (escala - 0.3) * 3);
-      this.grafMuro.lineStyle(1, 0x000000, 0.15 * alpha);
-      for (let fy = y0 + muroH * 0.15; fy < y0 + muroH; fy += muroH * 0.12) {
-        this.grafMuro.beginPath();
-        this.grafMuro.moveTo(x0, fy);
-        this.grafMuro.lineTo(x0 + muroW, fy);
-        this.grafMuro.strokePath();
-      }
-    }
+    const siluetaH = muroH * 0.82;
+    const siluetaW = siluetaH * 0.55;
 
-    // Silueta del hueco dentro del muro (color blanco)
-    this._dibujarEsqueleto(
-      this.grafMuro,
-      pose.silueta,
-      x0, y0, muroW, muroH,
-      C.blanco,
-      Math.max(2, 5 * escala),
-      Math.max(3, 9 * escala),
+    this._glowCapas = capasGlow.map(({ extra, alpha, tint }, i) => {
+      return this.add.image(cx, cy, pose.imagenKey)
+        .setDisplaySize(siluetaW * extra, siluetaH * extra)
+        .setDepth(11.1 + i * 0.1)
+        .setTint(tint)
+        .setAlpha(alpha);
+    });
+
+    // ── Silueta negra encima de todo ──────────────────────────
+    this._muroSilueta = this.add.image(cx, cy, pose.imagenKey)
+      .setDisplaySize(siluetaW, siluetaH)
+      .setDepth(11)
+      .setTint(0x000000);
+
+
+    // ── Borde amarillo ────────────────────────────────────────
+    this._muroBorde = this.add.graphics().setDepth(12);
+    const grosorBorde = Math.max(4, 8 * escala);
+    this._muroBorde.lineStyle(grosorBorde, C.amarillo, 1);
+    this._muroBorde.strokeRect(x0, y0, muroW, muroH);
+    this._muroBorde.lineStyle(Math.max(2, 3 * escala), 0x000000, 0.25);
+    this._muroBorde.strokeRect(
+      x0 + grosorBorde, y0 + grosorBorde,
+      muroW - grosorBorde * 2, muroH - grosorBorde * 2,
     );
-
-    // Nombre de la pose en el muro (solo cuando es suficientemente grande)
-    if (escala > 0.4) {
-      const alpha = Math.min(1, (escala - 0.4) * 5);
-      this.grafMuro.fillStyle(C.amarillo, alpha * 0.9);
-    }
   }
 
-  // ─── Dibujar esqueleto genérico ───────────────────────────────────────────
-  // offsetX/Y = esquina superior izquierda del área donde se dibuja
-  // areaW/H   = tamaño del área (las coords normalizadas se multiplican por esto)
+  _limpiarMuro() {
+    this._muroSombra?.destroy();
+    this._muroImg?.destroy();
+    this._muroSilueta?.destroy();
+    this._muroBorde?.destroy();
+    this._glowCapas?.forEach(g => g.destroy());
+    this._muroSombra = null;
+    this._muroImg = null;
+    this._muroSilueta = null;
+    this._muroBorde = null;
+    this._glowCapas = [];
+  }
+
+  // ─── Dibujar silueta gruesa para el hueco ────────────────────────────────
+  // Las líneas y círculos deben ser MUY gruesos para que el hueco
+  // sea suficientemente grande para que el niño "entre" visualmente
+  _dibujarSiluetaParaHueco(graphics, silueta, offsetX, offsetY, areaW, areaH) {
+    graphics.lineStyle(GROSOR_SILUETA, 0xffffff, 1);
+
+    CONEXIONES.forEach(([a, b]) => {
+      if (!silueta[a] || !silueta[b]) return;
+      graphics.beginPath();
+      graphics.moveTo(
+        offsetX + silueta[a].x * areaW,
+        offsetY + silueta[a].y * areaH,
+      );
+      graphics.lineTo(
+        offsetX + silueta[b].x * areaW,
+        offsetY + silueta[b].y * areaH,
+      );
+      graphics.strokePath();
+    });
+
+    graphics.fillStyle(0xffffff, 1);
+    Object.values(silueta).forEach((p) => {
+      graphics.fillCircle(
+        offsetX + p.x * areaW,
+        offsetY + p.y * areaH,
+        RADIO_SILUETA,
+      );
+    });
+  }
+
+  // ─── Esqueleto genérico ───────────────────────────────────────────────────
   _dibujarEsqueleto(graphics, esqueleto, offsetX, offsetY, areaW, areaH, color, grosor, radio) {
-    // Líneas entre joints
     graphics.lineStyle(grosor, color, 0.9);
     CONEXIONES.forEach(([a, b]) => {
       if (!esqueleto[a] || !esqueleto[b]) return;
@@ -504,8 +619,6 @@ export class DuroMuroScene extends Phaser.Scene {
       graphics.lineTo(offsetX + esqueleto[b].x * areaW, offsetY + esqueleto[b].y * areaH);
       graphics.strokePath();
     });
-
-    // Círculos en cada joint
     graphics.fillStyle(color, 1);
     Object.values(esqueleto).forEach((p) => {
       graphics.fillCircle(
@@ -516,132 +629,116 @@ export class DuroMuroScene extends Phaser.Scene {
     });
   }
 
-  // ─── Feedback visual en tiempo real ──────────────────────────────────────
-  // Muestra círculos verdes/rojos en los joints del jugador según si encajan
-  _dibujarFeedbackTiempoReal(pose) {
+  // ─── Feedback en tiempo real ──────────────────────────────────────────────
+  _dibujarFeedback(pose) {
     if (!this.esqueleto) return;
     const { width, height } = this.scale;
 
     Object.entries(pose.angulos).forEach(([nombreJoint, def]) => {
       const encaja = this._evaluarAngulo(def, this.esqueleto);
-      const punto  = this.esqueleto[nombreJoint];
+      const punto = this.esqueleto[nombreJoint];
       if (!punto) return;
 
       const px = punto.x * width;
       const py = punto.y * height;
 
       this.grafFeedback.fillStyle(encaja ? C.verde : C.naranja, 0.85);
-      this.grafFeedback.fillCircle(px, py, 14);
-
-      // Borde blanco para contraste
-      this.grafFeedback.lineStyle(2, C.blanco, 0.7);
-      this.grafFeedback.strokeCircle(px, py, 14);
+      this.grafFeedback.fillCircle(px, py, 16);
+      this.grafFeedback.lineStyle(3, C.blanco, 0.8);
+      this.grafFeedback.strokeCircle(px, py, 16);
     });
   }
 
-  // ─── Calcular ángulo entre 3 puntos ──────────────────────────────────────
-  // Calcula el ángulo en el punto "m" (medio) formado por los puntos a → m → b
-  // Devuelve el ángulo en grados (0-180)
-  _calcularAngulo(puntoA, puntoM, puntoB) {
-    const ax = puntoA.x - puntoM.x;
-    const ay = puntoA.y - puntoM.y;
-    const bx = puntoB.x - puntoM.x;
-    const by = puntoB.y - puntoM.y;
-
-    const dot      = ax * bx + ay * by;
-    const magA     = Math.sqrt(ax * ax + ay * ay);
-    const magB     = Math.sqrt(bx * bx + by * by);
-
+  // ─── Ángulos ──────────────────────────────────────────────────────────────
+  _calcularAngulo(pA, pM, pB) {
+    const ax = pA.x - pM.x, ay = pA.y - pM.y;
+    const bx = pB.x - pM.x, by = pB.y - pM.y;
+    const dot = ax * bx + ay * by;
+    const magA = Math.sqrt(ax * ax + ay * ay);
+    const magB = Math.sqrt(bx * bx + by * by);
     if (magA === 0 || magB === 0) return 0;
-
-    const cosAngulo = Math.max(-1, Math.min(1, dot / (magA * magB)));
-    return (Math.acos(cosAngulo) * 180) / Math.PI;
+    return (Math.acos(Math.max(-1, Math.min(1, dot / (magA * magB)))) * 180) / Math.PI;
   }
 
-  // ─── Evaluar si un ángulo encaja con la pose ──────────────────────────────
   _evaluarAngulo(def, esqueleto) {
     const pA = esqueleto[def.a];
     const pM = esqueleto[def.m];
     const pB = esqueleto[def.b];
     if (!pA || !pM || !pB) return false;
-
-    const anguloActual = this._calcularAngulo(pA, pM, pB);
-    return Math.abs(anguloActual - def.objetivo) <= CONFIG.toleranciaAngulo;
+    return Math.abs(this._calcularAngulo(pA, pM, pB) - def.objetivo) <= CONFIG.toleranciaAngulo;
   }
 
-  // ─── Validar pose al llegar el muro ──────────────────────────────────────
+  // ─── Validar pose ─────────────────────────────────────────────────────────
   _validarPose(pose) {
     if (this.validando) return;
-    this.validando   = true;
+    this.validando = true;
     this.juegoActivo = false;
-
     this._timerRonda?.destroy();
-    this.tweens.killAll();
+    this._tweenMuro?.stop();
 
     if (!this.esqueleto) {
       this._mostrarResultado(false, 0, Object.keys(pose.angulos).length, '¡No te detecté!');
       return;
     }
 
-    const angulos      = Object.values(pose.angulos);
+    const angulos = Object.values(pose.angulos);
     const totalAngulos = angulos.length;
-    let   aciertos     = 0;
-
-    angulos.forEach((def) => {
-      if (this._evaluarAngulo(def, this.esqueleto)) aciertos++;
-    });
+    let aciertos = 0;
+    angulos.forEach((def) => { if (this._evaluarAngulo(def, this.esqueleto)) aciertos++; });
 
     const porcentaje = aciertos / totalAngulos;
-    const exito      = porcentaje >= CONFIG.umbralExito;
+    const exito = porcentaje >= CONFIG.umbralExito;
 
     if (exito) {
-      // Más aciertos = más puntos (máximo 500 por ronda)
-      const bonus = Math.round(porcentaje * 500);
-      this.puntaje += bonus;
+      this.puntaje += Math.round(porcentaje * 500);
       this.textoPuntaje.setText(`${this.puntaje}`);
+
+      // Animación de puntaje
+      this.tweens.add({
+        targets: this.textoPuntaje,
+        scaleX: 1.4, scaleY: 1.4,
+        duration: 150,
+        yoyo: true,
+      });
     }
 
     this._mostrarResultado(exito, aciertos, totalAngulos);
   }
 
-  // ─── Mostrar resultado de la ronda ───────────────────────────────────────
+  // ─── Mostrar resultado ────────────────────────────────────────────────────
   _mostrarResultado(exito, aciertos, total, mensajeExtra = null) {
     const { width, height } = this.scale;
 
-    // Flash de pantalla
+    // Flash
     const flash = this.add.rectangle(0, 0, width, height,
-      exito ? C.verde : C.naranja, 0.35).setOrigin(0).setDepth(25);
+      exito ? C.verde : C.naranja, 0.3).setOrigin(0).setDepth(25);
 
-    // Texto principal
-    const emoji   = exito ? '🎉' : '😅';
-    const mensaje = exito ? '¡ATRAVESASTE!' : '¡FALLASTE!';
-    const color   = exito ? '#3dc9a1' : '#fa804f';
-
-    const textoGrande = this.add.text(width / 2, height / 2 - 60, `${emoji} ${mensaje}`, {
-      fontSize: '88px',
+    // Texto grande
+    const textoGrande = this.add.text(
+      width / 2, height / 2 - 70,
+      exito ? '🎉 ¡ATRAVESASTE!' : '😅 ¡FALLASTE!', {
+      fontSize: '96px',
       fontFamily: 'Fredoka, sans-serif',
-      color,
+      color: exito ? '#3dc9a1' : '#fa804f',
       stroke: '#000000',
-      strokeThickness: 10,
-    }).setOrigin(0.5).setDepth(26).setAlpha(0).setScale(0.5);
+      strokeThickness: 12,
+    }
+    ).setOrigin(0.5).setDepth(26).setAlpha(0).setScale(0.4);
 
-    // Texto de detalle
+    // Detalle
     const detalle = mensajeExtra ?? `${aciertos} de ${total} posiciones correctas`;
-    const textoDetalle = this.add.text(width / 2, height / 2 + 50, detalle, {
-      fontSize: '36px',
+    const textoDetalle = this.add.text(width / 2, height / 2 + 60, detalle, {
+      fontSize: '38px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 5,
     }).setOrigin(0.5).setDepth(26).setAlpha(0);
 
-    // Animación de entrada
     this.tweens.add({
       targets: textoGrande,
-      alpha: 1,
-      scaleX: 1,
-      scaleY: 1,
-      duration: 400,
+      alpha: 1, scaleX: 1, scaleY: 1,
+      duration: 450,
       ease: 'Back.easeOut',
     });
 
@@ -649,26 +746,22 @@ export class DuroMuroScene extends Phaser.Scene {
       targets: textoDetalle,
       alpha: 1,
       duration: 300,
-      delay: 200,
+      delay: 250,
     });
 
-    // Shake de cámara
-    this.cameras.main.shake(300, exito ? 0.01 : 0.02);
-
-    // Confeti si fue exitoso
+    this.cameras.main.shake(300, exito ? 0.012 : 0.022);
     if (exito) this._confeti(width, height);
 
-    // Esperar y pasar a siguiente ronda
-    this.time.delayedCall(2200, () => {
+    this.time.delayedCall(2400, () => {
       this.tweens.add({
         targets: [flash, textoGrande, textoDetalle],
         alpha: 0,
-        duration: 300,
+        duration: 350,
         onComplete: () => {
           flash.destroy();
           textoGrande.destroy();
           textoDetalle.destroy();
-          this.grafMuro.clear();
+          this._limpiarMuro();
           this._escalaMuro = null;
           this._poseActual = null;
           this._iniciarRonda();
@@ -677,29 +770,29 @@ export class DuroMuroScene extends Phaser.Scene {
     });
   }
 
-  // ─── Confeti de celebración ───────────────────────────────────────────────
+  // ─── Confeti ──────────────────────────────────────────────────────────────
   _confeti(width, height) {
     const colores = [C.purpura, C.verde, C.naranja, C.amarillo, C.azul, C.blanco];
-    for (let i = 0; i < 6; i++) {
-      this.time.delayedCall(i * 120, () => {
+    for (let i = 0; i < 8; i++) {
+      this.time.delayedCall(i * 100, () => {
         colores.forEach((color) => {
           const emitter = this.add.particles(
-            Phaser.Math.Between(width * 0.2, width * 0.8),
-            Phaser.Math.Between(0, height * 0.4),
+            Phaser.Math.Between(width * 0.15, width * 0.85),
+            Phaser.Math.Between(0, height * 0.35),
             '__DEFAULT',
             {
-              speed:     { min: 150, max: 400 },
-              angle:     { min: 0, max: 360 },
-              scale:     { start: 0.6, end: 0 },
-              tint:      color,
-              lifespan:  900,
-              quantity:  5,
-              gravityY:  250,
-              emitting:  false,
+              speed: { min: 200, max: 500 },
+              angle: { min: 0, max: 360 },
+              scale: { start: 0.7, end: 0 },
+              tint: color,
+              lifespan: 1000,
+              quantity: 6,
+              gravityY: 300,
+              emitting: false,
             },
           );
-          emitter.explode(5);
-          this.time.delayedCall(1100, () => emitter.destroy());
+          emitter.explode(6);
+          this.time.delayedCall(1200, () => emitter.destroy());
         });
       });
     }
@@ -710,63 +803,57 @@ export class DuroMuroScene extends Phaser.Scene {
     this.juegoActivo = false;
     const { width, height } = this.scale;
 
-    this.grafMuro.clear();
+    this.rtMuro.clear();
     this.textoInstruccion.setVisible(false);
     this.textoTimer.setVisible(false);
 
     this._confeti(width, height);
 
-    // Overlay
-    this.add.rectangle(0, 0, width, height, 0x000000, 0.78)
+    this.add.rectangle(0, 0, width, height, 0x000000, 0.80)
       .setOrigin(0).setDepth(30);
 
     // Panel
-    this.add.rectangle(width / 2, height / 2, 560, 400, 0x1a0a2e)
-      .setDepth(31)
-      .setStrokeStyle(5, C.purpura);
+    const panelW = 580, panelH = 420;
+    this.add.rectangle(width / 2, height / 2, panelW, panelH, 0x1a0a2e)
+      .setDepth(31).setStrokeStyle(6, C.purpura);
+    this.add.rectangle(width / 2, height / 2, panelW - 20, panelH - 20, 0x000000, 0)
+      .setDepth(31).setStrokeStyle(2, C.amarillo);
 
-    // Borde decorativo interno
-    this.add.rectangle(width / 2, height / 2, 540, 380, 0x000000, 0)
-      .setDepth(31)
-      .setStrokeStyle(2, C.amarillo);
-
-    this.add.text(width / 2, height / 2 - 145, '🏆 ¡Fin del Juego!', {
-      fontSize: '52px',
+    this.add.text(width / 2, height / 2 - 155, '🏆 ¡Fin del Juego!', {
+      fontSize: '54px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#fdbf2c',
       stroke: '#000000',
-      strokeThickness: 6,
+      strokeThickness: 7,
     }).setOrigin(0.5).setDepth(32);
 
-    this.add.text(width / 2, height / 2 - 50, 'Tu puntaje final:', {
-      fontSize: '28px',
+    this.add.text(width / 2, height / 2 - 55, 'Tu puntaje final:', {
+      fontSize: '30px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff',
     }).setOrigin(0.5).setDepth(32);
 
-    this.add.text(width / 2, height / 2 + 55, `${this.puntaje}`, {
-      fontSize: '110px',
+    this.add.text(width / 2, height / 2 + 60, `${this.puntaje}`, {
+      fontSize: '120px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#3dc9a1',
       stroke: '#000000',
-      strokeThickness: 8,
+      strokeThickness: 10,
     }).setOrigin(0.5).setDepth(32);
 
-    // Botón jugar de nuevo
-    const btn = this.add.rectangle(width / 2, height / 2 + 165, 320, 70, C.purpura)
-      .setDepth(32)
-      .setInteractive({ cursor: 'pointer' });
+    const btn = this.add.rectangle(width / 2, height / 2 + 175, 340, 75, C.purpura)
+      .setDepth(32).setInteractive({ cursor: 'pointer' });
 
-    this.add.text(width / 2, height / 2 + 165, '🔄 Jugar de nuevo', {
-      fontSize: '28px',
+    this.add.text(width / 2, height / 2 + 175, '🔄 Jugar de nuevo', {
+      fontSize: '30px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff',
     }).setOrigin(0.5).setDepth(33);
 
     btn.on('pointerdown', () => this.scene.restart());
-    btn.on('pointerover',  () => {
+    btn.on('pointerover', () => {
       btn.setFillColor(0x7a3690);
-      this.tweens.add({ targets: btn, scaleX: 1.05, scaleY: 1.05, duration: 100 });
+      this.tweens.add({ targets: btn, scaleX: 1.06, scaleY: 1.06, duration: 100 });
     });
     btn.on('pointerout', () => {
       btn.setFillColor(C.purpura);
@@ -777,22 +864,18 @@ export class DuroMuroScene extends Phaser.Scene {
   // ─── WebSocket ────────────────────────────────────────────────────────────
   _onWsMessage(event) {
     const data = event.detail;
-    if (data.port !== 8080)          return;
+    if (data.port !== 8080) return;
     if (data.juego_activo !== 'poses') return;
-
-    if (!data.jugador_detectado) {
-      this.esqueleto = null;
-      return;
-    }
-
-    if (data.poses?.esqueleto) {
-      this.esqueleto = data.poses.esqueleto;
-    }
+    if (!data.jugador_detectado) { this.esqueleto = null; return; }
+    if (data.poses?.esqueleto) this.esqueleto = data.poses.esqueleto;
   }
 
   // ─── Cleanup ──────────────────────────────────────────────────────────────
   shutdown() {
     window.removeEventListener('ws-message', this._wsHandler);
     this._timerRonda?.destroy();
+    this._limpiarMuro();
+    this._grafAux?.destroy();
+    this.rtMuro?.destroy();
   }
 }

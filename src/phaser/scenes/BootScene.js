@@ -16,6 +16,11 @@ export class BootScene extends Phaser.Scene {
     // Imagenes juego Duro contra el Muro
     this.load.image('duro_muro_fondo', 'assets/images/duro-muro/fondo.jpg');
     this.load.image('duro_muro_textura', 'assets/images/duro-muro/muro.jpg');
+    this.load.image('pose_estrella', 'assets/images/duro-muro/pose_estrella.png');
+    this.load.image('pose_manos_cielo', 'assets/images/duro-muro/pose_manos_cielo.png');
+    this.load.image('pose_cangrejo', 'assets/images/duro-muro/pose_cangrejo.png');
+    this.load.image('pose_rayo', 'assets/images/duro-muro/pose_rayo.png');
+    this.load.image('pose_biceps', 'assets/images/duro-muro/pose_biceps.png');
 
     // Pantalla de carga
     const loadingText = this.add.text(width / 2, height / 2, 'Cargando...', {
