@@ -261,6 +261,7 @@ export class DuroMuroScene extends Phaser.Scene {
     window.addEventListener('ws-message', this._wsHandler);
 
     // ── Arrancar ──────────────────────────────────────────────
+    this.events.once('shutdown', () => this.shutdown());
     this._cuentaRegresiva();
   }
 
