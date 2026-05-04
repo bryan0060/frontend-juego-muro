@@ -4,14 +4,15 @@ export class SubwaySurfersScene extends Phaser.Scene {
   constructor() {
     super('SubwaySurfersScene');
     this.player = null;
-    this.lanes = [-350, 0, 350]; // Ajustados a la perspectiva de la nueva imagen
+    this.lanes = [-300, 0, 300]; // Alineados con la nueva pista visual
     this.currentLane = 1;
     this.isJumping = false;
     this.isSliding = false;
-    this.gameSpeed = 7;
+    this.gameSpeed = 2.0; // Velocidad equilibrada
     this.score = 0;
     this.isGameOver = false;
-    this.nextDifficultyScore = 1500;
+    this.nextDifficultyScore = 500;
+    this.spawnDelay = 2000; // Un obstáculo cada 2 segundos
   }
 
   preload() {
@@ -32,16 +33,23 @@ export class SubwaySurfersScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.isGameOver = false;
     this.score = 0;
-    this.gameSpeed = 7;
+    this.gameSpeed = 2.0;
     this.currentLane = 1;
+    this.spawnDelay = 2000;
+    this._isRestarting = false; // MUY IMPORTANTE: reiniciar esta bandera
 
-    // 1. UI (Siempre al frente)
+    // 1. Efecto de entrada y UI (Siempre al frente)
+    this.cameras.main.fadeIn(300, 0, 0, 0);
     this._createUI();
 
     // 2. Fondo del Mall (Imagen Generada de alta calidad)
-    this.add.image(width / 2, height / 2, 'background_mall')
+    this.background = this.add.image(width / 2, height / 2, 'background_mall')
         .setDisplaySize(width, height)
         .setDepth(0);
+
+    // 3. Pista de Carreras (Perspectiva)
+    this.trackGraphics = this.add.graphics().setDepth(1);
+    this._drawStaticTrack();
 
     // 3. Personaje y Contenedores
     // Ubicado un poco más abajo para que coincida con el inicio de los carriles
@@ -49,15 +57,41 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.jumpContainer = this.add.container(0, 0);
     this.playerContainer.add(this.jumpContainer);
 
-    this.player = this.add.sprite(0, 0, 'player').setScale(0.45).setOrigin(0.5);
+    this.player = this.add.sprite(0, 0, 'player').setScale(0.45).setOrigin(0.5, 1);
     this.jumpContainer.add(this.player);
     this.playerContainer.setDepth(50);
+
+    // Animación de correr (bounce)
+    this.tweens.add({
+        targets: this.player,
+        y: -10,
+        duration: 200,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+    });
 
     // 4. Logo en la esquina
     this.add.image(width - 250, 100, 'logo_game').setScale(0.4).setDepth(100);
 
-    // 5. Timers
-    this.spawnTimer = this.time.addEvent({ delay: 1000, callback: () => this._spawnCycle(), loop: true });
+    // 5. Decoraciones laterales (Paredes/Edificios que se mueven)
+    this.sideDecorations = this.add.group();
+    this.time.addEvent({
+        delay: 1500, // Menos frecuente aún para no saturar
+        callback: () => this._spawnSideDecoration(),
+        loop: true
+    });
+
+    // 6. Líneas de velocidad
+    this.speedLines = this.add.group();
+    this.time.addEvent({
+        delay: 100,
+        callback: () => this._spawnSpeedLine(),
+        loop: true
+    });
+
+    // 7. Timers
+    this._startSpawnTimer();
     this.timeScoreTimer = this.time.addEvent({ delay: 500, callback: () => this._updateScore(), loop: true });
 
     // 6. Líneas de movimiento en el suelo (para simular avance)
@@ -68,23 +102,34 @@ export class SubwaySurfersScene extends Phaser.Scene {
         loop: true
     });
 
-    // 7. Controles
+    // 7. Controles (Máxima compatibilidad)
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.input.keyboard.on('keydown-LEFT', () => this._setLane(Math.max(0, this.currentLane - 1)));
-    this.input.keyboard.on('keydown-RIGHT', () => this._setLane(Math.min(2, this.currentLane + 1)));
-    this.input.keyboard.on('keydown-UP', () => this._jump());
-    this.input.keyboard.on('keydown-DOWN', () => this._slide());
+    this.input.keyboard.addCapture([37, 38, 39, 40]); // Prevenir scroll del navegador
+
+    // 8. Evento de apagado para limpiar
+    this.events.once('shutdown', () => this._cleanup());
   }
 
   _updateScore() {
     if (this.isGameOver) return;
-    this.score += Math.floor(this.gameSpeed / 2);
+    this.score += 5; // Puntaje fijo para asegurar que siempre suba
     this.scoreText.setText(this.score);
     if (this.score >= this.nextDifficultyScore) {
-        this.nextDifficultyScore += 1500;
-        this.gameSpeed += 0.8;
+        this.nextDifficultyScore += 1000; // Aumento de dificultad más lento
+        this.gameSpeed += 0.1; // Casi no aumenta la velocidad
+        this.spawnDelay = Math.max(2000, this.spawnDelay - 100); // Mínimo 2s entre obstáculos
+        this._startSpawnTimer(); 
         this.cameras.main.flash(400, 255, 255, 255, 0.05);
     }
+  }
+
+  _startSpawnTimer() {
+    if (this.spawnTimer) this.spawnTimer.destroy();
+    this.spawnTimer = this.time.addEvent({ 
+        delay: this.spawnDelay, 
+        callback: () => this._spawnCycle(), 
+        loop: true 
+    });
   }
 
   _createUI() {
@@ -97,8 +142,27 @@ export class SubwaySurfersScene extends Phaser.Scene {
   update() {
     if (this.isGameOver) return;
     
+    // Leer controles en update (más fiable)
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) {
+        this._setLane(Math.max(0, this.currentLane - 1));
+    } else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) {
+        this._setLane(Math.min(2, this.currentLane + 1));
+    }
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) {
+        this._jump();
+    }
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.down)) {
+        this._slide();
+    }
+
     const horizonY = this.scale.height * 0.45;
     
+    // Efecto de movimiento en el fondo (escenario vivo)
+    this.background.y = (this.scale.height / 2) + Math.sin(this.time.now * 0.01) * 2;
+    
+    // Redibujar la pista con un ligero desfase para simular movimiento
+    this._drawDynamicTrack();
+
     // Actualizar líneas de reflejo en el suelo (Sensación de avance)
     this.floorStrips.getChildren().forEach(strip => {
         strip.y += this.gameSpeed * 1.5;
@@ -111,6 +175,30 @@ export class SubwaySurfersScene extends Phaser.Scene {
         strip.alpha = Phaser.Math.Clamp(progress * 2, 0, 0.4);
 
         if (strip.y > this.scale.height + 100) strip.destroy();
+    });
+
+    // Actualizar decoraciones laterales
+    this.sideDecorations.getChildren().forEach(dec => {
+        dec.y += this.gameSpeed * 1.5;
+        const progress = (dec.y - horizonY) / (this.scale.height - horizonY);
+        const sideFactor = dec.side === 'left' ? -1 : 1;
+        
+        // Movimiento desde el punto de fuga hacia los extremos
+        const startX = this.scale.width / 2 + (sideFactor * 20);
+        const targetX = this.scale.width / 2 + (sideFactor * 800);
+        dec.x = Phaser.Math.Linear(startX, targetX, progress);
+        
+        dec.setScale(0.01 + progress * 1.5); // Escala moderada
+        dec.alpha = Phaser.Math.Clamp(progress * 4, 0, 1);
+
+        if (dec.y > this.scale.height + 200) dec.destroy();
+    });
+
+    // Actualizar líneas de velocidad
+    this.speedLines.getChildren().forEach(line => {
+        line.y += this.gameSpeed * 2;
+        line.alpha -= 0.02;
+        if (line.y > this.scale.height || line.alpha <= 0) line.destroy();
     });
 
     const objs = [];
@@ -127,14 +215,20 @@ export class SubwaySurfersScene extends Phaser.Scene {
       const targetX = this.scale.width / 2 + this.lanes[obj.lane];
       obj.x = Phaser.Math.Linear(startX, targetX, progress);
       
-      obj.setScale(0.01 + progress * 0.8);
+      // Aumentamos el tamaño máximo para que se vean bien
+      const targetSize = 250 * progress; 
+      obj.setDisplaySize(targetSize, targetSize);
+      
       obj.setAlpha(Phaser.Math.Clamp(progress * 4, 0, 1));
+      obj.setDepth(20); // Asegurar que estén sobre la pista (depth 1)
 
       if (obj.y > this.scale.height + 200) obj.destroy();
 
-      // Colisiones
-      const dist = Phaser.Math.Distance.Between(obj.x, obj.y, this.playerContainer.x, this.playerContainer.y);
-      if (dist < 80 && obj.lane === this.currentLane) {
+      // Colisiones (Basadas en pies y carril)
+      const playerY = this.playerContainer.y;
+      const verticalDist = Math.abs(obj.y - playerY);
+      
+      if (verticalDist < 50 && obj.lane === this.currentLane) {
         if (this.obstacles && this.obstacles.contains(obj)) {
             if (!this.isJumping) this._gameOver();
         } else {
@@ -153,9 +247,11 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
   _spawnObstacle(lane) {
     if (!this.obstacles) this.obstacles = this.add.group();
-    const type = Phaser.Math.RND.pick(['obs_castle', 'obs_rainbow', 'obs_valla']);
+    // Usamos solo 'obs_valla' para garantizar que visualmente sean 100% idénticos
+    const type = 'obs_valla';
     const obs = this.add.sprite(this.scale.width / 2, this.scale.height * 0.45, type);
     obs.lane = lane;
+    obs.setOrigin(0.5, 1); 
     this.obstacles.add(obs);
   }
 
@@ -163,6 +259,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     if (!this.collectibles) this.collectibles = this.add.group();
     const sun = this.add.sprite(this.scale.width / 2, this.scale.height * 0.45, 'sun');
     sun.lane = lane;
+    sun.setOrigin(0.5, 1); // Base en el suelo
     this.collectibles.add(sun);
   }
 
@@ -210,6 +307,88 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.tweens.add({ targets: this.scoreText, scale: 1.2, duration: 100, yoyo: true });
   }
 
+  _setupControls() {
+    this._handleKeyDown = (event) => {
+        if (this.isGameOver) return;
+        switch (event.keyCode) {
+            case Phaser.Input.Keyboard.KeyCodes.LEFT:
+                this._setLane(Math.max(0, this.currentLane - 1));
+                break;
+            case Phaser.Input.Keyboard.KeyCodes.RIGHT:
+                this._setLane(Math.min(2, this.currentLane + 1));
+                break;
+            case Phaser.Input.Keyboard.KeyCodes.UP:
+                this._jump();
+                break;
+            case Phaser.Input.Keyboard.KeyCodes.DOWN:
+                this._slide();
+                break;
+        }
+    };
+    this.input.keyboard.on('keydown', this._handleKeyDown);
+  }
+
+  _cleanup() {
+    if (this.spawnTimer) this.spawnTimer.destroy();
+    if (this.timeScoreTimer) this.timeScoreTimer.destroy();
+  }
+
+  _drawStaticTrack() {
+    // Solo para inicializar si fuera necesario
+  }
+
+  _drawDynamicTrack() {
+    const { width, height } = this.scale;
+    const horizonY = height * 0.45;
+    const g = this.trackGraphics;
+    g.clear();
+
+    // 1. Piso principal (Trapezoide de perspectiva)
+    // El color purpura del brandbook para la pista (más sólido)
+    g.fillStyle(0x9c4eb3, 0.6);
+    g.beginPath();
+    g.moveTo(width / 2 - 20, horizonY);
+    g.lineTo(width / 2 + 20, horizonY);
+    g.lineTo(width + 400, height);
+    g.lineTo(-400, height);
+    g.closePath();
+    g.fillPath();
+
+    // Brillo en los bordes de la pista
+    g.lineStyle(4, 0xfa804f, 0.5); // Naranja brandbook
+
+    // 2. Líneas de los carriles (Efecto de movimiento)
+    const speedFactor = this.time.now * 0.001 * this.gameSpeed;
+    g.lineStyle(4, 0xffffff, 0.4);
+    
+    // Carriles calculados por perspectiva
+    [-1, 1].forEach(dir => {
+        g.beginPath();
+        g.moveTo(width / 2 + dir * 15, horizonY);
+        g.lineTo(width / 2 + dir * 300, height);
+        g.strokePath();
+    });
+
+    // 3. Líneas discontinuas de movimiento (Sense of speed)
+    g.lineStyle(6, 0xffffff, 0.8);
+    for (let i = 0; i < 5; i++) {
+        const p = ((i + speedFactor) % 5) / 5;
+        const y = horizonY + p * (height - horizonY);
+        const w = 20 + p * 100;
+        const xStart = width / 2 - w / 2;
+        g.lineBetween(xStart, y, xStart + w, y);
+    }
+
+    // 4. Bordes laterales (Veredas/Sidewalks) con movimiento
+    g.lineStyle(12, 0x3dc9a1, 0.9); // Color verde del brandbook
+    [-1, 1].forEach(dir => {
+        g.beginPath();
+        g.moveTo(width / 2 + dir * 50, horizonY);
+        g.lineTo(width / 2 + dir * 800, height);
+        g.strokePath();
+    });
+  }
+
   _spawnFloorStrip() {
     if (this.isGameOver) return;
     const lane = Phaser.Math.Between(0, 2);
@@ -218,6 +397,26 @@ export class SubwaySurfersScene extends Phaser.Scene {
     const strip = this.add.rectangle(this.scale.width / 2, horizonY, 100, 10, 0xffffff, 0.3);
     strip.lane = lane;
     this.floorStrips.add(strip);
+  }
+
+  _spawnSideDecoration() {
+    if (this.isGameOver) return;
+    const side = Phaser.Math.RND.pick(['left', 'right']);
+    const horizonY = this.scale.height * 0.45;
+    
+    // Usamos líneas o luces abstractas como decoración para no confundir con obstáculos
+    const dec = this.add.rectangle(this.scale.width / 2, horizonY, 20, 100, 0x40c0dd, 0.4);
+    dec.side = side;
+    dec.setDepth(10);
+    this.sideDecorations.add(dec);
+  }
+
+  _spawnSpeedLine() {
+    if (this.isGameOver) return;
+    const x = Phaser.Math.Between(0, this.scale.width);
+    const y = Phaser.Math.Between(0, this.scale.height);
+    const line = this.add.rectangle(x, y, 2, 50, 0xffffff, 0.2);
+    this.speedLines.add(line);
   }
 
   _gameOver() {
@@ -244,20 +443,34 @@ export class SubwaySurfersScene extends Phaser.Scene {
     }).setOrigin(0.5);
     panel.add(scoreFinal);
 
-    // Botón Reintentar
-    const btn = this.add.container(0, 140);
-    const btnBg = this.add.rectangle(0, 0, 350, 90, 0xffffff)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.scene.restart());
+    // Botón Reintentar (Color de alto contraste Naranja Brandbook)
+    const btn = this.add.text(0, 140, ' REINTENTAR ', { 
+        fontSize: '40px', 
+        color: '#ffffff', 
+        backgroundColor: '#fa804f', // Naranja brillante
+        padding: { x: 40, y: 20 },
+        fontWeight: 'bold'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     
-    const btnText = this.add.text(0, 0, 'REINTENTAR', { 
-        fontSize: '32px', color: '#9c4eb3', fontWeight: 'bold' 
-    }).setOrigin(0.5);
-    
-    btn.add([btnBg, btnText]);
     panel.add(btn);
+    
+    const restartAction = () => {
+        if (!this.isGameOver || this._isRestarting) return;
+        this._isRestarting = true;
+        this.scene.restart();
+    };
 
-    // Animación de entrada
+    btn.on('pointerdown', restartAction);
+    
+    // Fallback GLOBAL e INFALIBLE: Cualquier clic en la pantalla reinicia el juego
+    this.time.delayedCall(500, () => {
+        this.input.on('pointerdown', restartAction);
+    });
+
+    btn.on('pointerdown', restartAction);
+    
+
+    // Animación de entrada del panel
     panel.setScale(0);
     this.tweens.add({
         targets: panel,

@@ -12,6 +12,17 @@ dist
 dist-ssr
 *.local
 
+# Documentos ofimáticos
+*.docx
+*.pdf
+*.xlsx
+
+# Archivos comprimidos y temporales
+*.zip
+*.tar.gz
+temp/
+temp_*/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
