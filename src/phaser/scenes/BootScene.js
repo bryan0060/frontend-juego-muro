@@ -39,8 +39,67 @@ export class BootScene extends Phaser.Scene {
     this.load.image('scenery_hielo', 'assets/images/animales/hielo.png');
     this.load.image('scenery_pantano', 'assets/images/animales/pantano.png');
     this.load.image('jaula_hada', 'assets/images/animales/jaula_hada.png');
-    this.load.image('lobo', 'assets/images/animales/lobo.png');
+    this.load.image('hada', 'assets/images/animales/hada.png');
+    
+    // Animales del Bosque
+    this.load.image('bosque_lobo', 'assets/images/animales/animales%20para%20el%20bosque/lobo.png');
+    this.load.image('bosque_lobo2', 'assets/images/animales/animales%20para%20el%20bosque/lobo%202.png');
+    this.load.image('bosque_lobo3', 'assets/images/animales/animales%20para%20el%20bosque/lobo%203.png');
+    this.load.image('bosque_oso', 'assets/images/animales/animales%20para%20el%20bosque/oso.png');
+    this.load.image('bosque_oso2', 'assets/images/animales/animales%20para%20el%20bosque/oso%202.png');
+    this.load.image('bosque_oso3', 'assets/images/animales/animales%20para%20el%20bosque/oso%203.png');
+    this.load.image('bosque_serpiente', 'assets/images/animales/animales%20para%20el%20bosque/serpiente.png');
+    this.load.image('bosque_cuervo', 'assets/images/animales/animales%20para%20el%20bosque/cuervo.png');
+    this.load.image('bosque_aguila', 'assets/images/animales/animales%20para%20el%20bosque/aguila.png');
+    this.load.image('bosque_buho', 'assets/images/animales/animales%20para%20el%20bosque/buho.png');
+    this.load.image('bosque_cazador', 'assets/images/animales/animales%20para%20el%20bosque/cazador.webp');
+
+    // Animales del Desierto
+    this.load.image('desierto_araña', 'assets/images/animales/animales%20para%20el%20desierto/ara%C3%B1a.png');
+    this.load.image('desierto_ave', 'assets/images/animales/animales%20para%20el%20desierto/ave.png');
+    this.load.image('desierto_buho', 'assets/images/animales/animales%20para%20el%20desierto/buho.png');
+    this.load.image('desierto_camello', 'assets/images/animales/animales%20para%20el%20desierto/camello.png');
+    this.load.image('desierto_canguro', 'assets/images/animales/animales%20para%20el%20desierto/canguro.png');
+    this.load.image('desierto_cobra', 'assets/images/animales/animales%20para%20el%20desierto/cobra.png');
+    this.load.image('desierto_cobra2', 'assets/images/animales/animales%20para%20el%20desierto/cobra2.png');
+    this.load.image('desierto_cobra3', 'assets/images/animales/animales%20para%20el%20desierto/cobra3.png');
+    this.load.image('desierto_cobra4', 'assets/images/animales/animales%20para%20el%20desierto/cobra4.png');
+    this.load.image('desierto_coyote', 'assets/images/animales/animales%20para%20el%20desierto/coyote.png');
+    this.load.image('desierto_escorpion', 'assets/images/animales/animales%20para%20el%20desierto/escorpion.png');
+
+    // Animales del Hielo
+    this.load.image('hielo_buho', 'assets/images/animales/animales%20para%20el%20hielo/buho.png');
+    this.load.image('hielo_foca', 'assets/images/animales/animales%20para%20el%20hielo/foca.png');
+    this.load.image('hielo_leopardo', 'assets/images/animales/animales%20para%20el%20hielo/leopardo.png');
+    this.load.image('hielo_lobo', 'assets/images/animales/animales%20para%20el%20hielo/lobo.png');
+    this.load.image('hielo_mamut', 'assets/images/animales/animales%20para%20el%20hielo/m.png');
+    this.load.image('hielo_morsa', 'assets/images/animales/animales%20para%20el%20hielo/morsa.png');
+    this.load.image('hielo_oso', 'assets/images/animales/animales%20para%20el%20hielo/oso.png');
+    this.load.image('hielo_pinguino', 'assets/images/animales/animales%20para%20el%20hielo/pinguino.png');
+    this.load.image('hielo_reno', 'assets/images/animales/animales%20para%20el%20hielo/reno.png');
+    this.load.image('hielo_zorro', 'assets/images/animales/animales%20para%20el%20hielo/zorro.png');
+
+    // Animales del Pantano
+    this.load.image('pantano_capibara', 'assets/images/animales/animales%20para%20el%20pantano/capibara.png');
+    this.load.image('pantano_cisne', 'assets/images/animales/animales%20para%20el%20pantano/cisne.png');
+    this.load.image('pantano_cocodrilo', 'assets/images/animales/animales%20para%20el%20pantano/cocodrilo.png');
+    this.load.image('pantano_garza', 'assets/images/animales/animales%20para%20el%20pantano/garza.png');
+    this.load.image('pantano_hipopotamo', 'assets/images/animales/animales%20para%20el%20pantano/hipopotamo.png');
+    this.load.image('pantano_murcielago', 'assets/images/animales/animales%20para%20el%20pantano/murcielago.png');
+    this.load.image('pantano_nutria', 'assets/images/animales/animales%20para%20el%20pantano/nutria.png');
+    this.load.image('pantano_pato_volando', 'assets/images/animales/animales%20para%20el%20pantano/pato%20volando.png');
+    this.load.image('pantano_pato', 'assets/images/animales/animales%20para%20el%20pantano/pato.png');
+    this.load.image('pantano_sapo', 'assets/images/animales/animales%20para%20el%20pantano/sapo.jpg');
+    this.load.image('pantano_sapo2', 'assets/images/animales/animales%20para%20el%20pantano/sapo2.png');
+    this.load.image('pantano_sapo3', 'assets/images/animales/animales%20para%20el%20pantano/sapo3.png');
+    this.load.image('pantano_sapo4', 'assets/images/animales/animales%20para%20el%20pantano/sapo4.png');
+    this.load.image('pantano_sapo5', 'assets/images/animales/animales%20para%20el%20pantano/sapo5.png');
+    this.load.image('pantano_tortuga', 'assets/images/animales/animales%20para%20el%20pantano/tortuga.png');
+
     this.load.audio('sonido_bosque', 'assets/audio/sonidos%20de%20animales/bosque.mp3');
+    this.load.audio('sonido_desierto', 'assets/audio/sonidos%20de%20animales/desierto.mp3');
+    this.load.audio('sonido_hielo', 'assets/audio/sonidos%20de%20animales/hielo.mp3');
+    this.load.audio('sonido_pantano', 'assets/audio/sonidos%20de%20animales/pantano.mp3');
   }
 
   create() {

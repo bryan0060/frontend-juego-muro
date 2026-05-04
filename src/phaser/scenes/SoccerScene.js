@@ -10,10 +10,10 @@ export class SoccerScene extends Phaser.Scene {
 
       // 4 cajas para cubrir toda la diagonal del portero en salto lateral
       boxesSide: [
-        { ox: -320, oy: 0, w: 115, h: 130 }, 
-        { ox: -175, oy: -90, w: 145, h: 210 }, 
-        { ox: -35, oy: -70, w: 135, h: 150 }, 
-        { ox: 110, oy: -140, w: 130, h: 175 }, 
+        { ox: -320, oy: 0, w: 115, h: 130 },
+        { ox: -175, oy: -90, w: 145, h: 210 },
+        { ox: -35, oy: -70, w: 135, h: 150 },
+        { ox: 110, oy: -140, w: 130, h: 175 },
       ],
 
       boxesNeutral: [
@@ -61,7 +61,7 @@ export class SoccerScene extends Phaser.Scene {
       .setDisplaySize(W, H)
       .setAlpha(0.2)
       .setDepth(1);
-    
+
     // 3. Degradados para enfoque (Efecto Viñeta)
     const vignette = this.add.graphics().setDepth(2);
     // Degradado superior a negro
@@ -80,7 +80,7 @@ export class SoccerScene extends Phaser.Scene {
     // 6. Portero y Sombra sutil
     this.keeperShadow = this.add.ellipse(W / 2, H * 0.75 + 50, 140, 35, 0x000000, 0.5)
       .setDepth(4);
-    
+
     this.keeperContainer = this.add.container(W / 2, H * 0.75).setDepth(5);
     this._buildKeeper();
 
@@ -98,6 +98,14 @@ export class SoccerScene extends Phaser.Scene {
       quantity: 40,
       emitting: false,
     });
+
+    // Crear una textura dedicada para los fuegos artificiales para asegurar visibilidad
+    if (!this.textures.exists('sparkle')) {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(0xffffff);
+      g.fillCircle(4, 4, 4);
+      g.generateTexture('sparkle', 8, 8);
+    }
 
     this.debugGraphics = this.add.graphics().setDepth(1000);
   }
@@ -226,7 +234,7 @@ export class SoccerScene extends Phaser.Scene {
     // ── UI — Mensajes centrales ────────────────────────────────
     this.messageText = this.add.text(W / 2, H / 2 - 10, '', {
       fontSize: '48px',
-      fontFamily: 'Arial Black',
+      fontFamily: 'Playthings',
       fontStyle: 'bold',
       color: '#ffffff',
       stroke: '#000000',
@@ -235,7 +243,7 @@ export class SoccerScene extends Phaser.Scene {
 
     this.hintText = this.add.text(W / 2, this.H - 85, 'APUNTA Y DISPARA', {
       fontSize: '16px',
-      fontFamily: 'Arial Black',
+      fontFamily: 'Gotham Rounded',
       color: '#ffffff',
       backgroundColor: '#000000aa',
       padding: { x: 20, y: 10 },
@@ -255,47 +263,47 @@ export class SoccerScene extends Phaser.Scene {
   _createBroadcastScoreboard() {
     const W = this.W;
     const cx = W / 2;
-    const cy = 50; 
+    const cy = 50;
 
     this.scoreboardGraphics = this.add.graphics().setDepth(100);
-    
+
     // 1. Textos centrales
     this.teamJUG = this.add.text(cx - 85, cy - 8, 'JUG', {
-      fontSize: '22px', fontFamily: 'Arial Black', color: '#ffffff'
+      fontSize: '22px', fontFamily: 'Playthings', color: '#ffffff'
     }).setOrigin(0.5).setDepth(102);
 
     this.shotsCounterText = this.add.text(cx, cy - 8, '0/5', {
-      fontSize: '24px', fontFamily: 'Arial Black', color: '#00ff00'
+      fontSize: '24px', fontFamily: 'Gotham Rounded', color: '#00ff00'
     }).setOrigin(0.5).setDepth(102);
 
     this.teamCPU = this.add.text(cx + 85, cy - 8, 'CPU', {
-      fontSize: '22px', fontFamily: 'Arial Black', color: '#ffffff'
+      fontSize: '22px', fontFamily: 'Playthings', color: '#ffffff'
     }).setOrigin(0.5).setDepth(102);
 
     // 2. Puntajes con fondo "texturizado" (rectángulos de color por ahora)
     this.scoreJUG = this.add.text(cx - 160, cy, '0', {
-      fontSize: '44px', fontFamily: 'Arial Black', color: '#ffffff'
+      fontSize: '44px', fontFamily: 'Gotham Rounded', color: '#ffffff'
     }).setOrigin(0.5).setDepth(102);
 
     this.scoreCPU = this.add.text(cx + 160, cy, '0', {
-      fontSize: '44px', fontFamily: 'Arial Black', color: '#ffffff'
+      fontSize: '44px', fontFamily: 'Gotham Rounded', color: '#ffffff'
     }).setOrigin(0.5).setDepth(102);
 
     // 3. Texto "GOAL" y estrella decorativa
     this.goalLabel = this.add.text(cx - 245, cy + 10, 'GOAL', {
-      fontSize: '12px', fontFamily: 'Arial Black', color: '#ffffff'
+      fontSize: '12px', fontFamily: 'Playthings', color: '#ffffff'
     }).setOrigin(0.5).setDepth(102);
 
     // 4. Indicadores de balones en la extensión inferior
     this.shotIndicators = [];
     const spacing = 35;
     const startX = cx - (spacing * (SoccerScene.MAX_SHOTS - 1)) / 2;
-    
+
     for (let i = 0; i < SoccerScene.MAX_SHOTS; i++) {
       const ball = this.add.sprite(startX + i * spacing, cy + 45, 'ball')
         .setScale(0.018)
         .setDepth(102)
-        .setAlpha(0.2); 
+        .setAlpha(0.2);
       this.shotIndicators.push(ball);
     }
 
@@ -395,7 +403,7 @@ export class SoccerScene extends Phaser.Scene {
       if (i < this.shotResults.length) {
         const isGoal = this.shotResults[i];
         indicator.setAlpha(1);
-        
+
         if (isGoal) {
           indicator.setTint(0x00ff00);
           // Efecto de brillo si es gol (usando una sombra interna simulada con tint)
@@ -412,7 +420,7 @@ export class SoccerScene extends Phaser.Scene {
         } else {
           indicator.setTint(0x444444); // Gris oscuro para fallos (según imagen)
         }
-        
+
         // Efecto de pulso si es el último tiro registrado
         if (i === this.shotResults.length - 1 && !indicator.getData('animated')) {
           indicator.setData('animated', true);
@@ -471,7 +479,7 @@ export class SoccerScene extends Phaser.Scene {
 
     const isLowShot = ty > this.H * 0.7; // Detectar si el tiro es bajo
 
-    const jumpPower = isLowShot 
+    const jumpPower = isLowShot
       ? Phaser.Math.Between(0, 50) // Si es bajo, apenas salta
       : Phaser.Math.Clamp(Math.max(120, (this.H * 0.75 - ty) * 0.9), 0, 350);
 
@@ -523,22 +531,47 @@ export class SoccerScene extends Phaser.Scene {
       return tx > bLeft && tx < bRight && ty > bTop && ty < bBot;
     });
 
-    const inGoal =
-      tx > cx - this.W * this.hitbox.goalWidthRatio &&
-      tx < cx + this.W * this.hitbox.goalWidthRatio &&
-      ty > this.hitbox.goalTop &&
-      ty < this.H * this.hitbox.goalBottomRatio;
+    const gWidth = this.W * this.hitbox.goalWidthRatio;
+    const gTop = this.hitbox.goalTop;
+    const gBot = this.H * this.hitbox.goalBottomRatio;
+    const postMargin = 15; // Margen para detectar si pegó en el poste
 
-    if (inGoal && !blocked) {
+    // Detectar si pegó en los postes o el travesaño
+    const hitPost = (
+      (Math.abs(tx - (cx - gWidth)) < postMargin && ty > gTop && ty < gBot) || // Poste izquierdo
+      (Math.abs(tx - (cx + gWidth)) < postMargin && ty > gTop && ty < gBot) || // Poste derecho
+      (Math.abs(ty - gTop) < postMargin && tx > cx - gWidth && tx < cx + gWidth) // Travesaño
+    );
+
+    // Detectar si entró limpiamente (dentro de los postes)
+    const strictlyInGoal =
+      tx > (cx - gWidth + postMargin) &&
+      tx < (cx + gWidth - postMargin) &&
+      ty > (gTop + postMargin) &&
+      ty < gBot;
+
+    if (strictlyInGoal && !blocked && !hitPost) {
       this._showResult('GOL!', '#4CAF50');
       this.score++;
       this.shotResults.push(true);
-      this.sound.play('gol'); // Sonido de gol
+      this.sound.play('gol');
       this.cameras.main.shake(250, 0.012);
       this.particles.setPosition(tx, ty);
       this.particles.explode(40);
-    } else {
+      this._launchFireworks(); // ¡Fuegos artificiales!
+    } else if (blocked) {
       this._showResult('ATAJADO', '#f44336');
+      this.cpuScore++;
+      this.shotResults.push(false);
+    } else if (hitPost) {
+      const msg = this._getRandomMessage(['CASI!', 'UYYY!', 'POSTE!']);
+      this._showResult(msg, '#FF9800'); // Naranja para el poste
+      this.cpuScore++;
+      this.shotResults.push(false);
+      this.sound.play('tick'); // Sonido de rebote sutil
+    } else {
+      const msg = this._getRandomMessage(['MUY FUERTE', 'AHHH!', 'AFUERA!']);
+      this._showResult(msg, '#757575'); // Gris para fuera
       this.cpuScore++;
       this.shotResults.push(false);
     }
@@ -699,6 +732,46 @@ export class SoccerScene extends Phaser.Scene {
     const { x, y } = event.detail;
     this.particles.setPosition(x, y);
     this.particles.explode(25);
+  }
+
+  _getRandomMessage(options) {
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  _launchFireworks() {
+    const W = this.W, H = this.H;
+    const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xffffff];
+
+    for (let i = 0; i < 8; i++) {
+      this.time.delayedCall(i * 350, () => {
+        const x = Phaser.Math.Between(W * 0.15, W * 0.85);
+        const y = Phaser.Math.Between(H * 0.15, H * 0.45);
+        const color = colors[Phaser.Math.Between(0, colors.length - 1)];
+
+        // Usar la textura 'sparkle' generada
+        const burst = this.add.particles(x, y, 'sparkle', {
+          speed: { min: 100, max: 600 },
+          angle: { min: 0, max: 360 },
+          scale: { start: 1.5, end: 0 },
+          tint: color,
+          blendMode: 'ADD',
+          lifespan: 1500,
+          gravityY: 250,
+          quantity: 50,
+          emitting: false,
+        }).setDepth(200);
+
+        burst.explode(50);
+
+        // Sonido de explosión suave
+        this.sound.play('pop', { volume: 0.4, detune: Phaser.Math.Between(-600, 600) });
+
+        // Limpieza
+        this.time.delayedCall(2000, () => {
+          if (burst && burst.destroy) burst.destroy();
+        });
+      });
+    }
   }
 
   shutdown() {
