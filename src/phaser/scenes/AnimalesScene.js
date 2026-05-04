@@ -57,6 +57,16 @@ export class AnimalesScene extends Phaser.Scene {
             graphics.fillCircle(8, 8, 8);
             graphics.generateTexture('estrella_magica', 16, 16);
         }
+
+        // Fallback para la jaula si no existe el asset
+        if (!this.textures.exists('jaula_hada') && !this.textures.exists('jaula_fallback')) {
+            const g = this.make.graphics({ x: 0, y: 0, add: false });
+            g.lineStyle(4, 0x00ffff, 1);
+            g.strokeRoundedRect(0, 0, 60, 100, 10);
+            g.fillStyle(0x00ffff, 0.2);
+            g.fillRoundedRect(0, 0, 60, 100, 10);
+            g.generateTexture('jaula_fallback', 60, 100);
+        }
     }
 
     create() {
@@ -65,16 +75,31 @@ export class AnimalesScene extends Phaser.Scene {
         this.H = H;
 
         // Estado inicial
-        this.estado = 'seleccion'; 
+        this.estado = 'seleccion';
         this.juegoActivo = false;
         this.energia = CONFIG.totalEnergia;
         this.puntaje = 0;
         this.esqueletoActual = null;
         this.enemigos = this.add.group();
 
-        // 1. Jaula y Hada (Ocultos hasta empezar)
-        this.jaula = this.add.image(W / 2, H / 2 + 50, 'jaula_hada').setScale(0.8).setDepth(5).setVisible(false);
+        // 1. Jaula y Hada (Más abajo, en el suelo)
+        // Forzamos el fallback por ahora si el usuario no tiene el archivo
+        const jaulaKey = this.textures.exists('jaula_hada') && this.textures.get('jaula_hada').key !== '__MISSING' ? 'jaula_hada' : 'jaula_fallback';
+        this.jaula = this.add.image(W / 2, H - 120, jaulaKey).setScale(0.8).setDepth(5).setVisible(false);
         
+        // Hada dentro de la jaula
+        this.hada = this.add.image(W / 2, H - 150, 'hada').setScale(0.45).setDepth(4).setVisible(false);
+        
+        // Animación suave para el hada
+        this.tweens.add({
+            targets: this.hada,
+            y: H - 165,
+            duration: 1500,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
         // 2. Aura de poder
         this.aura = this.add.graphics().setDepth(10);
 
@@ -105,7 +130,7 @@ export class AnimalesScene extends Phaser.Scene {
 
     _mostrarMenuEscenarios() {
         const { width: W, height: H } = this.scale;
-        
+
         this.menuContainer = this.add.container(0, 0).setDepth(200);
 
         // 1. Fondo Estilo Pizarra Mágica Pro (Nebulosas y Profundidad)
@@ -117,15 +142,15 @@ export class AnimalesScene extends Phaser.Scene {
         // Capa de Nebulosas (Círculos grandes con transparencia y blur)
         for (let i = 0; i < 5; i++) {
             const neb = this.add.circle(
-                Phaser.Math.Between(0, W), 
-                Phaser.Math.Between(0, H), 
-                Phaser.Math.Between(300, 600), 
-                i % 2 === 0 ? 0x4a2a6e : 0x0a4a6e, 
+                Phaser.Math.Between(0, W),
+                Phaser.Math.Between(0, H),
+                Phaser.Math.Between(300, 600),
+                i % 2 === 0 ? 0x4a2a6e : 0x0a4a6e,
                 0.15
             );
             neb.setBlendMode('ADD');
             this.menuContainer.add(neb);
-            
+
             // Animación de deriva lenta para las nebulosas
             this.tweens.add({
                 targets: neb,
@@ -153,7 +178,7 @@ export class AnimalesScene extends Phaser.Scene {
                 g.fillCircle(Phaser.Math.Between(0, W), Phaser.Math.Between(0, H), layer.size);
             }
             this.menuContainer.add(g);
-            
+
             // Movimiento muy lento para efecto de profundidad
             this.tweens.add({
                 targets: g,
@@ -171,13 +196,13 @@ export class AnimalesScene extends Phaser.Scene {
             callback: () => {
                 if (!this.menuContainer || !this.menuContainer.visible) return;
                 const sx = Phaser.Math.Between(0, W);
-                const sy = Phaser.Math.Between(0, H/2);
+                const sy = Phaser.Math.Between(0, H / 2);
                 const line = this.add.graphics();
                 line.lineStyle(2, 0xffffff, 1);
                 line.strokeLineShape(new Phaser.Geom.Line(0, 0, 50, -5));
                 line.setPosition(sx, sy);
                 this.menuContainer.add(line);
-                
+
                 this.tweens.add({
                     targets: line,
                     x: sx + 800,
@@ -198,7 +223,7 @@ export class AnimalesScene extends Phaser.Scene {
             lifespan: 700,
             blendMode: 'ADD',
             emitting: false
-        }).setDepth(500); 
+        }).setDepth(500);
 
         // Evento de clic global para las estrellas
         const clickArea = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0).setInteractive().setDepth(-2);
@@ -214,18 +239,18 @@ export class AnimalesScene extends Phaser.Scene {
 
         // 3. Título Estilo Burbuja 3D (Capa de Sombra Profunda)
         const tituloSombra = this.add.text(W / 2, 88, 'ELIJE TU ESCENARIO', {
-            fontSize: '84px', 
-            fontFamily: 'Bubblegum Sans', 
-            fill: '#2e1a4e', 
-            stroke: '#2e1a4e', 
+            fontSize: '84px',
+            fontFamily: 'Bubblegum Sans',
+            fill: '#2e1a4e',
+            stroke: '#2e1a4e',
             strokeThickness: 20,
         }).setOrigin(0.5);
 
         const titulo = this.add.text(W / 2, 80, 'ELIJE TU ESCENARIO', {
-            fontSize: '84px', 
-            fontFamily: 'Bubblegum Sans', 
+            fontSize: '84px',
+            fontFamily: 'Bubblegum Sans',
             fill: '#ffffff',
-            stroke: '#40c0dd', 
+            stroke: '#40c0dd',
             strokeThickness: 14,
         }).setOrigin(0.5);
 
@@ -234,7 +259,7 @@ export class AnimalesScene extends Phaser.Scene {
         gradient.addColorStop(0, '#40c0dd');
         gradient.addColorStop(1, '#9c4eb3');
         titulo.setFill(gradient);
-        
+
         this.tweens.add({
             targets: [titulo, tituloSombra],
             scale: 1.04,
@@ -279,8 +304,8 @@ export class AnimalesScene extends Phaser.Scene {
             labelBg.strokeRoundedRect(-200, 65, 400, 45, { bl: 12, br: 12 });
 
             const txt = this.add.text(0, 87, esc.nombre, {
-                fontSize: '28px', 
-                fontFamily: 'Cinzel Decorative', 
+                fontSize: '28px',
+                fontFamily: 'Cinzel Decorative',
                 color: '#ffffff',
                 letterSpacing: 4
             }).setOrigin(0.5);
@@ -291,25 +316,22 @@ export class AnimalesScene extends Phaser.Scene {
 
             hitArea.on('pointerover', () => {
                 this.tweens.add({ targets: cardContainer, scale: 1.1, duration: 100, ease: 'Back.easeOut' });
-                
+
                 glow.clear();
-                glow.lineStyle(10, 0xffffff, 1); 
+                glow.lineStyle(10, 0xffffff, 1);
                 glow.strokeRoundedRect(-210, -110, 420, 220, 15);
                 glow.lineStyle(4, esc.color, 1);
                 glow.strokeRoundedRect(-205, -105, 410, 210, 12);
 
-                if (esc.id === 'scenery_bosque') {
-                    this.sound.play('sonido_bosque', { volume: 1 });
-                }
+                const soundKey = esc.id.replace('scenery_', 'sonido_');
+                this.sound.play(soundKey, { volume: 1 });
             });
 
             hitArea.on('pointerout', () => {
                 this.tweens.add({ targets: cardContainer, scale: 1, duration: 100, ease: 'Linear' });
-                
-                // Detener el sonido del bosque al salir
-                if (esc.id === 'scenery_bosque') {
-                    this.sound.stopByKey('sonido_bosque');
-                }
+
+                const soundKey = esc.id.replace('scenery_', 'sonido_');
+                this.sound.stopByKey(soundKey);
 
                 glow.clear();
                 glow.lineStyle(8, esc.color, 0.3);
@@ -325,6 +347,7 @@ export class AnimalesScene extends Phaser.Scene {
 
     _iniciarJuego(escenarioId) {
         this.menuContainer.destroy();
+        this.escenarioActual = escenarioId;
         this.estado = 'jugando';
         this.juegoActivo = true;
 
@@ -335,11 +358,19 @@ export class AnimalesScene extends Phaser.Scene {
 
         // Mostrar elementos de juego
         this.jaula.setVisible(true);
+        this.hada.setVisible(true);
         this.textoPuntaje.setVisible(true);
         this.barraEnergiaBg.setVisible(true);
         this.barraEnergia.setVisible(true);
         this.textoInstruccion.setVisible(true).setText('¡PREPÁRATE!');
-        
+        this.btnMenu.setVisible(true);
+
+        // Detener sonidos de menú y empezar música ambiental en loop
+        this.sound.stopAll();
+        const soundKey = escenarioId.replace('scenery_', 'sonido_');
+        this.bgMusic = this.sound.add(soundKey, { loop: true, volume: 0.6 });
+        this.bgMusic.play();
+
         // Luciérnagas
         this._createFireflies();
 
@@ -353,37 +384,136 @@ export class AnimalesScene extends Phaser.Scene {
     }
 
     _buildHUD() {
+        // Puntaje
         this.textoPuntaje = this.add.text(30, 30, 'PUNTOS: 0', {
             fontSize: '32px', fontFamily: 'Bangers', color: '#ffffff', stroke: '#000', strokeThickness: 4
         });
 
-        this.barraEnergiaBg = this.add.rectangle(this.W - 220, 50, 200, 30, 0x000000).setOrigin(0, 0.5);
-        this.barraEnergia = this.add.rectangle(this.W - 220, 50, 200, 30, 0x00ff00).setOrigin(0, 0.5);
-        this.add.text(this.W - 220, 20, 'ENERGÍA DEL HADA', { fontSize: '18px', fontFamily: 'Bangers', color: '#ffffff' });
+        // Barra de energía mejorada
+        const energyX = this.W - 240;
+        const energyY = 55;
+        // Sombra y fondo de la barra
+        this.add.rectangle(energyX + 1, energyY + 1, 210, 28, 0x000000, 0.6).setOrigin(0, 0.5);
+        this.barraEnergiaBg = this.add.rectangle(energyX, energyY, 210, 28, 0x1a0a2e).setOrigin(0, 0.5);
+        // Borde de la barra
+        const barBorder = this.add.graphics();
+        barBorder.lineStyle(2, 0xa855f7, 1);
+        barBorder.strokeRoundedRect(energyX - 1, energyY - 15, 212, 30, 6);
+        // Barra de energía con color vibrante
+        this.barraEnergia = this.add.rectangle(energyX, energyY, 210, 28, 0x00ff88).setOrigin(0, 0.5);
+        // Icono + label
+        this.add.text(energyX, energyY - 28, '✨ ENERGÍA DEL HADA', {
+            fontSize: '15px', fontFamily: 'Bangers', color: '#e0aaff', stroke: '#000', strokeThickness: 3
+        });
 
-        this.textoInstruccion = this.add.text(this.W / 2, this.H - 80, '¡PREPÁRATE!', {
+        // Texto de instrucción - centro superior (más abajo)
+        this.textoInstruccion = this.add.text(this.W / 2, 130, '¡PREPÁRATE!', {
             fontSize: '40px', fontFamily: 'Luckiest Guy', color: '#ffffff', stroke: '#000', strokeThickness: 6
         }).setOrigin(0.5);
+
+        // Botón Menú - sin fondo, estilo cristal
+        this.btnMenu = this.add.text(30, 75, '← Menú', {
+            fontSize: '24px', fontFamily: 'Bangers', color: '#e0aaff',
+            stroke: '#000', strokeThickness: 4
+        }).setOrigin(0, 0.5).setDepth(50).setInteractive({ cursor: 'pointer' }).setVisible(false);
+
+        this.btnMenu.on('pointerover', () => this.btnMenu.setStyle({ color: '#ffffff' }));
+        this.btnMenu.on('pointerout',  () => this.btnMenu.setStyle({ color: '#e0aaff' }));
+        this.btnMenu.on('pointerdown', () => this._volverAlMenu());
     }
 
     _spawnEnemigo() {
         if (!this.juegoActivo) return;
 
-        const tipos = [
-            { key: 'lobo', pose: 'agachado', speed: 1.2 },
-            { key: 'lobo', pose: 'manos-cielo', speed: 1.5 } // Usaré el lobo para ambos por ahora
-        ];
-        const tipo = Phaser.Utils.Array.GetRandom(tipos);
+        const pools = {
+            'scenery_bosque': [
+                { key: 'bosque_lobo', pose: 'agachado', speed: 1.2, origin: 'side', scale: 0.45 },
+                { key: 'bosque_lobo2', pose: 'agachado', speed: 1.3, origin: 'side', scale: 0.45 },
+                { key: 'bosque_lobo3', pose: 'agachado', speed: 1.4, origin: 'side', scale: 0.45 },
+                { key: 'bosque_oso', pose: 'manos-cielo', speed: 0.8, origin: 'side', scale: 0.65, reverse: true },
+                { key: 'bosque_oso2', pose: 'manos-cielo', speed: 0.9, origin: 'side', scale: 0.65, reverse: true },
+                { key: 'bosque_oso3', pose: 'manos-cielo', speed: 0.7, origin: 'side', scale: 0.65, reverse: true },
+                { key: 'bosque_serpiente', pose: 'agachado', speed: 1.8, origin: 'side', scale: 0.45, reverse: true },
+                { key: 'bosque_cuervo', pose: 'manos-cielo', speed: 1.4, origin: 'sky', scale: 0.08 },
+                { key: 'bosque_aguila', pose: 'estrella', speed: 1.6, origin: 'sky', scale: 0.35, reverse: true },
+                { key: 'bosque_buho', pose: 'estrella', speed: 1.2, origin: 'sky', scale: 0.35, reverse: true },
+                { key: 'bosque_cazador', pose: 'estrella', speed: 1.0, origin: 'side', scale: 0.2, reverse: true }
+            ],
+            'scenery_desierto': [
+                { key: 'desierto_araña', pose: 'agachado', speed: 1.5, origin: 'side', scale: 0.45, reverse: true },
+                { key: 'desierto_ave', pose: 'estrella', speed: 1.8, origin: 'sky', scale: 0.4, reverse: true },
+                { key: 'desierto_buho', pose: 'estrella', speed: 1.4, origin: 'sky', scale: 0.45, reverse: true },
+                { key: 'desierto_camello', pose: 'manos-cielo', speed: 0.9, origin: 'side', scale: 0.8, reverse: true },
+                { key: 'desierto_canguro', pose: 'manos-cielo', speed: 1.3, origin: 'side', scale: 0.5, reverse: true },
+                { key: 'desierto_cobra', pose: 'agachado', speed: 1.6, origin: 'side', scale: 0.55, reverse: true },
+                { key: 'desierto_cobra2', pose: 'agachado', speed: 1.7, origin: 'side', scale: 0.55, reverse: true },
+                { key: 'desierto_cobra3', pose: 'agachado', speed: 1.6, origin: 'side', scale: 0.55, reverse: true },
+                { key: 'desierto_cobra4', pose: 'agachado', speed: 1.5, origin: 'side', scale: 0.55, reverse: true },
+                { key: 'desierto_coyote', pose: 'agachado', speed: 1.8, origin: 'side', scale: 0.3, reverse: true },
+                { key: 'desierto_escorpion', pose: 'agachado', speed: 2.0, origin: 'side', scale: 0.15, reverse: true }
+            ],
+            'scenery_hielo': [
+                { key: 'hielo_buho', pose: 'estrella', speed: 1.4, origin: 'sky', scale: 0.45, reverse: true },
+                { key: 'hielo_foca', pose: 'agachado', speed: 1.0, origin: 'side', scale: 0.55, reverse: true },
+                { key: 'hielo_leopardo', pose: 'agachado', speed: 1.6, origin: 'side', scale: 0.5, reverse: true },
+                { key: 'hielo_lobo', pose: 'agachado', speed: 1.5, origin: 'side', scale: 0.5, reverse: true },
+                { key: 'hielo_mamut', pose: 'manos-cielo', speed: 0.7, origin: 'side', scale: 0.65, reverse: true },
+                { key: 'hielo_morsa', pose: 'manos-cielo', speed: 0.8, origin: 'side', scale: 0.6, reverse: true },
+                { key: 'hielo_oso', pose: 'manos-cielo', speed: 0.9, origin: 'side', scale: 0.5, reverse: true },
+                { key: 'hielo_pinguino', pose: 'agachado', speed: 1.2, origin: 'side', scale: 0.4 },
+                { key: 'hielo_reno', pose: 'manos-cielo', speed: 1.1, origin: 'side', scale: 0.5 },
+                { key: 'hielo_zorro', pose: 'agachado', speed: 1.4, origin: 'side', scale: 0.35, reverse: true }
+            ],
+            'scenery_pantano': [
+                { key: 'pantano_capibara', pose: 'agachado', speed: 1.1, origin: 'side', scale: 0.45, reverse: true },
+                { key: 'pantano_cisne', pose: 'manos-cielo', speed: 1.2, origin: 'side', scale: 0.5, reverse: true },
+                { key: 'pantano_cocodrilo', pose: 'agachado', speed: 1.4, origin: 'side', scale: 0.6, reverse: true },
+                { key: 'pantano_garza', pose: 'estrella', speed: 1.5, origin: 'sky', scale: 0.45, reverse: true },
+                { key: 'pantano_hipopotamo', pose: 'manos-cielo', speed: 0.8, origin: 'side', scale: 0.65, reverse: true },
+                { key: 'pantano_murcielago', pose: 'estrella', speed: 1.8, origin: 'sky', scale: 0.4, reverse: true },
+                { key: 'pantano_nutria', pose: 'agachado', speed: 1.3, origin: 'side', scale: 0.45, reverse: true },
+                { key: 'pantano_pato_volando', pose: 'estrella', speed: 1.6, origin: 'sky', scale: 0.4, reverse: true },
+                { key: 'pantano_pato', pose: 'agachado', speed: 1.2, origin: 'side', scale: 0.3, reverse: true },
+                { key: 'pantano_sapo', pose: 'agachado', speed: 1.8, origin: 'side', scale: 0.25, reverse: true },
+                { key: 'pantano_sapo2', pose: 'agachado', speed: 1.7, origin: 'side', scale: 0.25, reverse: true },
+                { key: 'pantano_sapo3', pose: 'agachado', speed: 1.9, origin: 'side', scale: 0.25, reverse: true },
+                { key: 'pantano_sapo4', pose: 'agachado', speed: 1.6, origin: 'side', scale: 0.25, reverse: true },
+                { key: 'pantano_sapo5', pose: 'agachado', speed: 2.0, origin: 'side', scale: 0.25, reverse: true },
+                { key: 'pantano_tortuga', pose: 'agachado', speed: 0.9, origin: 'side', scale: 0.35, reverse: true }
+            ]
+        };
 
-        // Aparecer desde los lados
-        const side = Math.random() > 0.5 ? -100 : this.W + 100;
-        const x = side;
-        const y = this.H / 2 + 150; // A la altura del suelo
+        const pool = pools[this.escenarioActual] || pools['scenery_bosque'];
+        const tipo = Phaser.Utils.Array.GetRandom(pool);
 
-        const enemigo = this.add.sprite(x, y, tipo.key).setScale(0.4).setDepth(4);
+        let x, y;
+        const horizonY = this.H / 2 + 50;
+
+        if (tipo.origin === 'sky') {
+            const desdeIzquierda = Math.random() > 0.5;
+            x = desdeIzquierda ? -300 : this.W + 300;
+            y = Phaser.Math.Between(-150, 0); // Vienen desde más arriba
+        } else {
+            const desdeIzquierda = Math.random() > 0.5;
+            x = desdeIzquierda ? -300 : this.W + 300;
+            y = horizonY + Phaser.Math.Between(-30, 30);
+        }
+
+        const enemigo = this.add.sprite(x, y, tipo.key).setScale(0.01).setDepth(4);
         enemigo.poseRequerida = tipo.pose;
+        enemigo.baseScale = tipo.scale;
         enemigo.speed = tipo.speed;
-        
+        enemigo.originType = tipo.origin;
+        // Los voladores atacan la parte superior de la jaula, los terrestres la base
+        enemigo.targetY = (tipo.origin === 'sky') ? this.H - 280 : this.H - 120;
+        enemigo.spawnY = y;
+        enemigo.spawnX = x;
+
+        // Lógica de orientación individualizada
+        const haciaDerecha = x < this.W / 2;
+        const flip = tipo.reverse ? haciaDerecha : !haciaDerecha;
+        enemigo.setFlipX(flip);
+
         // Icono de pose sobre el enemigo
         const poseIcon = this.add.text(0, -100, CONFIG.poses[tipo.pose].emoji, { fontSize: '60px' }).setOrigin(0.5).setDepth(10);
         enemigo.icon = poseIcon;
@@ -397,21 +527,33 @@ export class AnimalesScene extends Phaser.Scene {
         // Mover enemigos hacia la jaula
         this.enemigos.getChildren().forEach(enemigo => {
             const dx = this.W / 2 - enemigo.x;
-            const dy = (this.H / 2 + 50) - enemigo.y;
+            const dy = (enemigo.targetY || (this.H - 120)) - enemigo.y;
             const angle = Math.atan2(dy, dx);
 
             enemigo.x += Math.cos(angle) * enemigo.speed;
             enemigo.y += Math.sin(angle) * enemigo.speed;
-            
+
+            // Perspectiva: crecen a medida que se acercan (progresión hacia el centro)
+            const distActual = Phaser.Math.Distance.Between(enemigo.x, enemigo.y, this.W / 2, enemigo.targetY);
+            const distTotal = Phaser.Math.Distance.Between(enemigo.spawnX || 0, enemigo.spawnY || 0, this.W / 2, enemigo.targetY);
+            const progreso = Phaser.Math.Clamp(1 - (distActual / distTotal), 0, 1);
+
+            const currentScale = Phaser.Math.Linear(0.01, enemigo.baseScale || 0.1, progreso);
+            enemigo.setScale(currentScale);
+
+            // Efecto de caminata (bobbing) ajustado a la escala
+            if (enemigo.originType !== 'sky') {
+                const hop = Math.abs(Math.sin(this.time.now / 150)) * (8 * progreso);
+                enemigo.displayOriginY = enemigo.height / 2 + hop;
+            }
+
             enemigo.icon.x = enemigo.x;
-            enemigo.icon.y = enemigo.y - 120;
+            enemigo.icon.y = enemigo.y - (enemigo.displayHeight / 2 + 60 * currentScale);
+            enemigo.icon.setScale(currentScale + 0.5);
 
-            // Flip según dirección
-            enemigo.setFlipX(dx < 0);
-
-            // Colisión con la jaula
-            const dist = Phaser.Math.Distance.Between(enemigo.x, enemigo.y, this.W / 2, this.H / 2 + 50);
-            if (dist < 80) {
+            // Colisión con la jaula (ajustado al nuevo centro)
+            const dist = Phaser.Math.Distance.Between(enemigo.x, enemigo.y, this.W / 2, this.H - 120);
+            if (dist < 130) {
                 this._danoJaula();
                 this._eliminarEnemigo(enemigo);
             }
@@ -458,11 +600,19 @@ export class AnimalesScene extends Phaser.Scene {
 
     _danoJaula() {
         this.energia -= 10;
-        this.barraEnergia.width = (this.energia / CONFIG.totalEnergia) * 200;
-        
+        const pct = this.energia / CONFIG.totalEnergia;
+        this.barraEnergia.width = pct * 210;
+        // Color dinámico: verde → amarillo → rojo
+        const color = pct > 0.6 ? 0x00ff88 : pct > 0.3 ? 0xffcc00 : 0xff3344;
+        this.barraEnergia.setFillStyle(color);
+
         this.cameras.main.shake(200, 0.02);
         this.jaula.setTint(0xff0000);
-        this.time.delayedCall(200, () => this.jaula.clearTint());
+        this.hada.setTint(0xff0000);
+        this.time.delayedCall(200, () => {
+            this.jaula.clearTint();
+            this.hada.clearTint();
+        });
 
         if (this.energia <= 0) {
             this._gameOver();
@@ -489,18 +639,35 @@ export class AnimalesScene extends Phaser.Scene {
         this.textoInstruccion.setText(poseDetectada);
     }
 
+    _volverAlMenu() {
+        this.juegoActivo = false;
+        this.sound.stopAll();
+        this.tweens.killAll();
+        this.time.removeAllEvents();
+        this.enemigos.getChildren().forEach(e => {
+            if (e.icon) e.icon.destroy();
+            e.destroy();
+        });
+        this.scene.restart();
+    }
+
     _gameOver() {
         this.juegoActivo = false;
         this.add.rectangle(this.W / 2, this.H / 2, this.W, this.H, 0x000000, 0.7).setDepth(100);
-        this.add.text(this.W / 2, this.H / 2 - 50, 'EL HADA SE QUEDÓ SIN ENERGÍA', {
+        this.add.text(this.W / 2, this.H / 2 - 80, 'EL HADA SE QUEDÓ SIN ENERGÍA', {
             fontSize: '48px', color: '#ff0000', fontFamily: 'Arial Black'
         }).setOrigin(0.5).setDepth(101);
-        
-        const btn = this.add.text(this.W / 2, this.H / 2 + 50, 'REINTENTAR', {
+
+        const btn = this.add.text(this.W / 2, this.H / 2 + 20, 'REINTENTAR', {
             fontSize: '32px', color: '#ffffff', backgroundColor: '#9c4eb3', padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setDepth(101).setInteractive({ cursor: 'pointer' });
-
         btn.on('pointerdown', () => this.scene.restart());
+
+        const btnMenuGO = this.add.text(this.W / 2, this.H / 2 + 90, '☰ VOLVER AL MENÚ', {
+            fontSize: '28px', color: '#ffffff', backgroundColor: '#2e1a4e', padding: { x: 20, y: 10 }
+        }).setOrigin(0.5).setDepth(101).setInteractive({ cursor: 'pointer' });
+        btnMenuGO.on('pointerdown', () => this._volverAlMenu());
+
         this.sound.play('end');
     }
 
@@ -522,5 +689,6 @@ export class AnimalesScene extends Phaser.Scene {
 
     shutdown() {
         window.removeEventListener('ws-message', this._wsHandler);
+        this.sound.stopAll();
     }
 }
