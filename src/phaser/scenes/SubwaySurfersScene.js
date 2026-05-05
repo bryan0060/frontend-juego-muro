@@ -37,6 +37,12 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.currentLane = 1;
     this.spawnDelay = 2000;
     this._isRestarting = false; // MUY IMPORTANTE: reiniciar esta bandera
+    
+    // Resetear estados críticos
+    this.isJumping = false;
+    this.isSliding = false;
+    this.obstacles = null;
+    this.collectibles = null;
 
     // 1. Efecto de entrada y UI (Siempre al frente)
     this.cameras.main.fadeIn(300, 0, 0, 0);
@@ -457,6 +463,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     const restartAction = () => {
         if (!this.isGameOver || this._isRestarting) return;
         this._isRestarting = true;
+        this.input.off('pointerdown', restartAction);
         this.scene.restart();
     };
 
@@ -464,10 +471,10 @@ export class SubwaySurfersScene extends Phaser.Scene {
     
     // Fallback GLOBAL e INFALIBLE: Cualquier clic en la pantalla reinicia el juego
     this.time.delayedCall(500, () => {
-        this.input.on('pointerdown', restartAction);
+        if (!this._isRestarting) {
+            this.input.on('pointerdown', restartAction);
+        }
     });
-
-    btn.on('pointerdown', restartAction);
     
 
     // Animación de entrada del panel
