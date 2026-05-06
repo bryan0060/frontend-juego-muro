@@ -496,8 +496,8 @@ export class SoccerScene extends Phaser.Scene {
     this.keeperContainer = this.add.container(W / 2, H * 0.75).setDepth(5);
     this._buildKeeper();
 
-    this.ballShadow = this.add.ellipse(W / 2, H - 35 + 15, 60, 15, 0x000000, 0.4).setDepth(6);
-    this.ballSprite = this._createBall(W / 2, H - 35).setDepth(7);
+    this.ballShadow = this.add.ellipse(W / 2, H - 35 + 15, 60, 15, 0x000000, 0.4).setDepth(6).setVisible(false);
+    this.ballSprite = this._createBall(W / 2, H - 35).setDepth(7).setVisible(false);
 
     this.particles = this.add.particles(0, 0, '__DEFAULT', {
       speed: { min: 100, max: 350 },
@@ -945,6 +945,9 @@ export class SoccerScene extends Phaser.Scene {
     this._updateHUDStats();
     this.hintText.setAlpha(0);
 
+    this.ballSprite.setVisible(true);
+    this.ballShadow.setVisible(true);
+
     const intelligence = Math.min(this.precisionExtra + (this.score * 0.22), 0.95);
     const randomDir = Math.random() > 0.5 ? 1 : -1;
     const randomDestX = this.W / 2 + randomDir * 280;
@@ -1137,6 +1140,12 @@ export class SoccerScene extends Phaser.Scene {
     this.debugGraphics.fillStyle(0xffffff, 1);
     this.debugGraphics.fillCircle(kx, ky, 5);
 
+    // Hitbox del balón (Círculo rojo tenue)
+    if (this.ballSprite && this.ballSprite.visible) {
+      this.debugGraphics.lineStyle(2, 0xff0000, 1);
+      this.debugGraphics.strokeCircle(this.ballSprite.x, this.ballSprite.y, 15);
+    }
+
     // Portería (amarillo semitransparente)
     const goalCx = this.W / 2;
     const gWidth = this.W * this.hitbox.goalWidthRatio;
@@ -1189,6 +1198,8 @@ export class SoccerScene extends Phaser.Scene {
     });
 
     this.ballShadow.y = this.H - 35 + 15;
+    this.ballSprite.setVisible(false);
+    this.ballShadow.setVisible(false);
     this.hintText.setAlpha(1);
     this.phase = 'aim';
   }
