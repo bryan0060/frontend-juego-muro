@@ -35,7 +35,7 @@ El sensor detecta el cuerpo del jugador (poses, movimiento, impactos).
 |---|---|---|
 | Just Dance | `JustDanceScene` | 🔴 Pendiente |
 | Subway Surfers | `SubwaySurfersScene` | 🔴 Pendiente |
-| Animales | `AnimalesScene` | 🔴 Pendiente |
+| Animales | `AnimalesScene` | 🟡 En progreso (Mecánicas core) |
 | Duro contra el Muro | `DuroMuroScene` | 🔴 Pendiente |
 
 ### 🔴 Sensor RPLiDAR → Puerto 8081
@@ -44,7 +44,7 @@ El sensor detecta coordenadas (X, Y) de impactos físicos en la pared.
 | Juego | Escena Phaser | Estado |
 |---|---|---|
 | Pizarra Mágica | `MagicBoardScene` | 🔴 Pendiente |
-| Penaltis | `SoccerScene` | 🟡 Base lista |
+| Penaltis | `SoccerScene` | ✅ Funcional / Polishing |
 
 ---
 
@@ -193,10 +193,27 @@ scene: [BootScene, SoccerScene, NombreScene],
 |---|---|---|
 | Arquitectura base | ✅ Completa | React + Phaser + WebSocket dinámico |
 | Menú con 6 juegos | ✅ Completa | Config central, disponibilidad |
-| SoccerScene (Penaltis) | 🟡 En progreso | Base funcional, falta lógica real |
-| 5 escenas restantes | 🔴 Pendiente | |
+| SoccerScene (Penaltis) | ✅ Funcional | Torneos, IA Portero, UI Broadcast, Feedback |
+| AnimalesScene | 🟡 En progreso | Biomas, escalado 3D, IA enemigos |
 | WebSocket real | 🔴 Pendiente | Depende del backend |
 | Build para Mini PC | 🔴 Pendiente | |
+
+---
+
+## 🕹️ Detalles de los juegos en curso
+
+### ⚽ Penaltis (SoccerScene)
+- **Modos de Torneo**: Selección entre "Torneo Juvenil" y "Copa Mundial" con estéticas y bandas sonoras únicas.
+- **IA de Portero Pro**: Hitboxes anatómicos precisos que se ajustan a la pose del portero en tiempo real.
+- **UI Broadcast**: Interfaz premium estilo transmisión de TV con tarjetas de torneo y marcadores dinámicos.
+- **Efectos y Feedback**: Sistema de fuegos artificiales al anotar y frases de feedback aleatorias ("¡Casi!", "¡Uyyy!", etc.).
+- **Arquitectura Realista**: Redes de portería con patrón de diamante y postes sin fisuras.
+
+### 🧚 Protege el Hada (AnimalesScene)
+- **Mecánica de Profundidad**: Escalado basado en perspectiva para simular el acercamiento de los animales desde el fondo.
+- **Multibiomas**: Escenarios dinámicos que incluyen Bosque, Desierto, Hielo y Pantano.
+- **Fauna Variada**: Enemigos con comportamientos únicos (Lobo, Oso, Serpiente, Cuervo).
+- **Audio Inmersivo**: Efectos de sonido y música ambiental que cambian según el bioma.
 
 ---
 
