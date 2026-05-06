@@ -5,7 +5,7 @@ export class SoccerScene extends Phaser.Scene {
     super({ key: 'SoccerScene' });
 
     this.hitbox = {
-      showDebug: true,
+      showDebug: false,
 
       boxesSide: [
         // 🟩 CAJA CENTRAL (Punto de partida - Torso)
