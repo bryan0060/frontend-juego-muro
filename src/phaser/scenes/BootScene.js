@@ -40,6 +40,9 @@ export class BootScene extends Phaser.Scene {
     for (let i = 1; i <= 8; i++) {
       this.load.audio(`soccer_music_${i}`, `assets/audio/sonidos futbol/cancion${i}.mp3`);
     }
+    for (let i = 1; i <= 7; i++) {
+      this.load.audio(`soccer_music_j_${i}`, `assets/audio/sonidos futbol/cancionj${i}.mp3`);
+    }
     this.load.audio('champions', 'assets/audio/sonidos futbol/Champions.mp3');
     this.load.audio('europa', 'assets/audio/sonidos futbol/europa.mp3');
     this.load.image('keeper_neutral', 'assets/images/futbol/posicion1.png');
