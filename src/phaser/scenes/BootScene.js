@@ -36,10 +36,23 @@ export class BootScene extends Phaser.Scene {
     this.load.audio('end', 'assets/audio/end.mp3');
     this.load.audio('victoria', 'assets/audio/victoria.mp3');
     this.load.audio('gol', 'assets/audio/sonidos futbol/gol.mp3');
+    this.load.audio('arbitro', 'assets/audio/sonidos futbol/arbitro.mp3');
+    for (let i = 1; i <= 8; i++) {
+      this.load.audio(`soccer_music_${i}`, `assets/audio/sonidos futbol/cancion${i}.mp3`);
+    }
+    this.load.audio('champions', 'assets/audio/sonidos futbol/Champions.mp3');
+    this.load.audio('europa', 'assets/audio/sonidos futbol/europa.mp3');
     this.load.image('keeper_neutral', 'assets/images/futbol/posicion1.png');
     this.load.image('keeper_side', 'assets/images/futbol/posicion iz.png');
+    this.load.image('keeper_kids_neutral', 'assets/images/futbol/porteria1.png');
+    this.load.image('keeper_kids_side', 'assets/images/futbol/posicion iz2.png');
     this.load.image('ball', 'assets/images/futbol/Balon.png');
     this.load.image('fans_bg', 'assets/images/futbol/hinchas.png');
+    this.load.image('soccer_kids_bg', 'assets/images/futbol/hinchas2.png');
+    this.load.image('soccer_adults_bg', 'assets/images/futbol/hinchas.png'); 
+    this.load.image('soccer_menu_bg', 'assets/images/futbol/estadio.png');
+    this.load.image('juvenil', 'assets/images/futbol/juvenil.png');
+    this.load.image('profesional', 'assets/images/futbol/profesional.png');
     this.load.image('neon_stage', 'assets/images/neon_stage.png');
 
     // Juego Animales (Protege el Hada)
