@@ -4,26 +4,43 @@ export class SoccerScene extends Phaser.Scene {
   constructor() {
     super({ key: 'SoccerScene' });
 
-    // --- CONFIGURACIÓN DE HITBOX (Ajusta aquí) ---
     this.hitbox = {
       showDebug: false,
 
-      // 4 cajas para cubrir toda la diagonal del portero en salto lateral
       boxesSide: [
-        { ox: -320, oy: 0, w: 115, h: 130 },
-        { ox: -175, oy: -90, w: 145, h: 210 },
-        { ox: -35, oy: -70, w: 135, h: 150 },
-        { ox: 110, oy: -140, w: 130, h: 175 },
+        // 🟩 CAJA CENTRAL (Punto de partida - Torso)
+        { ox: -50, oy: -50, w: 300, h: 150 },
+        // 🟥 CAJA PARTE DE ARRIBA (Cabeza y brazos)
+        { ox: -250, oy: -130, w: 200, h: 150 }
       ],
 
       boxesNeutral: [
-        { ox: -60, oy: -150, w: 120, h: 320 } // Más ancha y alta para cubrir centro
+        { ox: -40, oy: -170, w: 80, h: 240 }
       ],
 
       goalTop: 40,
       goalWidthRatio: 0.45,
       goalBottomRatio: 0.95
     };
+  }
+
+  init(data) {
+    this.escenarioPreseleccionado = (data && data.escenarioId) ? data.escenarioId : null;
+    // Cargar fuentes dinámicamente
+    if (!document.getElementById('soccer-fonts-loader')) {
+      const link = document.createElement('link');
+      link.id = 'soccer-fonts-loader';
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Bangers&family=Bubblegum+Sans&family=Fredoka:wght@700&display=swap';
+      document.head.appendChild(link);
+    }
+    // Generar textura de destello para partículas
+    if (!this.textures.exists('sparkle')) {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(4, 4, 4);
+      g.generateTexture('sparkle', 8, 8);
+    }
   }
 
   static MAX_SHOTS = 5;
@@ -36,55 +53,361 @@ export class SoccerScene extends Phaser.Scene {
     this.score = 0;
     this.cpuScore = 0;
     this.shots = 0;
-    this.shotResults = []; // Registro de resultados: true=gol, false=fallo
+    this.shotResults = [];
 
-    // El fondo se construye en _buildGraphics para mayor control de capas
+    this.currentMusicIndex = Phaser.Math.Between(1, 8);
+    this.menuMusic = null;
+    this.hoverSound = null;
+
+    this.estado = 'seleccion';
     this.phase = 'aim';
+
+    if (this.escenarioPreseleccionado) {
+      this._iniciarJuego(this.escenarioPreseleccionado);
+    } else {
+      this._mostrarMenuEscenarios();
+    }
+
+    this._impactHandler = this.handleImpact.bind(this);
+    window.addEventListener('ws-message', this._impactHandler);
+
+    // Fuegos artificiales al hacer clic en el menú
+    this.input.on('pointerdown', (ptr) => {
+      if (this.estado === 'seleccion') {
+        this._launchSingleFirework(ptr.x, ptr.y);
+      }
+    });
+  }
+
+  _mostrarMenuEscenarios() {
+    const { width: W, height: H } = this.scale;
+    this.menuContainer = this.add.container(0, 0).setDepth(200);
+
+    const bg = this.add.image(W / 2, H / 2, 'soccer_menu_bg').setDisplaySize(W, H);
+    this.menuContainer.add(bg);
+
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.4);
+    this.menuContainer.add(overlay);
+
+    const stars = this.add.graphics();
+    for (let i = 0; i < 200; i++) {
+      stars.fillStyle(0xffffff, Math.random());
+      stars.fillCircle(Math.random() * W, Math.random() * H, Math.random() * 2);
+    }
+    this.menuContainer.add(stars);
+
+    const titulo = this.add.text(W / 2, 100, 'ELIGE TU TORNEO', {
+      fontSize: '84px',
+      fontFamily: 'Luckiest Guy',
+      fill: '#ffffff',
+      stroke: '#40c0dd',
+      strokeThickness: 14,
+    }).setOrigin(0.5);
+
+    this.tweens.add({
+      targets: titulo,
+      scale: 1.05,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+    this.menuContainer.add(titulo);
+
+    const escenarios = [
+      { id: 'soccer_kids_bg', thumbnail: 'juvenil', nombre: 'LIGA JUVENIL', color: 0xff8000, desc: 'Nivel: Principiante' },
+      { id: 'soccer_adults_bg', thumbnail: 'profesional', nombre: 'HINCHADA MUNDIAL', color: 0x0044ff, desc: 'Nivel: Profesional' }
+    ];
+
+    escenarios.forEach((esc, i) => {
+      const x = W / 2 + (i === 0 ? -360 : 360);
+      const y = H / 2 + 60;
+
+      // Contenedor principal
+      const card = this.add.container(x, y);
+      this.menuContainer.add(card);
+
+      // 1. Base de la tarjeta (Vidrio oscuro profundo)
+      const cardBg = this.add.graphics();
+      cardBg.fillStyle(0x0a0a0a, 0.95);
+      cardBg.fillRoundedRect(-240, -200, 480, 400, 40);
+      cardBg.lineStyle(2, 0xffffff, 0.15);
+      cardBg.strokeRoundedRect(-240, -200, 480, 400, 40);
+      card.add(cardBg);
+
+      // 2. Imagen principal (Sin máscara compleja, usaremos el borde grueso como marco)
+      const img = this.add.image(0, -50, esc.thumbnail).setDisplaySize(460, 270);
+      card.add(img);
+
+      // 3. Degradado inferior
+      const overlay = this.add.graphics();
+      overlay.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0, 0.8, 0.8);
+      overlay.fillRect(-230, 20, 460, 100);
+      card.add(overlay);
+
+      // 4. Brillo y Marco decorativo (MUY GRUESO para tapar esquinas)
+      const glow = this.add.graphics();
+      this._drawCardGlow(glow, esc.color);
+      card.add(glow); // Se agrega al final para estar encima de la imagen
+
+      // 5. Títulos con estilo premium
+      const txt = this.add.text(0, 105, esc.nombre, {
+        fontSize: '46px',
+        fontFamily: 'Luckiest Guy',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 5,
+        shadow: { color: '#000000', fill: true, offsetX: 3, offsetY: 3, blur: 5 }
+      }).setOrigin(0.5);
+      card.add(txt);
+
+      // Badge de Nivel
+      const badgeBg = this.add.graphics();
+      badgeBg.fillStyle(esc.color, 1);
+      badgeBg.fillRoundedRect(-130, 150, 260, 42, 21);
+      card.add(badgeBg);
+
+      const levelTxt = this.add.text(0, 171, esc.desc.toUpperCase(), {
+        fontSize: '18px',
+        fontFamily: 'Fredoka',
+        color: '#ffffff',
+        fontStyle: 'bold',
+        letterSpacing: 3
+      }).setOrigin(0.5);
+      card.add(levelTxt);
+
+      // 6. Animación de flotación sutil
+      this.tweens.add({
+        targets: card,
+        y: y - 15,
+        duration: 2500 + (i * 300),
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+
+      // 7. Área interactiva
+      const hitArea = this.add.rectangle(x, y, 480, 400, 0x000000, 0).setInteractive({ cursor: 'pointer' });
+      this.menuContainer.add(hitArea);
+
+      hitArea.on('pointerover', () => {
+        glow.clear();
+        this._drawCardGlow(glow, 0xffffff, 1.2);
+        
+        // Sonido
+        if (this.hoverSound) this.hoverSound.stop();
+        const soundKey = esc.id === 'soccer_adults_bg' ? 'champions' : 'europa';
+        this.hoverSound = this.sound.add(soundKey, { volume: 0.5, loop: true });
+        this.hoverSound.play();
+        if (this.menuMusic) this.menuMusic.setVolume(0.1);
+      });
+
+      hitArea.on('pointerout', () => {
+        glow.clear();
+        this._drawCardGlow(glow, esc.color);
+
+        if (this.hoverSound) {
+          this.hoverSound.stop();
+          this.hoverSound = null;
+        }
+        if (this.menuMusic) this.menuMusic.setVolume(0.4);
+      });
+
+      hitArea.on('pointerdown', () => {
+        this.sound.play('pop');
+        this.tweens.add({
+          targets: card,
+          scale: 0.95,
+          duration: 100,
+          yoyo: true,
+          onComplete: () => this._iniciarJuego(esc.id)
+        });
+      });
+    });
+
+    this._playMenuMusic();
+    this._createMusicSelector();
+  }
+
+  _drawCardGlow(graphics, color, mult = 1) {
+    // Brillo exterior muy grueso para tapar cualquier esquina
+    graphics.lineStyle(16 * mult, color, 0.6);
+    graphics.strokeRoundedRect(-240, -200, 480, 400, 40);
+    
+    // Borde blanco interno más sólido (Marco real)
+    graphics.lineStyle(10 * mult, 0xffffff, 1);
+    graphics.strokeRoundedRect(-240, -200, 480, 400, 40);
+  }
+
+  _playMenuMusic() {
+    if (this.menuMusic) {
+      this.menuMusic.stop();
+      this.menuMusic.removeAllListeners();
+    }
+    this.menuMusic = this.sound.add(`soccer_music_${this.currentMusicIndex}`, { loop: false, volume: 0.4 });
+
+    this.menuMusic.on('complete', () => {
+      if (this.estado === 'seleccion') {
+        this.currentMusicIndex = Phaser.Math.Between(1, 8);
+        if (this.musicLabel) this.musicLabel.setText(`CANCIÓN ${this.currentMusicIndex}`);
+        this._playMenuMusic();
+      }
+    });
+
+    this.menuMusic.play();
+  }
+
+  _createMusicSelector() {
+    const { width: W, height: H } = this.scale;
+    const btn = this.add.container(W - 140, H - 50);
+    this.menuContainer.add(btn);
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.7);
+    bg.fillRoundedRect(-110, -25, 220, 50, 15);
+    bg.lineStyle(3, 0x40c0dd, 1);
+    bg.strokeRoundedRect(-110, -25, 220, 50, 15);
+    btn.add(bg);
+
+    const musicIcon = this.add.text(-85, 0, '🎵', { fontSize: '20px' }).setOrigin(0.5);
+    btn.add(musicIcon);
+
+    this.musicLabel = this.add.text(10, 0, `CANCIÓN ${this.currentMusicIndex}`, {
+      fontSize: '20px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+    }).setOrigin(0.5);
+    btn.add(this.musicLabel);
+
+    const hit = this.add.rectangle(0, 0, 220, 50, 0x000000, 0).setInteractive({ cursor: 'pointer' });
+    btn.add(hit);
+
+    hit.on('pointerover', () => {
+      bg.clear();
+      bg.fillStyle(0x40c0dd, 0.3);
+      bg.fillRoundedRect(-110, -25, 220, 50, 15);
+      bg.lineStyle(3, 0xffffff, 1);
+      bg.strokeRoundedRect(-110, -25, 220, 50, 15);
+    });
+
+    hit.on('pointerout', () => {
+      bg.clear();
+      bg.fillStyle(0x000000, 0.7);
+      bg.fillRoundedRect(-110, -25, 220, 50, 15);
+      bg.lineStyle(3, 0x40c0dd, 1);
+      bg.strokeRoundedRect(-110, -25, 220, 50, 15);
+    });
+
+    hit.on('pointerdown', () => {
+      this.currentMusicIndex = (this.currentMusicIndex % 8) + 1;
+      this.registry.set('soccer_music_idx', this.currentMusicIndex);
+      this.musicLabel.setText(`CANCIÓN ${this.currentMusicIndex}`);
+      this._playMenuMusic();
+      this.sound.play('pop');
+    });
+  }
+
+  _iniciarJuego(escenarioId) {
+    if (this.menuMusic) this.menuMusic.stop();
+    if (this.hoverSound) this.hoverSound.stop();
+    if (this.menuContainer) this.menuContainer.destroy();
+
+    this.escenarioActual = escenarioId;
+    this.estado = 'jugando';
+
+    if (escenarioId === 'soccer_kids_bg') {
+      this.hitbox.goalWidthRatio = 0.55;
+      this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side' };
+    } else {
+      this.hitbox.goalWidthRatio = 0.45;
+      this.keeperKeys = { neutral: 'keeper_neutral', side: 'keeper_side' };
+    }
 
     this._buildGraphics();
     this._buildHUD();
     this._buildInput();
+    this._iniciarCuentaRegresiva();
+  }
 
-    this._impactHandler = this.handleImpact.bind(this);
-    window.addEventListener('ws-message', this._impactHandler);
+  _iniciarCuentaRegresiva() {
+    this.estado = 'countdown';
+    this.phase = 'countdown';
+
+    const { width: W, height: H } = this.scale;
+    const countText = this.add.text(W / 2, H / 2, '3', {
+      fontSize: '220px',
+      fontFamily: 'Luckiest Guy',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 15
+    }).setOrigin(0.5).setDepth(500);
+
+    let count = 3;
+
+    const updateCount = () => {
+      this.tweens.add({
+        targets: countText,
+        scale: { start: 0.5, to: 1.2 },
+        alpha: { start: 0, to: 1 },
+        duration: 200,
+        ease: 'Back.easeOut',
+        onComplete: () => {
+          this.time.delayedCall(600, () => {
+            this.tweens.add({
+              targets: countText,
+              scale: 2,
+              alpha: 0,
+              duration: 200,
+              onComplete: () => {
+                count--;
+                if (count > 0) {
+                  countText.setText(count);
+                  this.sound.play('tick');
+                  updateCount();
+                } else if (count === 0) {
+                  countText.setText('¡GO!');
+                  countText.setColor('#00ff00');
+                  this.sound.play('pop');
+                  this.sound.play('arbitro');
+                  updateCount();
+                } else {
+                  countText.destroy();
+                  this.estado = 'jugando';
+                  this.phase = 'aim';
+                }
+              }
+            });
+          });
+        }
+      });
+    };
+
+    this.sound.play('tick');
+    updateCount();
   }
 
   // ─── Construcción de gráficos ────────────────────────────────────
   _buildGraphics() {
     const W = this.W, H = this.H;
 
-    // 1. Fondo Negro Profundo
-    this.add.rectangle(W / 2, H / 2, W, H, 0x080808).setDepth(0);
+    const bgKey = this.escenarioActual || 'soccer_adults_bg';
+    this.add.image(W / 2, H / 2, bgKey).setDisplaySize(W, H).setDepth(0);
 
-    // 2. Gradas / Hinchas (Integrados con sutileza en el fondo)
-    const fans = this.add.image(W / 2, H * 0.5, 'fans_bg')
-      .setDisplaySize(W, H)
-      .setAlpha(0.2)
-      .setDepth(1);
+    this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.2).setDepth(1);
 
-    // 3. Degradados para enfoque (Efecto Viñeta)
     const vignette = this.add.graphics().setDepth(2);
-    // Degradado superior a negro
     vignette.fillGradientStyle(0x000000, 0x000000, 0x080808, 0x080808, 1, 1, 0, 0);
     vignette.fillRect(0, 0, W, H * 0.4);
-    // Degradado inferior para el suelo
     vignette.fillGradientStyle(0x080808, 0x080808, 0x000000, 0x000000, 0, 0, 1, 1);
     vignette.fillRect(0, H * 0.6, W, H * 0.4);
 
-    // 4. Vallas publicitarias (Minimalistas en negro)
     this._drawAdBoards();
-
-    // 5. Portería
     this._drawGoal();
 
-    // 6. Portero y Sombra sutil
     this.keeperShadow = this.add.ellipse(W / 2, H * 0.75 + 50, 140, 35, 0x000000, 0.5)
       .setDepth(4);
 
     this.keeperContainer = this.add.container(W / 2, H * 0.75).setDepth(5);
     this._buildKeeper();
 
-    // 7. Balón y su sombra
     this.ballShadow = this.add.ellipse(W / 2, H - 35 + 15, 60, 15, 0x000000, 0.4).setDepth(6);
     this.ballSprite = this._createBall(W / 2, H - 35).setDepth(7);
 
@@ -99,7 +422,6 @@ export class SoccerScene extends Phaser.Scene {
       emitting: false,
     });
 
-    // Crear una textura dedicada para los fuegos artificiales para asegurar visibilidad
     if (!this.textures.exists('sparkle')) {
       const g = this.make.graphics({ x: 0, y: 0, add: false });
       g.fillStyle(0xffffff);
@@ -110,19 +432,15 @@ export class SoccerScene extends Phaser.Scene {
     this.debugGraphics = this.add.graphics().setDepth(1000);
   }
 
-  // Eliminado _drawPitch por petición del usuario
-
   _drawAdBoards() {
     const W = this.W, H = this.H;
-    const y = H * 0.75; // Alineado con los pies del portero
+    const y = H * 0.75;
     const boardHeight = 60;
     const g = this.add.graphics().setDepth(3);
 
-    // Fondo de la valla (Gris casi negro)
     g.fillStyle(0x111111, 0.8);
     g.fillRect(0, y, W, boardHeight);
 
-    // Borde superior sutil
     g.lineStyle(2, 0xffffff, 0.1);
     g.strokeLineShape(new Phaser.Geom.Line(0, y, W, y));
   }
@@ -140,73 +458,108 @@ export class SoccerScene extends Phaser.Scene {
     const bBot = fBot - 30;
     const bWid = fWid - 120;
 
-    // Red (Hilos finos)
-    g.lineStyle(1, 0xffffff, 0.1);
+    // 1. Red de Portería (Patrón de Diamante Profesional - Dibujo Acotado)
+    const netG = this.add.graphics().setDepth(4);
+    
+    const drawDiamondNet = (color, alpha, offset = 0) => {
+      netG.lineStyle(1, color, alpha);
+      const step = 28;
+      const netHeight = bBot - bTop;
+      
+      // Diagonales \ (Acotadas al ancho bWid)
+      for (let i = -bWid - netHeight; i <= bWid + netHeight; i += step) {
+        const x1 = cx + i + offset;
+        const x2 = cx + i - netHeight + offset;
+        
+        if ((x1 >= cx - bWid && x1 <= cx + bWid) || (x2 >= cx - bWid && x2 <= cx + bWid)) {
+          let rx1 = x1, ry1 = bTop, rx2 = x2, ry2 = bBot;
+          if (rx1 < cx - bWid) { ry1 = bTop + (bBot - bTop) * ((cx - bWid - x1) / (x2 - x1)); rx1 = cx - bWid; }
+          if (rx1 > cx + bWid) { ry1 = bTop + (bBot - bTop) * ((cx + bWid - x1) / (x2 - x1)); rx1 = cx + bWid; }
+          if (rx2 < cx - bWid) { ry2 = bBot - (bBot - bTop) * ((x2 - (cx - bWid)) / (x2 - x1)); rx2 = cx - bWid; }
+          if (rx2 > cx + bWid) { ry2 = bBot - (bBot - bTop) * ((x2 - (cx + bWid)) / (x2 - x1)); rx2 = cx + bWid; }
+          
+          if (ry1 >= bTop && ry1 <= bBot && ry2 >= bTop && ry2 <= bBot) {
+            netG.strokeLineShape(new Phaser.Geom.Line(rx1, ry1, rx2, ry2));
+          }
+        }
+      }
+      
+      // Diagonales / (Acotadas al ancho bWid)
+      for (let i = -bWid - netHeight; i <= bWid + netHeight; i += step) {
+        const x1 = cx + i + offset;
+        const x2 = cx + i + netHeight + offset;
+        if ((x1 >= cx - bWid && x1 <= cx + bWid) || (x2 >= cx - bWid && x2 <= cx + bWid)) {
+          let rx1 = x1, ry1 = bTop, rx2 = x2, ry2 = bBot;
+          if (rx1 < cx - bWid) { ry1 = bTop + (bBot - bTop) * ((cx - bWid - x1) / (x2 - x1)); rx1 = cx - bWid; }
+          if (rx1 > cx + bWid) { ry1 = bTop + (bBot - bTop) * ((cx + bWid - x1) / (x2 - x1)); rx1 = cx + bWid; }
+          if (rx2 < cx - bWid) { ry2 = bBot - (bBot - bTop) * ((x2 - (cx - bWid)) / (x2 - x1)); rx2 = cx - bWid; }
+          if (rx2 > cx + bWid) { ry2 = bBot - (bBot - bTop) * ((x2 - (cx + bWid)) / (x2 - x1)); rx2 = cx + bWid; }
+          
+          if (ry1 >= bTop && ry1 <= bBot && ry2 >= bTop && ry2 <= bBot) {
+            netG.strokeLineShape(new Phaser.Geom.Line(rx1, ry1, rx2, ry2));
+          }
+        }
+      }
+    };
 
+    drawDiamondNet(0x000000, 0.2, 1);
+    drawDiamondNet(0xffffff, 0.15);
+
+    // Conexiones de perspectiva
+    netG.lineStyle(1, 0xffffff, 0.15);
     for (let x = cx - bWid; x <= cx + bWid; x += 40) {
-      g.strokeLineShape(new Phaser.Geom.Line(x, bTop, x, bBot));
-    }
-    for (let y = bTop; y <= bBot; y += 30) {
-      g.strokeLineShape(new Phaser.Geom.Line(cx - bWid, y, cx + bWid, y));
+      const ratio = (x - (cx - bWid)) / (bWid * 2);
+      const fx = (cx - fWid) + (fWid * 2) * ratio;
+      netG.strokeLineShape(new Phaser.Geom.Line(x, bTop, fx, fTop));
+      if (x === cx - bWid || x === cx + bWid) {
+        netG.strokeLineShape(new Phaser.Geom.Line(x, bBot, x === cx - bWid ? cx - fWid : cx + fWid, fBot));
+      }
     }
 
-    // Estructura trasera
-    g.lineStyle(4, 0x888888, 0.5);
-    g.strokeLineShape(new Phaser.Geom.Line(cx - bWid, bTop, cx + bWid, bTop));
-    g.strokeLineShape(new Phaser.Geom.Line(cx - bWid, bBot, cx + bWid, bBot));
-    g.strokeLineShape(new Phaser.Geom.Line(cx - bWid, bTop, cx - bWid, bBot));
-    g.strokeLineShape(new Phaser.Geom.Line(cx + bWid, bTop, cx + bWid, bBot));
+    // 2. Postes Principales (El "Arco")
+    // Sombras primero
+    g.lineStyle(24, 0x000000, 0.2);
+    g.beginPath();
+    g.moveTo(cx - fWid, fBot);
+    g.lineTo(cx - fWid, fTop);
+    g.lineTo(cx + fWid, fTop);
+    g.lineTo(cx + fWid, fBot);
+    g.strokePath();
 
-    // Postes frontales (Principales) - Con brillo
+    // El poste blanco real (Sin huecos usando Path)
     g.lineStyle(20, 0xffffff, 1);
-    g.strokeLineShape(new Phaser.Geom.Line(cx - fWid, fTop, cx + fWid, fTop));
-    g.strokeLineShape(new Phaser.Geom.Line(cx - fWid, fTop, cx - fWid, fBot));
-    g.strokeLineShape(new Phaser.Geom.Line(cx + fWid, fTop, cx + fWid, fBot));
+    g.beginPath();
+    g.moveTo(cx - fWid, fBot);
+    g.lineTo(cx - fWid, fTop);
+    g.lineTo(cx + fWid, fTop);
+    g.lineTo(cx + fWid, fBot);
+    g.strokePath();
 
-    // Base lateral
-    g.lineStyle(8, 0xcccccc, 0.3);
+    // Brillo/Highlight central para efecto cilíndrico
+    g.lineStyle(4, 0xffffff, 0.4);
+    g.beginPath();
+    g.moveTo(cx - fWid + 4, fBot);
+    g.lineTo(cx - fWid + 4, fTop + 4);
+    g.lineTo(cx + fWid - 4, fTop + 4);
+    g.lineTo(cx + fWid - 4, fBot);
+    g.strokePath();
+
+    // 4. Tapas redondeadas en las esquinas (Uniones perfectas)
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(cx - fWid, fTop, 10);
+    g.fillCircle(cx + fWid, fTop, 10);
+
+    // Base de los postes (Suelo)
+    g.lineStyle(8, 0x000000, 0.3);
     g.strokeLineShape(new Phaser.Geom.Line(cx - fWid, fBot, cx - bWid, bBot));
     g.strokeLineShape(new Phaser.Geom.Line(cx + fWid, fBot, cx + bWid, bBot));
-  }
-
-  _drawPenaltyArea() {
-    const g = this.add.graphics();
-    const cx = this.W / 2;
-    const H = this.H;
-    const goalBottom = H * 0.95;
-
-    g.lineStyle(5, 0xffffff, 0.6);
-
-    const topW = this.W * 0.48;
-    const botW = this.W * 0.9;
-    const depth = H * 0.15;
-
-    g.beginPath();
-    g.moveTo(cx - topW, goalBottom);
-    g.lineTo(cx + topW, goalBottom);
-    g.lineTo(cx + botW, goalBottom + depth);
-    g.lineTo(cx - botW, goalBottom + depth);
-    g.closePath();
-    g.strokePath();
-
-    const cTopW = this.W * 0.25;
-    const cBotW = this.W * 0.4;
-    const cDepth = H * 0.05;
-
-    g.beginPath();
-    g.moveTo(cx - cTopW, goalBottom);
-    g.lineTo(cx + cTopW, goalBottom);
-    g.lineTo(cx + cBotW, goalBottom + cDepth);
-    g.lineTo(cx - cBotW, goalBottom + cDepth);
-    g.closePath();
-    g.strokePath();
   }
 
   _buildKeeper() {
     this.scaleNeutral = 0.95;
     this.scaleSide = 0.95;
 
-    const sp = this.add.sprite(0, 0, 'keeper_neutral');
+    const sp = this.add.sprite(0, 0, this.keeperKeys?.neutral || 'keeper_neutral');
     sp.setScale(this.scaleNeutral);
     sp.setOrigin(0.5, 0.5);
 
@@ -231,10 +584,9 @@ export class SoccerScene extends Phaser.Scene {
     bg.fillRoundedRect(0, 0, 220, 60, 4);
     this._createBroadcastScoreboard();
 
-    // ── UI — Mensajes centrales ────────────────────────────────
     this.messageText = this.add.text(W / 2, H / 2 - 10, '', {
       fontSize: '48px',
-      fontFamily: 'Playthings',
+      fontFamily: 'Luckiest Guy',
       fontStyle: 'bold',
       color: '#ffffff',
       stroke: '#000000',
@@ -243,13 +595,12 @@ export class SoccerScene extends Phaser.Scene {
 
     this.hintText = this.add.text(W / 2, this.H - 85, 'APUNTA Y DISPARA', {
       fontSize: '16px',
-      fontFamily: 'Gotham Rounded',
+      fontFamily: 'Fredoka',
       color: '#ffffff',
       backgroundColor: '#000000aa',
       padding: { x: 20, y: 10 },
     }).setOrigin(0.5).setDepth(100);
 
-    // Animación de respiración para el texto
     this.tweens.add({
       targets: this.hintText,
       alpha: 0.5,
@@ -266,42 +617,78 @@ export class SoccerScene extends Phaser.Scene {
     const cy = 50;
 
     this.scoreboardGraphics = this.add.graphics().setDepth(100);
+    this.isSerious = (this.escenarioActual === 'soccer_adults_bg');
 
-    // 1. Textos centrales
-    this.teamJUG = this.add.text(cx - 85, cy - 8, 'JUG', {
-      fontSize: '22px', fontFamily: 'Playthings', color: '#ffffff'
-    }).setOrigin(0.5).setDepth(102);
+    if (this.isSerious) {
+      this.teamJUG = this.add.text(cx - 85, cy - 8, 'LOCAL', {
+        fontSize: '22px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+      }).setOrigin(0.5).setDepth(102);
 
-    this.shotsCounterText = this.add.text(cx, cy - 8, '0/5', {
-      fontSize: '24px', fontFamily: 'Gotham Rounded', color: '#00ff00'
-    }).setOrigin(0.5).setDepth(102);
+      this.shotsCounterText = this.add.text(cx, cy - 8, '0/5', {
+        fontSize: '24px', fontFamily: 'Fredoka', color: '#00ff00'
+      }).setOrigin(0.5).setDepth(102);
 
-    this.teamCPU = this.add.text(cx + 85, cy - 8, 'CPU', {
-      fontSize: '22px', fontFamily: 'Playthings', color: '#ffffff'
-    }).setOrigin(0.5).setDepth(102);
+      this.teamCPU = this.add.text(cx + 85, cy - 8, 'RIVAL', {
+        fontSize: '22px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+      }).setOrigin(0.5).setDepth(102);
 
-    // 2. Puntajes con fondo "texturizado" (rectángulos de color por ahora)
-    this.scoreJUG = this.add.text(cx - 160, cy, '0', {
-      fontSize: '44px', fontFamily: 'Gotham Rounded', color: '#ffffff'
-    }).setOrigin(0.5).setDepth(102);
+      this.scoreJUG = this.add.text(cx - 160, cy, '0', {
+        fontSize: '44px', fontFamily: 'Fredoka', color: '#ffffff'
+      }).setOrigin(0.5).setDepth(102);
 
-    this.scoreCPU = this.add.text(cx + 160, cy, '0', {
-      fontSize: '44px', fontFamily: 'Gotham Rounded', color: '#ffffff'
-    }).setOrigin(0.5).setDepth(102);
+      this.scoreCPU = this.add.text(cx + 160, cy, '0', {
+        fontSize: '44px', fontFamily: 'Fredoka', color: '#ffffff'
+      }).setOrigin(0.5).setDepth(102);
 
-    // 3. Texto "GOAL" y estrella decorativa
-    this.goalLabel = this.add.text(cx - 245, cy + 10, 'GOAL', {
-      fontSize: '12px', fontFamily: 'Playthings', color: '#ffffff'
-    }).setOrigin(0.5).setDepth(102);
+      this.goalLabel = this.add.text(cx - 245, cy + 10, 'GOAL', {
+        fontSize: '12px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+      }).setOrigin(0.5).setDepth(102);
 
-    // 4. Indicadores de balones en la extensión inferior
+      this.cpuLabel = { setVisible: () => { } };
+    } else {
+      this.teamJUG = this.add.text(cx - 100, cy - 10, 'JUGADOR', {
+        fontSize: '24px', fontFamily: 'Bubblegum Sans', color: '#ffffff',
+        stroke: '#000000', strokeThickness: 4
+      }).setOrigin(0.5).setDepth(102);
+
+      this.shotsCounterText = this.add.text(cx, cy + 25, '0/5', {
+        fontSize: '28px', fontFamily: 'Luckiest Guy', color: '#ffff00',
+        stroke: '#000000', strokeThickness: 6
+      }).setOrigin(0.5).setDepth(102);
+
+      this.teamCPU = this.add.text(cx + 100, cy - 10, 'EQUIPO RIVAL', {
+        fontSize: '24px', fontFamily: 'Bubblegum Sans', color: '#ffffff',
+        stroke: '#000000', strokeThickness: 4
+      }).setOrigin(0.5).setDepth(102);
+
+      this.scoreJUG = this.add.text(cx - 200, cy, '0', {
+        fontSize: '60px', fontFamily: 'Luckiest Guy', color: '#ffffff',
+        stroke: '#ff00ff', strokeThickness: 8
+      }).setOrigin(0.5).setDepth(102);
+
+      this.scoreCPU = this.add.text(cx + 200, cy, '0', {
+        fontSize: '60px', fontFamily: 'Luckiest Guy', color: '#ffffff',
+        stroke: '#00ffff', strokeThickness: 8
+      }).setOrigin(0.5).setDepth(102);
+
+      this.goalLabel = this.add.text(cx - 200, cy - 45, 'GOLES', {
+        fontSize: '14px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+      }).setOrigin(0.5).setDepth(102);
+
+      this.cpuLabel = this.add.text(cx + 200, cy - 45, 'GOLES', {
+        fontSize: '14px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+      }).setOrigin(0.5).setDepth(102);
+    }
+
+    // Indicadores de balones
     this.shotIndicators = [];
     const spacing = 35;
     const startX = cx - (spacing * (SoccerScene.MAX_SHOTS - 1)) / 2;
+    const indicatorY = this.isSerious ? cy + 45 : cy + 65;
 
     for (let i = 0; i < SoccerScene.MAX_SHOTS; i++) {
-      const ball = this.add.sprite(startX + i * spacing, cy + 45, 'ball')
-        .setScale(0.018)
+      const ball = this.add.sprite(startX + i * spacing, indicatorY, 'ball')
+        .setScale(this.isSerious ? 0.018 : 0.022)
         .setDepth(102)
         .setAlpha(0.2);
       this.shotIndicators.push(ball);
@@ -316,57 +703,60 @@ export class SoccerScene extends Phaser.Scene {
     const cx = this.W / 2;
     const cy = 50;
 
-    // --- 1. FONDO CENTRAL (NEGRO) ---
-    g.fillStyle(0x111111, 0.95);
-    // Rectángulo principal
-    g.fillRect(cx - 120, cy - 25, 240, 40);
-    // Extensión inferior (Trapecio para los balones)
-    g.fillPoints([
-      { x: cx - 110, y: cy + 15 },
-      { x: cx + 110, y: cy + 15 },
-      { x: cx + 90, y: cy + 75 },
-      { x: cx - 90, y: cy + 75 }
-    ], true);
+    if (this.isSerious) {
+      g.fillStyle(0x111111, 0.95);
+      g.fillRect(cx - 120, cy - 25, 240, 40);
 
-    // --- 2. BLOQUES DE PUNTAJE (BROWN/GRAY) ---
-    // Izquierda (Jugador) - Marrón
-    g.fillStyle(0x795548, 1);
-    g.fillRect(cx - 195, cy - 25, 70, 60);
-    // Derecha (CPU) - Gris
-    g.fillStyle(0x616161, 1);
-    g.fillRect(cx + 125, cy - 25, 70, 60);
+      g.fillPoints([
+        { x: cx - 110, y: cy + 15 },
+        { x: cx + 110, y: cy + 15 },
+        { x: cx + 90, y: cy + 75 },
+        { x: cx - 90, y: cy + 75 }
+      ], true);
 
-    // --- 3. ALAS VERDES (PARALELOGRAMOS) ---
-    g.fillStyle(0x2e7d32, 1);
-    // Izquierda
-    g.fillPoints([
-      { x: cx - 290, y: cy - 25 },
-      { x: cx - 195, y: cy - 25 },
-      { x: cx - 195, y: cy + 35 },
-      { x: cx - 260, y: cy + 35 }
-    ], true);
-    // Derecha
-    g.fillPoints([
-      { x: cx + 195, y: cy - 25 },
-      { x: cx + 290, y: cy - 25 },
-      { x: cx + 260, y: cy + 35 },
-      { x: cx + 195, y: cy + 35 }
-    ], true);
+      g.fillStyle(0x0d47a1, 1);
+      g.fillRect(cx - 195, cy - 25, 70, 60);
+      g.fillStyle(0x616161, 1);
+      g.fillRect(cx + 125, cy - 25, 70, 60);
 
-    // --- 4. DETALLES Y ACENTOS ---
-    // Barra verde superior
-    g.fillStyle(0x4caf50, 1);
-    g.fillRect(cx - 50, cy - 35, 100, 8);
+      g.fillStyle(0x1a237e, 1);
+      g.fillPoints([
+        { x: cx - 290, y: cy - 25 }, { x: cx - 195, y: cy - 25 },
+        { x: cx - 195, y: cy + 35 }, { x: cx - 260, y: cy + 35 }
+      ], true);
+      g.fillPoints([
+        { x: cx + 195, y: cy - 25 }, { x: cx + 290, y: cy - 25 },
+        { x: cx + 260, y: cy + 35 }, { x: cx + 195, y: cy + 35 }
+      ], true);
 
-    // Estrella en el ala izquierda
-    const sx = cx - 245;
-    const sy = cy - 5;
-    g.fillStyle(0xffd700, 1);
-    this._drawStar(g, sx, sy, 5, 18, 8);
+      g.fillStyle(0x3f51b5, 1);
+      g.fillRect(cx - 50, cy - 35, 100, 8);
+      g.fillStyle(0xffd700, 1);
+      this._drawStar(g, cx - 245, cy - 5, 5, 18, 8);
+      g.lineStyle(2, 0xffffff, 0.2);
+      g.strokeRect(cx - 120, cy - 25, 240, 40);
 
-    // Bordes sutiles
-    g.lineStyle(2, 0xffffff, 0.1);
-    g.strokeRect(cx - 120, cy - 25, 240, 40);
+    } else {
+      g.fillStyle(0x000000, 0.7);
+      g.fillRoundedRect(cx - 150, cy - 30, 300, 110, 20);
+      g.lineStyle(4, 0xffffff, 0.5);
+      g.strokeRoundedRect(cx - 150, cy - 30, 300, 110, 20);
+
+      g.fillStyle(0xff00ff, 1);
+      g.fillCircle(cx - 200, cy, 50);
+      g.lineStyle(6, 0xffffff, 1);
+      g.strokeCircle(cx - 200, cy, 50);
+
+      g.fillStyle(0x00ffff, 1);
+      g.fillCircle(cx + 200, cy, 50);
+      g.lineStyle(6, 0xffffff, 1);
+      g.strokeCircle(cx + 200, cy, 50);
+
+      g.fillStyle(0xffff00, 1);
+      g.fillCircle(cx - 140, cy - 20, 8);
+      g.fillCircle(cx + 140, cy - 20, 8);
+      g.fillCircle(cx, cy - 40, 6);
+    }
   }
 
   _drawStar(graphics, cx, cy, spikes, outerRadius, innerRadius) {
@@ -398,7 +788,6 @@ export class SoccerScene extends Phaser.Scene {
     if (this.scoreCPU) this.scoreCPU.setText(this.cpuScore);
     if (this.shotsCounterText) this.shotsCounterText.setText(`${this.shots}/${SoccerScene.MAX_SHOTS}`);
 
-    // Actualizar indicadores de balones
     this.shotIndicators.forEach((indicator, i) => {
       if (i < this.shotResults.length) {
         const isGoal = this.shotResults[i];
@@ -406,7 +795,6 @@ export class SoccerScene extends Phaser.Scene {
 
         if (isGoal) {
           indicator.setTint(0x00ff00);
-          // Efecto de brillo si es gol (usando una sombra interna simulada con tint)
           if (!indicator.getData('glowing')) {
             indicator.setData('glowing', true);
             this.tweens.add({
@@ -418,10 +806,9 @@ export class SoccerScene extends Phaser.Scene {
             });
           }
         } else {
-          indicator.setTint(0x444444); // Gris oscuro para fallos (según imagen)
+          indicator.setTint(0x444444);
         }
 
-        // Efecto de pulso si es el último tiro registrado
         if (i === this.shotResults.length - 1 && !indicator.getData('animated')) {
           indicator.setData('animated', true);
           this.tweens.add({
@@ -450,10 +837,7 @@ export class SoccerScene extends Phaser.Scene {
     });
 
     this.input.on('pointerdown', (ptr) => {
-      if (this.phase === 'gameover') {
-        this._resetGame();
-        return;
-      }
+      if (this.phase === 'gameover') return;
       if (this.phase !== 'aim') return;
       this._shoot(ptr.x, ptr.y);
     });
@@ -477,15 +861,15 @@ export class SoccerScene extends Phaser.Scene {
       this.W / 2 + this.W * 0.5
     );
 
-    const isLowShot = ty > this.H * 0.7; // Detectar si el tiro es bajo
+    const isLowShot = ty > this.H * 0.7;
 
     const jumpPower = isLowShot
-      ? Phaser.Math.Between(0, 50) // Si es bajo, apenas salta
+      ? Phaser.Math.Between(0, 50)
       : Phaser.Math.Clamp(Math.max(120, (this.H * 0.75 - ty) * 0.9), 0, 350);
 
     const reactionTime = Math.max(240, 380 - (this.score * 40));
 
-    this.keeperSprite.setTexture('keeper_side');
+    this.keeperSprite.setTexture(this.keeperKeys.side);
     this.keeperSprite.setScale(this.scaleSide);
     this.keeperSprite.setFlipX(keeperDestX > this.W / 2);
 
@@ -502,48 +886,59 @@ export class SoccerScene extends Phaser.Scene {
       targets: [this.ballSprite, this.ballShadow],
       x: tx,
       y: ty,
-      scaleX: 0.015,
-      scaleY: 0.015,
       duration: 400,
       ease: 'Quad.easeIn',
       onComplete: () => this._evaluateShot(tx, ty, keeperDestX),
     });
   }
 
+  // ─── Evaluación del disparo con hitboxes horizontales ────────────
   _evaluateShot(tx, ty, keeperDest) {
     const cx = this.W / 2;
     const isFlipped = this.keeperSprite.flipX;
-    const isNeutral = this.keeperSprite.texture.key === 'keeper_neutral';
-    const isLowShot = ty > this.H * 0.7; // Definir aquí también
+    const isNeutral = this.keeperSprite.texture.key === (this.keeperKeys?.neutral || 'keeper_neutral');
+    const isLowShot = ty > this.H * 0.7;
+
     const activeBoxes = isNeutral
       ? this.hitbox.boxesNeutral
       : this.hitbox.boxesSide;
 
-    const blocked = activeBoxes.some(box => {
+    const sortedBoxes = [...activeBoxes];
+    // El guante (menor ox) siempre primero
+    sortedBoxes.sort((a, b) => a.ox - b.ox);
+
+    const blocked = sortedBoxes.some(box => {
       let ox = box.ox;
-      if (isFlipped && !isNeutral) ox = -box.ox - box.w;
+      if (isFlipped && !isNeutral) {
+        ox = -(box.ox + box.w);
+      }
 
-      const bLeft = keeperDest + ox;
-      const bRight = bLeft + box.w;
-      const bTop = this.keeperContainer.y + box.oy;
-      const bBot = bTop + box.h + (isLowShot ? 100 : 0); // Extender hitbox hacia abajo si es tiro bajo
+      // Convertimos la posición del balón al espacio local del portero (deshaciendo la rotación)
+      const dx = tx - keeperDest;
+      const dy = ty - this.keeperContainer.y;
+      const angleRad = -this.keeperContainer.rotation;
+      const localX = dx * Math.cos(angleRad) - dy * Math.sin(angleRad);
+      const localY = dx * Math.sin(angleRad) + dy * Math.cos(angleRad);
 
-      return tx > bLeft && tx < bRight && ty > bTop && ty < bBot;
+      const bLeft = ox;
+      const bRight = ox + box.w;
+      const bTop = box.oy;
+      const bBot = box.oy + box.h + (isLowShot ? 15 : 0);
+
+      return localX > bLeft && localX < bRight && localY > bTop && localY < bBot;
     });
 
     const gWidth = this.W * this.hitbox.goalWidthRatio;
     const gTop = this.hitbox.goalTop;
     const gBot = this.H * this.hitbox.goalBottomRatio;
-    const postMargin = 15; // Margen para detectar si pegó en el poste
+    const postMargin = 10;
 
-    // Detectar si pegó en los postes o el travesaño
     const hitPost = (
-      (Math.abs(tx - (cx - gWidth)) < postMargin && ty > gTop && ty < gBot) || // Poste izquierdo
-      (Math.abs(tx - (cx + gWidth)) < postMargin && ty > gTop && ty < gBot) || // Poste derecho
-      (Math.abs(ty - gTop) < postMargin && tx > cx - gWidth && tx < cx + gWidth) // Travesaño
+      (Math.abs(tx - (cx - gWidth)) < postMargin && ty > gTop && ty < gBot) ||
+      (Math.abs(tx - (cx + gWidth)) < postMargin && ty > gTop && ty < gBot) ||
+      (Math.abs(ty - gTop) < postMargin && tx > cx - gWidth && tx < cx + gWidth)
     );
 
-    // Detectar si entró limpiamente (dentro de los postes)
     const strictlyInGoal =
       tx > (cx - gWidth + postMargin) &&
       tx < (cx + gWidth - postMargin) &&
@@ -551,79 +946,110 @@ export class SoccerScene extends Phaser.Scene {
       ty < gBot;
 
     if (strictlyInGoal && !blocked && !hitPost) {
-      this._showResult('GOL!', '#4CAF50');
+      const msg = this._getRandomMessage([
+        '¡GOLAZO!', '¡GOL!', '¡QUÉ TIRO!', '¡INCREÍBLE!', '¡ADENTRO!', 
+        '¡GENIAL!', '¡FENOMENAL!', '¡ESTRELLA!', '¡MAGNÍFICO!', 
+        '¡POTENCIA PURA!', '¡IMPARABLE!', '¡GOOOOL!', '¡CRACK!'
+      ]);
+      this._showResult(msg, '#4CAF50');
       this.score++;
       this.shotResults.push(true);
       this.sound.play('gol');
       this.cameras.main.shake(250, 0.012);
       this.particles.setPosition(tx, ty);
       this.particles.explode(40);
-      this._launchFireworks(); // ¡Fuegos artificiales!
+      this._launchFireworks();
     } else if (blocked) {
-      this._showResult('ATAJADO', '#f44336');
+      const msg = this._getRandomMessage([
+        'ATAJADO', '¡QUÉ REFLEJOS!', '¡MURALLA!', '¡ATAJADÓN!', 
+        '¡NO PASAS!', '¡MANO SALVADORA!', '¡IMPEDIDO!', '¡BLOQUEADO!'
+      ]);
+      this._showResult(msg, '#f44336');
       this.cpuScore++;
       this.shotResults.push(false);
     } else if (hitPost) {
-      const msg = this._getRandomMessage(['CASI!', 'UYYY!', 'POSTE!']);
-      this._showResult(msg, '#FF9800'); // Naranja para el poste
+      const msg = this._getRandomMessage([
+        '¡CASI!', '¡UYYY!', '¡POSTE!', '¡PALO!', '¡POR UN PELO!', 
+        '¡METAL!', '¡A NADA!', '¡NO PUEDE SER!'
+      ]);
+      this._showResult(msg, '#FF9800');
       this.cpuScore++;
       this.shotResults.push(false);
-      this.sound.play('tick'); // Sonido de rebote sutil
+      this.sound.play('tick');
     } else {
-      const msg = this._getRandomMessage(['MUY FUERTE', 'AHHH!', 'AFUERA!']);
-      this._showResult(msg, '#757575'); // Gris para fuera
+      const msg = this._getRandomMessage([
+        'MUY FUERTE', '¡AHHH!', '¡AFUERA!', '¡POR POCO!', 
+        '¡AL CIELO!', '¡FUERA!', '¡TE PASASTE!', '¡OTRA VEZ SERÁ!'
+      ]);
+      this._showResult(msg, '#757575');
       this.cpuScore++;
       this.shotResults.push(false);
     }
 
     this._updateHUDStats();
-
   }
 
-  // ─── Loop de actualización (debug) ───────────────────────────────
+  // ─── Loop de actualización (debug de hitboxes) ───────────────────
   update() {
+    if (this.estado !== 'jugando') return;
+
     if (!this.hitbox.showDebug) {
-      this.debugGraphics.clear();
+      if (this.debugGraphics) this.debugGraphics.clear();
       return;
     }
 
-    this.debugGraphics.clear();
+    if (this.debugGraphics) this.debugGraphics.clear();
 
     const kx = this.keeperContainer.x;
     const ky = this.keeperContainer.y;
     const isFlipped = this.keeperSprite.flipX;
-    const isNeutral = this.keeperSprite.texture.key === 'keeper_neutral';
+    const isNeutral = this.keeperSprite.texture.key === (this.keeperKeys?.neutral || 'keeper_neutral');
     const activeBoxes = isNeutral
       ? this.hitbox.boxesNeutral
       : this.hitbox.boxesSide;
 
-    // Color distinto por caja para identificar fácilmente cuál ajustar
-    const debugColors = [0x00ff00, 0x00ffaa, 0x00aaff, 0xffff00];
+    // Verde = cuerpo, Rojo = guante, Azul = pies, Amarillo = neutral
+    const debugColors = [0x00ff00, 0xff4400, 0x0088ff, 0xffff00];
 
     activeBoxes.forEach((box, i) => {
       let ox = box.ox;
-      if (isFlipped && !isNeutral) ox = -box.ox - box.w;
+      if (isFlipped && !isNeutral) ox = -(box.ox + box.w);
+
+      // Calculamos los 4 puntos rotados para dibujar la hitbox real
+      const angleRad = this.keeperContainer.rotation;
+      const cosA = Math.cos(angleRad);
+      const sinA = Math.sin(angleRad);
+
+      const getRotated = (x, y) => ({
+        x: kx + x * cosA - y * sinA,
+        y: ky + x * sinA + y * cosA
+      });
+
+      const p1 = getRotated(ox, box.oy);
+      const p2 = getRotated(ox + box.w, box.oy);
+      const p3 = getRotated(ox + box.w, box.oy + box.h);
+      const p4 = getRotated(ox, box.oy + box.h);
 
       this.debugGraphics.lineStyle(2, debugColors[i % debugColors.length], 0.9);
-      this.debugGraphics.strokeRect(kx + ox, ky + box.oy, box.w, box.h);
+      this.debugGraphics.strokePoints([p1, p2, p3, p4, p1]);
 
-      // Punto en esquina superior izquierda para identificar caja
+      // Punto de esquina para identificar cada caja
       this.debugGraphics.fillStyle(debugColors[i % debugColors.length], 1);
-      this.debugGraphics.fillCircle(kx + ox + 8, ky + box.oy + 10, 5);
+      this.debugGraphics.fillCircle(p1.x, p1.y, 5);
     });
 
-    // Origen del portero
+    // Origen del portero (punto blanco central)
     this.debugGraphics.fillStyle(0xffffff, 1);
     this.debugGraphics.fillCircle(kx, ky, 5);
 
-    // Portería (amarillo)
-    const cx = this.W / 2;
+    // Portería (amarillo semitransparente)
+    const goalCx = this.W / 2;
     const gWidth = this.W * this.hitbox.goalWidthRatio;
     const gTop = this.hitbox.goalTop;
     const gBot = this.H * this.hitbox.goalBottomRatio;
 
     this.debugGraphics.lineStyle(2, 0xffff00, 0.5);
-    this.debugGraphics.strokeRect(cx - gWidth, gTop, gWidth * 2, gBot - gTop);
+    this.debugGraphics.strokeRect(goalCx - gWidth, gTop, gWidth * 2, gBot - gTop);
   }
 
   // ─── Resultados y estados ─────────────────────────────────────────
@@ -644,7 +1070,7 @@ export class SoccerScene extends Phaser.Scene {
     }
 
     this.keeperSprite
-      .setTexture('keeper_neutral')
+      .setTexture(this.keeperKeys.neutral)
       .setScale(this.scaleNeutral)
       .setFlipX(false)
       .setAngle(0);
@@ -674,57 +1100,92 @@ export class SoccerScene extends Phaser.Scene {
 
   _gameOver() {
     this.phase = 'gameover';
+    this.sound.play('victoria');
 
-    this.keeperSprite
-      .setTexture('keeper_neutral')
-      .setScale(this.scaleNeutral)
-      .setFlipX(false)
-      .setAngle(0);
+    const { width: W, height: H } = this.scale;
+    const won = this.score >= 3;
 
-    this.tweens.add({
-      targets: this.keeperContainer,
-      x: this.W / 2,
-      y: this.H * 0.75,
-      angle: 0,
-      duration: 500,
-      ease: 'Power2'
+    this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.75).setDepth(300);
+
+    const modal = this.add.container(W / 2, H / 2).setDepth(301);
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x0a0a20, 0.95);
+    bg.lineStyle(6, won ? 0xffd700 : 0x3b82f6, 1);
+    bg.fillRoundedRect(-280, -230, 560, 460, 25);
+    bg.strokeRoundedRect(-280, -230, 560, 460, 25);
+    modal.add(bg);
+
+    const title = this.add.text(0, -140, won ? '¡VICTORIA!' : 'FIN DEL JUEGO', {
+      fontSize: '60px', fontFamily: 'Luckiest Guy', color: won ? '#ffd700' : '#ffffff',
+      stroke: '#000000', strokeThickness: 8
+    }).setOrigin(0.5);
+    modal.add(title);
+
+    const scoreLabel = this.add.text(0, -50, 'RESULTADO FINAL', {
+      fontSize: '20px', fontFamily: 'Fredoka', color: '#aaaaaa'
+    }).setOrigin(0.5);
+    modal.add(scoreLabel);
+
+    const scoreValue = this.add.text(0, 0, `${this.score} - ${this.cpuScore}`, {
+      fontSize: '80px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+    }).setOrigin(0.5);
+    modal.add(scoreValue);
+
+    const btnRetry = this._createModalButton(0, 100, 'REINTENTAR', 0x2e7d32, () => {
+      this.scene.restart({ escenarioId: this.escenarioActual });
+    });
+    modal.add(btnRetry);
+
+    const btnMenu = this._createModalButton(0, 185, 'CAMBIAR TORNEO', 0x1565c0, () => {
+      this.sound.stopAll();
+      this.scene.start('SoccerScene');
+    });
+    modal.add(btnMenu);
+  }
+
+  _createModalButton(x, y, label, color, callback) {
+    const btn = this.add.container(x, y);
+
+    const bg = this.add.graphics();
+    bg.fillStyle(color, 1);
+    bg.fillRoundedRect(-200, -35, 400, 70, 15);
+    btn.add(bg);
+
+    const txt = this.add.text(0, 0, label, {
+      fontSize: '28px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+    }).setOrigin(0.5);
+    btn.add(txt);
+
+    const hit = this.add.rectangle(0, 0, 400, 70, 0x000000, 0).setInteractive({ cursor: 'pointer' });
+    btn.add(hit);
+
+    hit.on('pointerover', () => {
+      this.tweens.add({ targets: btn, scale: 1.05, duration: 100 });
+      bg.clear();
+      bg.fillStyle(0xffffff, 0.2);
+      bg.fillRoundedRect(-200, -35, 400, 70, 15);
+      bg.fillStyle(color, 1);
+      bg.fillRoundedRect(-200, -35, 400, 70, 15);
     });
 
-    const won = this.score >= 3;
-    const text = won
-      ? `GANASTE\n${this.score}/${SoccerScene.MAX_SHOTS} GOLES`
-      : `VUELVE A INTENTAR\n${this.score}/${SoccerScene.MAX_SHOTS} GOLES`;
-    const color = won ? '#ffd700' : '#f44336';
+    hit.on('pointerout', () => {
+      this.tweens.add({ targets: btn, scale: 1, duration: 100 });
+      bg.clear();
+      bg.fillStyle(color, 1);
+      bg.fillRoundedRect(-200, -35, 400, 70, 15);
+    });
 
-    this.messageText
-      .setText(text)
-      .setColor(color)
-      .setAlpha(1)
-      .setFontSize('28px');
+    hit.on('pointerdown', () => {
+      this.sound.play('pop');
+      callback();
+    });
 
-    this.hintText.setText('Clic para jugar de nuevo').setAlpha(1);
-
-    // El sonido de victoria suena siempre al final
-    this.sound.play('victoria');
+    return btn;
   }
 
   _resetGame() {
-    this.score = 0;
-    this.cpuScore = 0;
-    this.shots = 0;
-    this.shotResults = [];
-    this._updateHUDStats();
-    this.messageText.setAlpha(0).setFontSize('48px');
-    this.hintText.setText('APUNTA Y DISPARA').setAlpha(1);
-    this.keeperContainer.setPosition(this.W / 2, this.H * 0.75).setAngle(0);
-    this.keeperSprite
-      .setTexture('keeper_neutral')
-      .setScale(this.scaleNeutral)
-      .setFlipX(false)
-      .setAngle(0);
-    this.ballSprite.setPosition(this.W / 2, this.H - 35).setScale(0.032);
-    this.ballShadow.setPosition(this.W / 2, this.H - 35 + 15).setScale(1.5);
-    this.phase = 'aim';
+    this.scene.restart();
   }
 
   // ─── Compatibilidad con laser-impact externo ─────────────────────
@@ -748,7 +1209,6 @@ export class SoccerScene extends Phaser.Scene {
         const y = Phaser.Math.Between(H * 0.15, H * 0.45);
         const color = colors[Phaser.Math.Between(0, colors.length - 1)];
 
-        // Usar la textura 'sparkle' generada
         const burst = this.add.particles(x, y, 'sparkle', {
           speed: { min: 100, max: 600 },
           angle: { min: 0, max: 360 },
@@ -762,16 +1222,37 @@ export class SoccerScene extends Phaser.Scene {
         }).setDepth(200);
 
         burst.explode(50);
-
-        // Sonido de explosión suave
         this.sound.play('pop', { volume: 0.4, detune: Phaser.Math.Between(-600, 600) });
 
-        // Limpieza
         this.time.delayedCall(2000, () => {
           if (burst && burst.destroy) burst.destroy();
         });
       });
     }
+  }
+
+  _launchSingleFirework(x, y) {
+    const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xffffff];
+    const color = Phaser.Utils.Array.GetRandom(colors);
+
+    const burst = this.add.particles(x, y, 'sparkle', {
+      speed: { min: 150, max: 500 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 2, end: 0 },
+      tint: color,
+      blendMode: 'ADD',
+      lifespan: 1200,
+      gravityY: 350,
+      quantity: 40,
+      emitting: false,
+    }).setDepth(600);
+
+    burst.explode(40);
+    this.sound.play('pop', { volume: 0.5, detune: Phaser.Math.Between(-600, 600) });
+
+    this.time.delayedCall(1500, () => {
+      if (burst) burst.destroy();
+    });
   }
 
   shutdown() {
