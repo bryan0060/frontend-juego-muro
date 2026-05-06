@@ -5,7 +5,7 @@ export class SoccerScene extends Phaser.Scene {
     super({ key: 'SoccerScene' });
 
     this.hitbox = {
-      showDebug: false,
+      showDebug: true,
 
       boxesSide: [
         // 🟩 CAJA CENTRAL (Punto de partida - Torso)
@@ -26,6 +26,7 @@ export class SoccerScene extends Phaser.Scene {
 
   init(data) {
     this.escenarioPreseleccionado = (data && data.escenarioId) ? data.escenarioId : null;
+    this.precisionPersistente = (data && data.precisionExtra) ? data.precisionExtra : 0;
     // Cargar fuentes dinámicamente
     if (!document.getElementById('soccer-fonts-loader')) {
       const link = document.createElement('link');
@@ -56,8 +57,11 @@ export class SoccerScene extends Phaser.Scene {
     this.shotResults = [];
 
     this.currentMusicIndex = Phaser.Math.Between(1, 8);
+    this.currentMusicJIndex = Phaser.Math.Between(1, 7);
     this.menuMusic = null;
+    this.gameMusic = null;
     this.hoverSound = null;
+    this.precisionExtra = this.precisionPersistente || 0; // 0 = Normal, 0.35 = Alta
 
     this.estado = 'seleccion';
     this.phase = 'aim';
@@ -193,7 +197,7 @@ export class SoccerScene extends Phaser.Scene {
       hitArea.on('pointerover', () => {
         glow.clear();
         this._drawCardGlow(glow, 0xffffff, 1.2);
-        
+
         // Sonido
         if (this.hoverSound) this.hoverSound.stop();
         const soundKey = esc.id === 'soccer_adults_bg' ? 'champions' : 'europa';
@@ -229,11 +233,71 @@ export class SoccerScene extends Phaser.Scene {
     this._createMusicSelector();
   }
 
+  _createPrecisionSelector() {
+    const { width: W } = this.scale;
+    // Posición muy pegada a la esquina superior derecha, casi invisible
+    const btn = this.add.container(W - 40, 40).setDepth(2000);
+
+    const bg = this.add.graphics();
+    const drawBg = (color, alpha = 0.05) => {
+      bg.clear();
+      bg.fillStyle(0x000000, alpha);
+      bg.fillCircle(0, 0, 25);
+      bg.lineStyle(1, color, alpha);
+      bg.strokeCircle(0, 0, 25);
+    };
+    
+    const currentColor = this.precisionExtra > 0 ? 0xff4400 : 0x40c0dd;
+    drawBg(currentColor, 0.03); // Muy tenue
+    btn.add(bg);
+
+    // Icono casi invisible
+    const icon = this.add.text(0, 0, '🎯', { fontSize: '16px' }).setOrigin(0.5).setAlpha(0.1);
+    btn.add(icon);
+
+    // Etiqueta invisible a menos que se pase el mouse
+    this.precisionLabel = this.add.text(-60, 0, '', {
+      fontSize: '12px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+    }).setOrigin(1, 0.5).setAlpha(0);
+    btn.add(this.precisionLabel);
+
+    const hit = this.add.circle(0, 0, 25, 0x000000, 0).setInteractive({ cursor: 'pointer' });
+    btn.add(hit);
+
+    // Guardar referencia para el chequeo de disparo
+    this.precisionHitArea = hit;
+
+    hit.on('pointerover', () => {
+      drawBg(this.precisionExtra > 0 ? 0xff4400 : 0x40c0dd, 0.2);
+      icon.setAlpha(0.5);
+      this.precisionLabel.setText(this.precisionExtra > 0 ? 'PRECISIÓN: ALTA' : 'PRECISIÓN: NORMAL').setAlpha(0.8);
+    });
+
+    hit.on('pointerout', () => {
+      drawBg(this.precisionExtra > 0 ? 0xff4400 : 0x40c0dd, 0.03);
+      icon.setAlpha(0.1);
+      this.precisionLabel.setAlpha(0);
+    });
+
+    hit.on('pointerdown', (ptr, localX, localY, event) => {
+      // Importante: No disparamos aquí, el chequeo se hace en _buildInput
+      if (this.precisionExtra === 0) {
+        this.precisionExtra = 0.35;
+        drawBg(0xff4400, 0.2);
+      } else {
+        this.precisionExtra = 0;
+        drawBg(0x40c0dd, 0.2);
+      }
+      this.precisionLabel.setText(this.precisionExtra > 0 ? 'PRECISIÓN: ALTA' : 'PRECISIÓN: NORMAL');
+      this.sound.play('pop', { volume: 0.2 });
+    });
+  }
+
   _drawCardGlow(graphics, color, mult = 1) {
     // Brillo exterior muy grueso para tapar cualquier esquina
     graphics.lineStyle(16 * mult, color, 0.6);
     graphics.strokeRoundedRect(-240, -200, 480, 400, 40);
-    
+
     // Borde blanco interno más sólido (Marco real)
     graphics.lineStyle(10 * mult, 0xffffff, 1);
     graphics.strokeRoundedRect(-240, -200, 480, 400, 40);
@@ -324,7 +388,31 @@ export class SoccerScene extends Phaser.Scene {
     this._buildGraphics();
     this._buildHUD();
     this._buildInput();
+    this._playGameMusic();
     this._iniciarCuentaRegresiva();
+  }
+
+  _playGameMusic() {
+    if (this.gameMusic) {
+      this.gameMusic.stop();
+      this.gameMusic.removeAllListeners();
+    }
+
+    const isJuvenil = this.escenarioActual === 'soccer_kids_bg';
+    const prefix = isJuvenil ? 'soccer_music_j_' : 'soccer_music_';
+    const max = isJuvenil ? 7 : 8;
+
+    // Si es aleatorio, elegimos uno nuevo
+    const randomIndex = Phaser.Math.Between(1, max);
+    this.gameMusic = this.sound.add(`${prefix}${randomIndex}`, { loop: false, volume: 0.3 });
+
+    this.gameMusic.on('complete', () => {
+      if (this.estado === 'jugando' || this.estado === 'countdown') {
+        this._playGameMusic();
+      }
+    });
+
+    this.gameMusic.play();
   }
 
   _iniciarCuentaRegresiva() {
@@ -460,30 +548,30 @@ export class SoccerScene extends Phaser.Scene {
 
     // 1. Red de Portería (Patrón de Diamante Profesional - Dibujo Acotado)
     const netG = this.add.graphics().setDepth(4);
-    
+
     const drawDiamondNet = (color, alpha, offset = 0) => {
       netG.lineStyle(1, color, alpha);
       const step = 28;
       const netHeight = bBot - bTop;
-      
+
       // Diagonales \ (Acotadas al ancho bWid)
       for (let i = -bWid - netHeight; i <= bWid + netHeight; i += step) {
         const x1 = cx + i + offset;
         const x2 = cx + i - netHeight + offset;
-        
+
         if ((x1 >= cx - bWid && x1 <= cx + bWid) || (x2 >= cx - bWid && x2 <= cx + bWid)) {
           let rx1 = x1, ry1 = bTop, rx2 = x2, ry2 = bBot;
           if (rx1 < cx - bWid) { ry1 = bTop + (bBot - bTop) * ((cx - bWid - x1) / (x2 - x1)); rx1 = cx - bWid; }
           if (rx1 > cx + bWid) { ry1 = bTop + (bBot - bTop) * ((cx + bWid - x1) / (x2 - x1)); rx1 = cx + bWid; }
           if (rx2 < cx - bWid) { ry2 = bBot - (bBot - bTop) * ((x2 - (cx - bWid)) / (x2 - x1)); rx2 = cx - bWid; }
           if (rx2 > cx + bWid) { ry2 = bBot - (bBot - bTop) * ((x2 - (cx + bWid)) / (x2 - x1)); rx2 = cx + bWid; }
-          
+
           if (ry1 >= bTop && ry1 <= bBot && ry2 >= bTop && ry2 <= bBot) {
             netG.strokeLineShape(new Phaser.Geom.Line(rx1, ry1, rx2, ry2));
           }
         }
       }
-      
+
       // Diagonales / (Acotadas al ancho bWid)
       for (let i = -bWid - netHeight; i <= bWid + netHeight; i += step) {
         const x1 = cx + i + offset;
@@ -494,7 +582,7 @@ export class SoccerScene extends Phaser.Scene {
           if (rx1 > cx + bWid) { ry1 = bTop + (bBot - bTop) * ((cx + bWid - x1) / (x2 - x1)); rx1 = cx + bWid; }
           if (rx2 < cx - bWid) { ry2 = bBot - (bBot - bTop) * ((x2 - (cx - bWid)) / (x2 - x1)); rx2 = cx - bWid; }
           if (rx2 > cx + bWid) { ry2 = bBot - (bBot - bTop) * ((x2 - (cx + bWid)) / (x2 - x1)); rx2 = cx + bWid; }
-          
+
           if (ry1 >= bTop && ry1 <= bBot && ry2 >= bTop && ry2 <= bBot) {
             netG.strokeLineShape(new Phaser.Geom.Line(rx1, ry1, rx2, ry2));
           }
@@ -583,6 +671,7 @@ export class SoccerScene extends Phaser.Scene {
     bg.fillStyle(0x000000, 0.85);
     bg.fillRoundedRect(0, 0, 220, 60, 4);
     this._createBroadcastScoreboard();
+    this._createPrecisionSelector();
 
     this.messageText = this.add.text(W / 2, H / 2 - 10, '', {
       fontSize: '48px',
@@ -839,6 +928,12 @@ export class SoccerScene extends Phaser.Scene {
     this.input.on('pointerdown', (ptr) => {
       if (this.phase === 'gameover') return;
       if (this.phase !== 'aim') return;
+
+      // Evitar disparo si se hace clic en el botón camuflado
+      const hits = this.input.hitTestPointer(ptr);
+      const isPrecisionClick = hits.some(h => h === this.precisionHitArea);
+      if (isPrecisionClick) return;
+
       this._shoot(ptr.x, ptr.y);
     });
   }
@@ -850,7 +945,7 @@ export class SoccerScene extends Phaser.Scene {
     this._updateHUDStats();
     this.hintText.setAlpha(0);
 
-    const intelligence = Math.min(this.score * 0.22, 0.95);
+    const intelligence = Math.min(this.precisionExtra + (this.score * 0.22), 0.95);
     const randomDir = Math.random() > 0.5 ? 1 : -1;
     const randomDestX = this.W / 2 + randomDir * 280;
 
@@ -947,8 +1042,8 @@ export class SoccerScene extends Phaser.Scene {
 
     if (strictlyInGoal && !blocked && !hitPost) {
       const msg = this._getRandomMessage([
-        '¡GOLAZO!', '¡GOL!', '¡QUÉ TIRO!', '¡INCREÍBLE!', '¡ADENTRO!', 
-        '¡GENIAL!', '¡FENOMENAL!', '¡ESTRELLA!', '¡MAGNÍFICO!', 
+        '¡GOLAZO!', '¡GOL!', '¡QUÉ TIRO!', '¡INCREÍBLE!', '¡ADENTRO!',
+        '¡GENIAL!', '¡FENOMENAL!', '¡ESTRELLA!', '¡MAGNÍFICO!',
         '¡POTENCIA PURA!', '¡IMPARABLE!', '¡GOOOOL!', '¡CRACK!'
       ]);
       this._showResult(msg, '#4CAF50');
@@ -961,7 +1056,7 @@ export class SoccerScene extends Phaser.Scene {
       this._launchFireworks();
     } else if (blocked) {
       const msg = this._getRandomMessage([
-        'ATAJADO', '¡QUÉ REFLEJOS!', '¡MURALLA!', '¡ATAJADÓN!', 
+        'ATAJADO', '¡QUÉ REFLEJOS!', '¡MURALLA!', '¡ATAJADÓN!',
         '¡NO PASAS!', '¡MANO SALVADORA!', '¡IMPEDIDO!', '¡BLOQUEADO!'
       ]);
       this._showResult(msg, '#f44336');
@@ -969,7 +1064,7 @@ export class SoccerScene extends Phaser.Scene {
       this.shotResults.push(false);
     } else if (hitPost) {
       const msg = this._getRandomMessage([
-        '¡CASI!', '¡UYYY!', '¡POSTE!', '¡PALO!', '¡POR UN PELO!', 
+        '¡CASI!', '¡UYYY!', '¡POSTE!', '¡PALO!', '¡POR UN PELO!',
         '¡METAL!', '¡A NADA!', '¡NO PUEDE SER!'
       ]);
       this._showResult(msg, '#FF9800');
@@ -978,7 +1073,7 @@ export class SoccerScene extends Phaser.Scene {
       this.sound.play('tick');
     } else {
       const msg = this._getRandomMessage([
-        'MUY FUERTE', '¡AHHH!', '¡AFUERA!', '¡POR POCO!', 
+        'MUY FUERTE', '¡AHHH!', '¡AFUERA!', '¡POR POCO!',
         '¡AL CIELO!', '¡FUERA!', '¡TE PASASTE!', '¡OTRA VEZ SERÁ!'
       ]);
       this._showResult(msg, '#757575');
@@ -1100,6 +1195,7 @@ export class SoccerScene extends Phaser.Scene {
 
   _gameOver() {
     this.phase = 'gameover';
+    if (this.gameMusic) this.gameMusic.stop();
     this.sound.play('victoria');
 
     const { width: W, height: H } = this.scale;
@@ -1133,7 +1229,7 @@ export class SoccerScene extends Phaser.Scene {
     modal.add(scoreValue);
 
     const btnRetry = this._createModalButton(0, 100, 'REINTENTAR', 0x2e7d32, () => {
-      this.scene.restart({ escenarioId: this.escenarioActual });
+      this.scene.restart({ escenarioId: this.escenarioActual, precisionExtra: this.precisionExtra });
     });
     modal.add(btnRetry);
 
