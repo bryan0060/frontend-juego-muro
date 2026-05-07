@@ -56,12 +56,14 @@ export class BootScene extends Phaser.Scene {
     this.load.image('neon_stage', 'assets/images/neon_stage.png');
 
     // Imágenes Pizarra Mágica (Bocetos)
+    this.load.image('plantilla', 'assets/images/PizarraMagica/plantilla.png');
     this.load.image('boceto_arcoiris', 'assets/images/PizarraMagica/Arcoiris.png');
     this.load.image('boceto_carro', 'assets/images/PizarraMagica/Carro.png');
     this.load.image('boceto_castillo', 'assets/images/PizarraMagica/Castillo.png');
     this.load.image('boceto_oso', 'assets/images/PizarraMagica/Oso (2).png');
     this.load.image('boceto_parke', 'assets/images/PizarraMagica/ParkeTr3s.png');
     this.load.image('boceto_sol', 'assets/images/PizarraMagica/sol.png');
+    this.load.image('cohete', 'assets/images/PizarraMagica/Cohete.webp');
 
     // Juego Animales (Protege el Hada)
     this.load.image('scenery_bosque', 'assets/images/animales/bosque.png');

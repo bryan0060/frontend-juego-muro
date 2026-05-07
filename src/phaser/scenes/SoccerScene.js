@@ -44,7 +44,7 @@ export class SoccerScene extends Phaser.Scene {
     }
   }
 
-  static MAX_SHOTS = 5;
+  static MAX_SHOTS = 10;
 
   create() {
     const { width: W, height: H } = this.scale;
@@ -56,7 +56,10 @@ export class SoccerScene extends Phaser.Scene {
     this.shots = 0;
     this.shotResults = [];
 
-    this.currentMusicIndex = Phaser.Math.Between(1, 14);
+    // Evitar canción 8 en el inicio (reservada para Liga Juvenil)
+    do {
+      this.currentMusicIndex = Phaser.Math.Between(1, 14);
+    } while (this.currentMusicIndex === 8);
     this.currentMusicJIndex = 1; // Ya no se usa pero mantenemos por compatibilidad interna sutil
     this.menuMusic = null;
     this.gameMusic = null;
@@ -65,6 +68,10 @@ export class SoccerScene extends Phaser.Scene {
 
     this.estado = 'seleccion';
     this.phase = 'aim';
+    
+    // Sistema de hold para botones
+    this.holdBtn = null;
+    this.holdGraphics = this.add.graphics().setDepth(20000);
 
     if (this.escenarioPreseleccionado) {
       this._iniciarJuego(this.escenarioPreseleccionado);
@@ -210,18 +217,8 @@ export class SoccerScene extends Phaser.Scene {
         if (this.menuMusic) this.menuMusic.setVolume(0.1);
       });
 
-      hitArea.on('pointerout', () => {
-        glow.clear();
-        this._drawCardGlow(glow, esc.color);
-
-        if (this.hoverSound) {
-          this.hoverSound.stop();
-          this.hoverSound = null;
-        }
-        if (this.menuMusic) this.menuMusic.setVolume(0.7);
-      });
-
-      hitArea.on('pointerdown', () => {
+      hitArea.on('pointerdown', (ptr) => {
+        // Acción inmediata para selección de escenarios
         this.sound.play('pop');
         this.tweens.add({
           targets: card,
@@ -230,6 +227,19 @@ export class SoccerScene extends Phaser.Scene {
           yoyo: true,
           onComplete: () => this._iniciarJuego(esc.id)
         });
+      });
+
+      hitArea.on('pointerup', () => this._cancelHold());
+      hitArea.on('pointerout', () => {
+        this._cancelHold();
+        glow.clear();
+        this._drawCardGlow(glow, esc.color);
+
+        if (this.hoverSound) {
+          this.hoverSound.stop();
+          this.hoverSound = null;
+        }
+        if (this.menuMusic) this.menuMusic.setVolume(0.7);
       });
     });
 
@@ -316,13 +326,16 @@ export class SoccerScene extends Phaser.Scene {
 
     this.menuMusic.on('complete', () => {
       if (this.estado === 'seleccion') {
-        this.currentMusicIndex = Phaser.Math.Between(1, 14);
+        do {
+          this.currentMusicIndex = Phaser.Math.Between(1, 14);
+        } while (this.currentMusicIndex === 8);
         if (this.musicLabel) this.musicLabel.setText(`CANCIÓN ${this.currentMusicIndex}`);
         this._playMenuMusic();
       }
     });
 
-    this.menuMusic.play();
+    const seekTime = (this.currentMusicIndex === 3 || this.currentMusicIndex === 5) ? 11 : 0;
+    this.menuMusic.play({ seek: seekTime });
   }
 
   _createMusicSelector() {
@@ -366,6 +379,7 @@ export class SoccerScene extends Phaser.Scene {
 
     hit.on('pointerdown', () => {
       this.currentMusicIndex = (this.currentMusicIndex % 14) + 1;
+      if (this.currentMusicIndex === 8) this.currentMusicIndex = 9; // Saltar canción 8 en el menú
       this.registry.set('soccer_music_idx', this.currentMusicIndex);
       this.musicLabel.setText(`CANCIÓN ${this.currentMusicIndex}`);
       this._playMenuMusic();
@@ -416,7 +430,11 @@ export class SoccerScene extends Phaser.Scene {
       this.gameMusic.removeAllListeners();
     }
 
-    const randomIndex = Phaser.Math.Between(1, max);
+    let randomIndex;
+    const isJuvenil = (this.escenarioActual === 'soccer_kids_bg');
+    do {
+      randomIndex = Phaser.Math.Between(1, max);
+    } while (!isJuvenil && randomIndex === 8); // Excluir canción 8 si no es Liga Juvenil
     this.gameMusic = this.sound.add(`${prefix}${randomIndex}`, { loop: false, volume: 0.65 });
 
     this.gameMusic.on('complete', () => {
@@ -425,7 +443,8 @@ export class SoccerScene extends Phaser.Scene {
       }
     });
 
-    this.gameMusic.play();
+    const seekTime = (randomIndex === 3 || randomIndex === 5) ? 11 : 0;
+    this.gameMusic.play({ seek: seekTime });
   }
 
   _iniciarCuentaRegresiva() {
@@ -720,7 +739,7 @@ export class SoccerScene extends Phaser.Scene {
         fontSize: '22px', fontFamily: 'Luckiest Guy', color: '#ffffff'
       }).setOrigin(0.5).setDepth(102);
 
-      this.shotsCounterText = this.add.text(cx, cy - 8, '0/5', {
+      this.shotsCounterText = this.add.text(cx, cy - 8, `0/${SoccerScene.MAX_SHOTS}`, {
         fontSize: '24px', fontFamily: 'Fredoka', color: '#00ff00'
       }).setOrigin(0.5).setDepth(102);
 
@@ -747,7 +766,7 @@ export class SoccerScene extends Phaser.Scene {
         stroke: '#000000', strokeThickness: 4
       }).setOrigin(0.5).setDepth(102);
 
-      this.shotsCounterText = this.add.text(cx, cy + 25, '0/5', {
+      this.shotsCounterText = this.add.text(cx, cy + 25, `0/${SoccerScene.MAX_SHOTS}`, {
         fontSize: '28px', fontFamily: 'Luckiest Guy', color: '#ffff00',
         stroke: '#000000', strokeThickness: 6
       }).setOrigin(0.5).setDepth(102);
@@ -767,12 +786,14 @@ export class SoccerScene extends Phaser.Scene {
         stroke: '#00ffff', strokeThickness: 8
       }).setOrigin(0.5).setDepth(102);
 
-      this.goalLabel = this.add.text(cx - 200, cy - 45, 'GOLES', {
-        fontSize: '14px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+      this.goalLabel = this.add.text(cx - 200, cy - 35, 'GOLES', {
+        fontSize: '24px', fontFamily: 'Luckiest Guy', color: '#ffff00',
+        stroke: '#000000', strokeThickness: 4
       }).setOrigin(0.5).setDepth(102);
 
-      this.cpuLabel = this.add.text(cx + 200, cy - 45, 'GOLES', {
-        fontSize: '14px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+      this.cpuLabel = this.add.text(cx + 200, cy - 35, 'GOLES', {
+        fontSize: '24px', fontFamily: 'Luckiest Guy', color: '#ffff00',
+        stroke: '#000000', strokeThickness: 4
       }).setOrigin(0.5).setDepth(102);
     }
 
@@ -1094,8 +1115,33 @@ export class SoccerScene extends Phaser.Scene {
     this._updateHUDStats();
   }
 
-  // ─── Loop de actualización (debug de hitboxes) ───────────────────
-  update() {
+  // ─── Loop de actualización ──────────────────────────────────────────
+
+  _cancelHold() {
+    this.holdBtn = null;
+    this.holdGraphics.clear();
+  }
+
+  // Se añade soporte para delta en update
+  update(time, delta) {
+    // Actualizar sistema de hold
+    if (this.holdBtn) {
+      this.holdBtn.time += delta;
+      const progress = Math.min(this.holdBtn.time / this.holdBtn.duration, 1);
+      
+      this.holdGraphics.clear();
+      this.holdGraphics.lineStyle(10, 0x00ff00, 0.8);
+      this.holdGraphics.beginPath();
+      this.holdGraphics.arc(this.holdBtn.x, this.holdBtn.y, 80, -Math.PI/2, -Math.PI/2 + (Math.PI*2*progress));
+      this.holdGraphics.strokePath();
+
+      if (progress >= 1) {
+        const cb = this.holdBtn.callback;
+        this._cancelHold();
+        cb();
+      }
+    }
+
     if (this.estado !== 'jugando') return;
 
     if (!this.hitbox.showDebug) {
@@ -1218,7 +1264,7 @@ export class SoccerScene extends Phaser.Scene {
     this.sound.play('victoria', { volume: 3.0 });
 
     const { width: W, height: H } = this.scale;
-    const won = this.score >= 3;
+    const won = this.score >= Math.ceil((SoccerScene.MAX_SHOTS + 1) / 2);
 
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.75).setDepth(300);
 
@@ -1292,10 +1338,18 @@ export class SoccerScene extends Phaser.Scene {
       bg.fillRoundedRect(-200, -35, 400, 70, 15);
     });
 
-    hit.on('pointerdown', () => {
-      this.sound.play('pop');
-      callback();
+    hit.on('pointerdown', (ptr) => {
+      this.holdBtn = {
+        x: this.scale.width/2 + x, y: this.scale.height/2 + y, // x,y son relativos al modal
+        duration: 2000, time: 0,
+        callback: () => {
+          this.sound.play('pop');
+          callback();
+        }
+      };
     });
+
+    hit.on('pointerup', () => this._cancelHold());
 
     return btn;
   }

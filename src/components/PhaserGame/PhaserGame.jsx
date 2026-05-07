@@ -14,7 +14,7 @@
  * - onBack: function       → volver al menú
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Phaser from 'phaser';
 import { createPhaserConfig } from '../../phaser/PhaserConfig';
 import { connectWebSocket, disconnectWebSocket } from '../../services/websocket/WebSocketClient';
@@ -48,20 +48,47 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
     };
   }, []);
 
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdTimerRef = useRef(null);
+  const startTimeRef = useRef(null);
+
+  const startHold = () => {
+    startTimeRef.current = Date.now();
+    holdTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTimeRef.current;
+      const progress = Math.min(elapsed / 2000, 1);
+      setHoldProgress(progress);
+      if (progress >= 1) {
+        clearInterval(holdTimerRef.current);
+        onBack();
+      }
+    }, 50);
+  };
+
+  const cancelHold = () => {
+    clearInterval(holdTimerRef.current);
+    setHoldProgress(0);
+  };
+
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
       <div
         ref={gameContainerRef}
         style={{ width: '100%', height: '100%' }}
       />
-      <button
-        onClick={onBack}
+      <div
+        onMouseDown={startHold}
+        onMouseUp={cancelHold}
+        onMouseLeave={cancelHold}
+        onTouchStart={startHold}
+        onTouchEnd={cancelHold}
         style={{
           position: 'absolute',
-          bottom: '20px',
+          bottom: escenaInicial === 'MagicBoardScene' ? 'auto' : '20px',
+          top: escenaInicial === 'MagicBoardScene' ? '20px' : 'auto',
           left: '20px',
           zIndex: 10,
-          background: 'rgba(0,0,0,0.5)',
+          background: 'rgba(0,0,0,0.6)',
           border: '2px solid rgba(255,255,255,0.4)',
           borderRadius: '50px',
           padding: '10px 24px',
@@ -69,10 +96,21 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
           fontSize: '1rem',
           fontFamily: 'var(--font-principal)',
           cursor: 'pointer',
+          overflow: 'hidden',
+          userSelect: 'none'
         }}
       >
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          height: '4px',
+          width: `${holdProgress * 100}%`,
+          background: '#00ff00',
+          transition: 'width 0.1s linear'
+        }} />
         ← Menú
-      </button>
+      </div>
     </div>
   );
 };
