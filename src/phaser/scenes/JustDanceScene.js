@@ -80,6 +80,15 @@ export class JustDanceScene extends Phaser.Scene {
     window.addEventListener('ws-message', this._wsHandler);
 
     this._iniciarRonda();
+
+    // Sistema de hold
+    this.holdBtn = null;
+    this.holdGraphics = this.add.graphics().setDepth(20000);
+  }
+
+  _cancelHold() {
+    this.holdBtn = null;
+    this.holdGraphics.clear();
   }
 
   _iniciarRonda() {
@@ -136,7 +145,22 @@ export class JustDanceScene extends Phaser.Scene {
     Object.values(esqueleto).forEach(p => graphics.fillCircle(offsetX + p.x * areaW, offsetY + p.y * areaH, radio));
   }
 
-  update() {
+  update(time, delta) {
+    // Sistema de hold
+    if (this.holdBtn) {
+      this.holdBtn.time += delta;
+      const progress = Math.min(this.holdBtn.time / this.holdBtn.duration, 1);
+      this.holdGraphics.clear();
+      this.holdGraphics.lineStyle(8, 0x00ff00, 0.8);
+      this.holdGraphics.beginPath();
+      this.holdGraphics.arc(this.holdBtn.x, this.holdBtn.y, 70, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * progress));
+      this.holdGraphics.strokePath();
+      if (progress >= 1) {
+        const cb = this.holdBtn.callback;
+        this._cancelHold();
+        cb();
+      }
+    }
     this._drawGrid();
     this.graficosEsqueleto.clear();
     if (this.esqueletoActual) {

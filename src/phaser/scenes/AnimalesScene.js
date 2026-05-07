@@ -81,6 +81,10 @@ export class AnimalesScene extends Phaser.Scene {
         this.puntaje = 0;
         this.esqueletoActual = null;
         this.enemigos = this.add.group();
+        
+        // Sistema de hold
+        this.holdBtn = null;
+        this.holdGraphics = this.add.graphics().setDepth(10000);
 
         // 1. Jaula y Hada (Más abajo, en el suelo)
         // Forzamos el fallback por ahora si el usuario no tiene el archivo
@@ -340,7 +344,18 @@ export class AnimalesScene extends Phaser.Scene {
                 glow.strokeRoundedRect(-205, -105, 410, 210, 12);
             });
 
-            hitArea.on('pointerdown', () => this._iniciarJuego(esc.id));
+            hitArea.on('pointerdown', (ptr) => {
+                // Acción inmediata para selección de escenarios
+                this.sound.play('pop');
+                this.tweens.add({
+                    targets: cardContainer,
+                    scale: 0.95,
+                    duration: 100,
+                    yoyo: true,
+                    onComplete: () => this._iniciarJuego(esc.id)
+                });
+            });
+            hitArea.on('pointerup', () => this._cancelHold());
             cardContainer.add([glow, img, labelBg, txt]);
         });
     }
@@ -410,16 +425,6 @@ export class AnimalesScene extends Phaser.Scene {
         this.textoInstruccion = this.add.text(this.W / 2, 130, '¡PREPÁRATE!', {
             fontSize: '40px', fontFamily: 'Luckiest Guy', color: '#ffffff', stroke: '#000', strokeThickness: 6
         }).setOrigin(0.5);
-
-        // Botón Menú - sin fondo, estilo cristal
-        this.btnMenu = this.add.text(30, 75, '← Menú', {
-            fontSize: '24px', fontFamily: 'Bangers', color: '#e0aaff',
-            stroke: '#000', strokeThickness: 4
-        }).setOrigin(0, 0.5).setDepth(50).setInteractive({ cursor: 'pointer' }).setVisible(false);
-
-        this.btnMenu.on('pointerover', () => this.btnMenu.setStyle({ color: '#ffffff' }));
-        this.btnMenu.on('pointerout',  () => this.btnMenu.setStyle({ color: '#e0aaff' }));
-        this.btnMenu.on('pointerdown', () => this._volverAlMenu());
     }
 
     _spawnEnemigo() {
@@ -521,7 +526,28 @@ export class AnimalesScene extends Phaser.Scene {
         this.enemigos.add(enemigo);
     }
 
-    update() {
+    _cancelHold() {
+        this.holdBtn = null;
+        this.holdGraphics.clear();
+    }
+
+    update(time, delta) {
+        // Sistema de hold
+        if (this.holdBtn) {
+            this.holdBtn.time += delta;
+            const progress = Math.min(this.holdBtn.time / this.holdBtn.duration, 1);
+            this.holdGraphics.clear();
+            this.holdGraphics.lineStyle(8, 0x00ff00, 0.8);
+            this.holdGraphics.beginPath();
+            this.holdGraphics.arc(this.holdBtn.x, this.holdBtn.y, 70, -Math.PI/2, -Math.PI/2 + (Math.PI*2*progress));
+            this.holdGraphics.strokePath();
+            if (progress >= 1) {
+                const cb = this.holdBtn.callback;
+                this._cancelHold();
+                cb();
+            }
+        }
+
         if (!this.juegoActivo) return;
 
         // Mover enemigos hacia la jaula
@@ -661,12 +687,24 @@ export class AnimalesScene extends Phaser.Scene {
         const btn = this.add.text(this.W / 2, this.H / 2 + 20, 'REINTENTAR', {
             fontSize: '32px', color: '#ffffff', backgroundColor: '#9c4eb3', padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setDepth(101).setInteractive({ cursor: 'pointer' });
-        btn.on('pointerdown', () => this.scene.restart());
+        btn.on('pointerdown', (ptr) => {
+            this.holdBtn = {
+                x: ptr.x, y: ptr.y, duration: 2000, time: 0,
+                callback: () => this.scene.restart()
+            };
+        });
+        btn.on('pointerup', () => this._cancelHold());
 
         const btnMenuGO = this.add.text(this.W / 2, this.H / 2 + 90, '☰ VOLVER AL MENÚ', {
             fontSize: '28px', color: '#ffffff', backgroundColor: '#2e1a4e', padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setDepth(101).setInteractive({ cursor: 'pointer' });
-        btnMenuGO.on('pointerdown', () => this._volverAlMenu());
+        btnMenuGO.on('pointerdown', (ptr) => {
+            this.holdBtn = {
+                x: ptr.x, y: ptr.y, duration: 2000, time: 0,
+                callback: () => this._volverAlMenu()
+            };
+        });
+        btnMenuGO.on('pointerup', () => this._cancelHold());
 
         this.sound.play('end');
     }

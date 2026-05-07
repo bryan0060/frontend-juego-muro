@@ -111,6 +111,10 @@ export class SubwaySurfersScene extends Phaser.Scene {
     // 7. Controles (Máxima compatibilidad)
     this.cursors = this.input.keyboard.createCursorKeys();
     this.input.keyboard.addCapture([37, 38, 39, 40]); // Prevenir scroll del navegador
+    
+    // Sistema de hold
+    this.holdBtn = null;
+    this.holdGraphics = this.add.graphics().setDepth(20000);
 
     // 8. Evento de apagado para limpiar
     this.events.once('shutdown', () => this._cleanup());
@@ -145,7 +149,27 @@ export class SubwaySurfersScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(100);
   }
 
-  update() {
+  _cancelHold() {
+    this.holdBtn = null;
+    this.holdGraphics.clear();
+  }
+
+  update(time, delta) {
+    // Sistema de hold
+    if (this.holdBtn) {
+      this.holdBtn.time += delta;
+      const progress = Math.min(this.holdBtn.time / this.holdBtn.duration, 1);
+      this.holdGraphics.clear();
+      this.holdGraphics.lineStyle(8, 0x00ff00, 0.8);
+      this.holdGraphics.beginPath();
+      this.holdGraphics.arc(this.holdBtn.x, this.holdBtn.y, 70, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * progress));
+      this.holdGraphics.strokePath();
+      if (progress >= 1) {
+        const cb = this.holdBtn.callback;
+        this._cancelHold();
+        cb();
+      }
+    }
     if (this.isGameOver) return;
     
     // Leer controles en update (más fiable)
@@ -467,7 +491,14 @@ export class SubwaySurfersScene extends Phaser.Scene {
         this.scene.restart();
     };
 
-    btn.on('pointerdown', restartAction);
+    btn.on('pointerdown', (ptr) => {
+        this.holdBtn = {
+            x: ptr.x, y: ptr.y, duration: 2000, time: 0,
+            callback: () => restartAction()
+        };
+    });
+    btn.on('pointerup', () => this._cancelHold());
+    btn.on('pointerout', () => this._cancelHold());
     
     // Fallback GLOBAL e INFALIBLE: Cualquier clic en la pantalla reinicia el juego
     this.time.delayedCall(500, () => {
