@@ -817,7 +817,10 @@ export class MagicBoardScene extends Phaser.Scene {
       ease: 'Cubic.easeIn',
       onComplete: () => {
         // Ocultar boceto y plantilla al viajar
-        this.bocetoImage.setVisible(false);
+        if (this.bocetoImage) {
+          this.bocetoImage.destroy();
+          this.bocetoImage = null;
+        }
         this.plantillaImg.setVisible(false);
         // Mostrar el planeta
         this.bg.setVisible(true);
