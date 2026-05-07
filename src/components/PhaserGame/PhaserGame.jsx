@@ -60,7 +60,19 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
       setHoldProgress(progress);
       if (progress >= 1) {
         clearInterval(holdTimerRef.current);
-        onBack();
+        let handled = false;
+        if (gameRef.current && gameRef.current.scene) {
+          const activeScenes = gameRef.current.scene.getScenes(true);
+          if (activeScenes.length > 0) {
+            const activeScene = activeScenes[0];
+            if (typeof activeScene.returnToMenu === 'function') {
+              handled = activeScene.returnToMenu();
+            }
+          }
+        }
+        if (!handled) {
+          onBack();
+        }
       }
     }, 50);
   };

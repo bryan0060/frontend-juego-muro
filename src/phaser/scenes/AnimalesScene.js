@@ -677,6 +677,16 @@ export class AnimalesScene extends Phaser.Scene {
         this.scene.restart();
     }
 
+    returnToMenu() {
+        if (this.estado === 'seleccion') {
+            return false; // Ya estamos en el menú de escenarios, salir al menú principal de React
+        }
+        
+        // Si estamos jugando o en game over, volver al menú de escenarios (biomas)
+        this._volverAlMenu();
+        return true;
+    }
+
     _gameOver() {
         this.juegoActivo = false;
         this.add.rectangle(this.W / 2, this.H / 2, this.W, this.H, 0x000000, 0.7).setDepth(100);

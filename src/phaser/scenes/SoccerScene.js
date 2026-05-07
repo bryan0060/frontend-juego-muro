@@ -1358,6 +1358,18 @@ export class SoccerScene extends Phaser.Scene {
     this.scene.restart();
   }
 
+  returnToMenu() {
+    if (this.estado === 'seleccion') {
+      return false; // Ya estamos en el menú, salir al menú principal de React
+    }
+    
+    // Volver al menú del torneo
+    this.shutdown();
+    this.sound.stopAll();
+    this.scene.start('SoccerScene', { escenarioId: null });
+    return true; // Hemos manejado la navegación internamente
+  }
+
   // ─── Compatibilidad con laser-impact externo ─────────────────────
   handleImpact(event) {
     if (!this.particles) return; // Evitar error si se activa antes de iniciar el juego
