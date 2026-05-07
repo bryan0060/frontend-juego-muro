@@ -71,7 +71,7 @@ export class MagicBoardScene extends Phaser.Scene {
     
     // Para el sistema de hold
     this.pressedBtn = null;
-    this.holdGraphics = this.add.graphics().setDepth(1000);
+    this.holdGraphics = this.add.graphics().setDepth(1500);
 
     // --- 4. PARTÍCULAS ---
     this.particles = this.add.particles(0, 0, '__DEFAULT', {
@@ -122,7 +122,7 @@ export class MagicBoardScene extends Phaser.Scene {
       fontSize: '52px', fontFamily: 'Luckiest Guy', color: '#ffffff',
       stroke: '#9c4eb3', strokeThickness: 10,
       shadow: { color: '#000000', fill: true, offsetX: 2, offsetY: 2, blur: 8 }
-    }).setOrigin(0.5).setDepth(20);
+    }).setOrigin(0.5).setDepth(1000);
 
     this.time.addEvent({
       delay: 100,
@@ -518,7 +518,7 @@ export class MagicBoardScene extends Phaser.Scene {
 
   _createElegantButton(x, y, iconStr, labelStr, callback, holdDuration = 2000) {
     const { width, height } = this.scale;
-    const btn = this.add.container(x, y).setDepth(500);
+    const btn = this.add.container(x, y).setDepth(1000);
     
     // Aura Galáctica (Glow más intenso)
     const aura = this.add.circle(0, 0, 65, 0x9c4eb3, 0.1).setStrokeStyle(3, 0xffffff, 0.1);
@@ -540,7 +540,7 @@ export class MagicBoardScene extends Phaser.Scene {
 
   _createStyleMenu() {
     const { height } = this.scale;
-    this.styleMenuCont = this.add.container(100, height - 200).setDepth(40).setVisible(false);
+    this.styleMenuCont = this.add.container(100, height - 200).setDepth(1000).setVisible(false);
     const styles = [{ id: 'shootingStar', icon: '✨' }, { id: 'neon', icon: '🔦' }, { id: 'comet', icon: '☄️' }];
     styles.forEach((s, i) => {
       const spacing = 90;
@@ -562,7 +562,7 @@ export class MagicBoardScene extends Phaser.Scene {
 
   _createColorMenu() {
     const { height } = this.scale;
-    this.colorMenuCont = this.add.container(240, height - 200).setDepth(40).setVisible(false);
+    this.colorMenuCont = this.add.container(240, height - 200).setDepth(1000).setVisible(false);
     this.availableColors.forEach((c, i) => {
       const col = i % 2;
       const row = Math.floor(i / 2);
@@ -595,7 +595,7 @@ export class MagicBoardScene extends Phaser.Scene {
 
   _createBocetoMenu() {
     const { height } = this.scale;
-    this.bocetoMenuCont = this.add.container(380, height - 200).setDepth(40).setVisible(false);
+    this.bocetoMenuCont = this.add.container(380, height - 200).setDepth(1000).setVisible(false);
     
     const bocetos = [
       { id: 'boceto_arcoiris', icon: '🌈' },
@@ -682,7 +682,7 @@ export class MagicBoardScene extends Phaser.Scene {
     // Posicionado encima del botón BORRADOR (esquina inf. derecha)
     const btnX = width - 380;
     const btnY = height - 100;
-    this.eraserMenuCont = this.add.container(btnX, btnY - 90).setDepth(500).setVisible(false);
+    this.eraserMenuCont = this.add.container(btnX, btnY - 90).setDepth(1000).setVisible(false);
 
     // Slider horizontal
     const trackW = 300;
@@ -747,7 +747,7 @@ export class MagicBoardScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const btnX = 520;
     const btnY = height - 100;
-    this.brushMenuCont = this.add.container(btnX, btnY - 90).setDepth(500).setVisible(false);
+    this.brushMenuCont = this.add.container(btnX, btnY - 90).setDepth(1000).setVisible(false);
 
     const trackW = 300;
     const trackH = 8;
