@@ -23,11 +23,14 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
       gameRef.current._mockCleanup = cleanup;
     } else {
       connectWebSocket(wsPort, wsPath, wsJuego);
+      if (wsPort === 8080) {
+        connectWebSocket(8081, '', null);
+      }
     }
 
     return () => {
       gameRef.current?._mockCleanup?.();
-      disconnectWebSocket();
+      disconnectWebSocket(); // cierra todos
       gameRef.current?.destroy(true);
       gameRef.current = null;
     };

@@ -1,7 +1,7 @@
 /**
  * WebSocketClient.js — Cliente WebSocket dinámico.
  *
- * Soporta conexión a múltiples puertos y paths según el juego activo.
+ * Soporta conexión simultánea a múltiples puertos.
  * Puerto 8080 /ws → Juegos de Cámara (poses, esquive, impacto, ritmo)
  * Puerto 8081     → Juegos de RPLiDAR (coordenadas láser)
  *
@@ -11,150 +11,169 @@
 
 const BASE_URL = import.meta.env.VITE_WS_HOST || 'localhost';
 
-let _socket = null;
-let _currentPort = null;
-let _currentPath = '';
-let _currentJuego = null;
-let _retryTimeout = null;
-let _isIntentionalClose = false;
+// Mapa de conexiones activas: port → { socket, path, juego, retryTimeout, isIntentionalClose }
+const _connections = new Map();
 
 // ─── API pública ──────────────────────────────────────────────────────────────
 
 /**
  * Conecta al WebSocket del puerto y path indicados.
  * Si ya existe una conexión abierta al mismo puerto, no hace nada.
- * Si existe una conexión a un puerto diferente, la cierra primero.
- *
- * @param {number|string} port   - Puerto destino (8080 o 8081)
- * @param {string}        path   - Path de la URL (ej: '/ws' o '')
- * @param {string|null}   juego  - Juego a activar al conectar (ej: 'poses')
+ * Múltiples puertos pueden estar conectados simultáneamente.
  */
 export const connectWebSocket = (port, path = '', juego = null) => {
   const targetPort = Number(port);
+  const existing = _connections.get(targetPort);
 
   // Ya conectado al puerto correcto — no hacer nada
-  if (
-    _socket?.readyState === WebSocket.OPEN &&
-    _currentPort === targetPort
-  ) {
+  if (existing?.socket?.readyState === WebSocket.OPEN) {
     console.info(`[WS] Ya conectado al puerto ${targetPort}. Sin cambios.`);
     return;
   }
 
-  // Hay una conexión a otro puerto — cerrar antes de reconectar
-  if (_socket) {
-    console.info(`[WS] Cambiando de puerto ${_currentPort} → ${targetPort}`);
-    _closeSocket();
+  // Si hay una conexión previa en ese puerto cerrándose, limpiarla
+  if (existing) {
+    _closeConnection(targetPort);
   }
 
-  _currentPort = targetPort;
-  _currentPath = path;
-  _currentJuego = juego;
-  _isIntentionalClose = false;
-
-  _openSocket();
+  const conn = { path, juego, retryTimeout: null, isIntentionalClose: false, socket: null };
+  _connections.set(targetPort, conn);
+  _openConnection(targetPort);
 };
 
 /**
- * Cierra la conexión activa de forma intencional.
- * Llamar siempre al salir de un juego (cleanup de PhaserGame).
+ * Cierra la conexión de un puerto específico.
+ * Si no se especifica puerto, cierra TODAS las conexiones.
  */
-export const disconnectWebSocket = () => {
-  _isIntentionalClose = true;
-  _clearRetry();
-  _closeSocket();
-  _currentPort = null;
-  _currentPath = '';
-  _currentJuego = null;
-  console.info('[WS] Desconectado intencionalmente.');
-};
-
-/**
- * Envía un mensaje JSON por el WebSocket activo.
- * @param {object} payload
- */
-export const sendMessage = (payload) => {
-  if (_socket?.readyState === WebSocket.OPEN) {
-    _socket.send(JSON.stringify(payload));
+export const disconnectWebSocket = (port = null) => {
+  if (port !== null) {
+    const targetPort = Number(port);
+    const conn = _connections.get(targetPort);
+    if (conn) {
+      conn.isIntentionalClose = true;
+      _closeConnection(targetPort);
+      _connections.delete(targetPort);
+      console.info(`[WS] Puerto ${targetPort} desconectado intencionalmente.`);
+    }
   } else {
-    console.warn('[WS] No se pudo enviar — socket no está abierto.', payload);
+    // Cerrar todas
+    for (const [p] of _connections) {
+      const conn = _connections.get(p);
+      if (conn) conn.isIntentionalClose = true;
+      _closeConnection(p);
+    }
+    _connections.clear();
+    console.info('[WS] Todos los puertos desconectados.');
   }
 };
 
-export const getCurrentPort = () => _currentPort;
+/**
+ * Envía un mensaje JSON por el WebSocket de un puerto específico.
+ * Si no se especifica puerto, usa el primero disponible.
+ */
+export const sendMessage = (payload, port = null) => {
+  if (port !== null) {
+    const conn = _connections.get(Number(port));
+    if (conn?.socket?.readyState === WebSocket.OPEN) {
+      conn.socket.send(JSON.stringify(payload));
+    } else {
+      console.warn(`[WS] No se pudo enviar al puerto ${port} — socket no abierto.`);
+    }
+  } else {
+    // Enviar por el primer socket disponible
+    for (const [p, conn] of _connections) {
+      if (conn.socket?.readyState === WebSocket.OPEN) {
+        conn.socket.send(JSON.stringify(payload));
+        return;
+      }
+    }
+    console.warn('[WS] No se pudo enviar — ningún socket abierto.', payload);
+  }
+};
+
+export const getCurrentPort = () => {
+  // Retorna el primer puerto conectado (compatibilidad con código existente)
+  for (const [p, conn] of _connections) {
+    if (conn.socket?.readyState === WebSocket.OPEN) return p;
+  }
+  return null;
+};
 
 // ─── Internals ────────────────────────────────────────────────────────────────
 
-function _openSocket() {
-  const url = `ws://${BASE_URL}:${_currentPort}${_currentPath}`;
+function _openConnection(port) {
+  const conn = _connections.get(port);
+  if (!conn) return;
+
+  const url = `ws://${BASE_URL}:${port}${conn.path}`;
   console.info(`[WS] Conectando a ${url}...`);
 
-  _socket = new WebSocket(url);
+  const socket = new WebSocket(url);
+  conn.socket = socket;
 
-  _socket.onopen = () => {
-    console.info(`[WS] ✅ Conectado al puerto ${_currentPort}`);
-    _clearRetry();
-
-    // Mandar el juego activo al backend apenas se conecte
-    if (_currentJuego) {
-      sendMessage({ juego: _currentJuego });
-      console.info(`[WS] 🎮 Juego activado en backend: ${_currentJuego}`);
+  socket.onopen = () => {
+    console.info(`[WS] ✅ Conectado al puerto ${port}`);
+    if (conn.retryTimeout) {
+      clearTimeout(conn.retryTimeout);
+      conn.retryTimeout = null;
+    }
+    if (conn.juego) {
+      socket.send(JSON.stringify({ juego: conn.juego }));
+      console.info(`[WS] 🎮 Juego activado en backend: ${conn.juego}`);
     }
   };
 
-  _socket.onmessage = (event) => {
+  socket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
-      _dispatch(data);
+      _dispatch(port, data);
     } catch (err) {
-      console.error('[WS] ❌ Error al parsear mensaje:', err, event.data);
+      console.error(`[WS] ❌ Error al parsear mensaje (puerto ${port}):`, err, event.data);
     }
   };
 
-  _socket.onerror = () => {
-    console.error(`[WS] ❌ Error en puerto ${_currentPort}`);
+  socket.onerror = () => {
+    console.error(`[WS] ❌ Error en puerto ${port}`);
   };
 
-  _socket.onclose = (event) => {
-    console.warn(
-      `[WS] Conexión cerrada (puerto ${_currentPort}, código ${event.code})`
-    );
-    if (!_isIntentionalClose) {
-      _scheduleRetry();
+  socket.onclose = (event) => {
+    console.warn(`[WS] Conexión cerrada (puerto ${port}, código ${event.code})`);
+    if (!conn.isIntentionalClose) {
+      _scheduleRetry(port);
     }
   };
 }
 
-function _closeSocket() {
-  if (_socket) {
-    _socket.onclose = null;
-    _socket.close();
-    _socket = null;
+function _closeConnection(port) {
+  const conn = _connections.get(port);
+  if (!conn) return;
+  if (conn.retryTimeout) {
+    clearTimeout(conn.retryTimeout);
+    conn.retryTimeout = null;
+  }
+  if (conn.socket) {
+    conn.socket.onclose = null;
+    conn.socket.close();
+    conn.socket = null;
   }
 }
 
-function _scheduleRetry() {
-  _clearRetry();
-  console.info(`[WS] Reintentando en 3s (puerto ${_currentPort})...`);
-  _retryTimeout = setTimeout(() => {
-    if (!_isIntentionalClose && _currentPort) {
-      _openSocket();
+function _scheduleRetry(port) {
+  const conn = _connections.get(port);
+  if (!conn) return;
+  console.info(`[WS] Reintentando en 3s (puerto ${port})...`);
+  conn.retryTimeout = setTimeout(() => {
+    if (!conn.isIntentionalClose && _connections.has(port)) {
+      _openConnection(port);
     }
   }, 3000);
 }
 
-function _clearRetry() {
-  if (_retryTimeout) {
-    clearTimeout(_retryTimeout);
-    _retryTimeout = null;
-  }
-}
-
-function _dispatch(data) {
+function _dispatch(port, data) {
   window.dispatchEvent(
     new CustomEvent('ws-message', {
       detail: {
-        port: _currentPort,
+        port,
         ...data,
       },
     })
