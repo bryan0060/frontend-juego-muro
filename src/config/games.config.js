@@ -15,7 +15,7 @@ export const GAMES = [
     wsPort: 8080,
     wsPath: '/ws',
     wsJuego: 'poses',
-    disponible: true,
+    disponible: false,
   },
   {
     id: 'subway-surfers',
@@ -25,17 +25,17 @@ export const GAMES = [
     wsPort: 8080,
     wsPath: '/ws',
     wsJuego: 'esquive',
-    disponible: true,
+    disponible: false,
   },
   {
     id: 'animales',
-    nombre: 'Protege el Hada',
+    nombre: 'Salva a tr3zy',
     emoji: '🧚',
     escena: 'AnimalesScene',
     wsPort: 8080,
     wsPath: '/ws',
     wsJuego: 'impacto',
-    disponible: true,
+    disponible: false,
   },
   {
     id: 'duro-muro',
@@ -45,7 +45,7 @@ export const GAMES = [
     wsPort: 8080,
     wsPath: '/ws',
     wsJuego: 'poses',
-    disponible: true,
+    disponible: false,
   },
 
   // ── Puerto 8081 — Sensor RPLiDAR ─────────────────────────────
