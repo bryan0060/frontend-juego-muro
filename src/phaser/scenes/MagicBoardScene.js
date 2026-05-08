@@ -35,10 +35,10 @@ export class MagicBoardScene extends Phaser.Scene {
     // --- 3. LIENZO Y HISTORIAL ---
     this.canvasTexture = this.textures.createCanvas('drawingCanvas', width, height);
     this.canvasImage = this.add.image(0, 0, 'drawingCanvas').setOrigin(0).setDepth(5);
-    
+
     // Se crea dinámicamente al seleccionar un boceto
     this.bocetoImage = null;
-    
+
     // --- 4. PLANTILLA DE FONDO ---
     this.plantillaImg = this.add.image(width / 2, height / 2, 'plantilla').setDepth(1).setVisible(false);
     // Escalar plantilla para que cubra toda la pantalla o el área principal
@@ -47,7 +47,7 @@ export class MagicBoardScene extends Phaser.Scene {
     this.plantillaImg.setScale(Math.max(scaleX, scaleY));
 
     this.ctx = this.canvasTexture.context;
-    
+
     // --- 4. PLANTILLA DE FONDO ---
     // Eliminado el bloque duplicado que causaba conflictos
     this.history = [];
@@ -68,7 +68,7 @@ export class MagicBoardScene extends Phaser.Scene {
     this.selectedColor = this.availableColors[0];
     this.lastX = null;
     this.lastY = null;
-    
+
     // Para el sistema de hold
     this.pressedBtn = null;
     this.holdGraphics = this.add.graphics().setDepth(1500);
@@ -87,7 +87,7 @@ export class MagicBoardScene extends Phaser.Scene {
     this._createElegantButton(width - 100, height - 100, '✨', 'BORRAR TODO', () => this._supernovaClear(), 2000);
     this._createElegantButton(width - 240, height - 100, '↩️', 'ATRÁS', () => this._undo(), 2000);
     this._createElegantButton(width - 380, height - 100, '🧽', 'BORRADOR', () => this._toggleEraserMenu(), 2000);
-    
+
     // Abajo Izquierda
     this._createElegantButton(100, height - 100, '✏️', 'ESTILO', () => this._toggleStyleMenu(), 2000);
     this._createElegantButton(240, height - 100, '🎨', 'COLOR', () => this._toggleColorMenu(), 2000);
@@ -103,17 +103,41 @@ export class MagicBoardScene extends Phaser.Scene {
 
     // --- 7. INPUTS Y SENSOR ---
     this._setupInputs();
+    // ✅ DESPUÉS
     this._impactHandler = (e) => {
       if (e.detail.port !== 8081) return;
-      this.isDrawing = true;
-      this._handleAction(e.detail.x, e.detail.y);
+      const { x, y } = e.detail;
+
+      const btn = this._getButtonAt(x, y);
+      if (btn) {
+        if (this.pressedBtn && this.pressedBtn !== btn) this._cancelHold();
+        if (!this.pressedBtn) {
+          this.pressedBtn = btn;
+          this.pressedBtn.holdTime = 0;
+        }
+        this.isDrawing = false;
+
+        // ← AGREGAR: resetear el timeout cada vez que llega un evento
+        clearTimeout(this._holdCancelTimer);
+        this._holdCancelTimer = setTimeout(() => {
+          this._cancelHold();
+        }, 150);
+
+        return;
+      }
+
+      if (this.pressedBtn) this._cancelHold();
+      if (!this.isSliderDragging && !this.isBrushSliderDragging) {
+        this.isDrawing = true;
+        this._handleAction(x, y);
+      }
     };
     window.addEventListener('ws-message', this._impactHandler);
 
     // --- 8. ELEMENTOS DINÁMICOS ---
     this.dynamicStars = [];
     this._createDynamicStars(width, height);
-    
+
     this.time.addEvent({
       delay: 2000,
       callback: () => this._spawnShootingStar(width, height),
@@ -128,8 +152,9 @@ export class MagicBoardScene extends Phaser.Scene {
 
     this.time.addEvent({
       delay: 100,
+      // ✅ DESPUÉS
       callback: () => {
-        if (this.time.now - this.lastActionTime > 150) {
+        if (this.time.now - this.lastActionTime > 150 && !this.pressedBtn) {
           this.isDrawing = false; this.lastX = null; this.lastY = null;
         }
       },
@@ -205,7 +230,7 @@ export class MagicBoardScene extends Phaser.Scene {
       const mx = cx + Math.cos(angle) * dist;
       const my = cy + Math.sin(angle) * dist;
       const mr = Phaser.Math.Between(15, 30);
-      
+
       // Brillo de la luna
       this.moonGraphics.fillStyle(0xffffff, 0.2);
       this.moonGraphics.fillCircle(mx, my, mr + 5);
@@ -214,7 +239,7 @@ export class MagicBoardScene extends Phaser.Scene {
       // Sombra de la luna
       this.moonGraphics.fillStyle(0x000000, 0.3);
       this.moonGraphics.beginPath();
-      this.moonGraphics.arc(mx, my, mr, -Math.PI/4, Math.PI*0.75);
+      this.moonGraphics.arc(mx, my, mr, -Math.PI / 4, Math.PI * 0.75);
       this.moonGraphics.fillPath();
     }
 
@@ -230,9 +255,9 @@ export class MagicBoardScene extends Phaser.Scene {
 
     this.planetGraphics.fillStyle(theme.planetColor, 0.4);
     this.planetGraphics.fillCircle(cx, cy, radius);
-    
+
     // DIBUJO ESPECÍFICO SEGÚN TIPO (Inspirado en la imagen)
-    switch(theme.type) {
+    switch (theme.type) {
       case 'sun':
         // Rayos solares
         for (let i = 0; i < 32; i++) {
@@ -240,19 +265,19 @@ export class MagicBoardScene extends Phaser.Scene {
           const r1 = radius + 20;
           const r2 = radius + 80 + Math.sin(this.time.now / 200 + i) * 30;
           this.planetGraphics.lineStyle(10, theme.accent, 0.4);
-          this.planetGraphics.lineBetween(cx + Math.cos(ang)*r1, cy + Math.sin(ang)*r1, cx + Math.cos(ang)*r2, cy + Math.sin(ang)*r2);
+          this.planetGraphics.lineBetween(cx + Math.cos(ang) * r1, cy + Math.sin(ang) * r1, cx + Math.cos(ang) * r2, cy + Math.sin(ang) * r2);
         }
         break;
       case 'earth':
         // Continentes verdes
         this.planetGraphics.fillStyle(0x44aa44, 0.4);
         for (let i = 0; i < 5; i++) {
-          this.planetGraphics.fillEllipse(cx + Phaser.Math.Between(-radius*0.6, radius*0.6), cy + Phaser.Math.Between(-radius*0.6, radius*0.6), 150, 80);
+          this.planetGraphics.fillEllipse(cx + Phaser.Math.Between(-radius * 0.6, radius * 0.6), cy + Phaser.Math.Between(-radius * 0.6, radius * 0.6), 150, 80);
         }
         // Nubes blancas
         this.planetGraphics.fillStyle(0xffffff, 0.2);
         for (let i = 0; i < 4; i++) {
-          this.planetGraphics.fillEllipse(cx + Math.cos(this.time.now/2000 + i)*radius*0.5, cy + Math.sin(i)*radius*0.3, 120, 40);
+          this.planetGraphics.fillEllipse(cx + Math.cos(this.time.now / 2000 + i) * radius * 0.5, cy + Math.sin(i) * radius * 0.3, 120, 40);
         }
         break;
       case 'magma':
@@ -261,8 +286,8 @@ export class MagicBoardScene extends Phaser.Scene {
         for (let i = 0; i < 8; i++) {
           const ang = i * 0.8;
           this.planetGraphics.beginPath();
-          this.planetGraphics.moveTo(cx + Math.cos(ang)*radius*0.2, cy + Math.sin(ang)*radius*0.2);
-          this.planetGraphics.lineTo(cx + Math.cos(ang)*radius, cy + Math.sin(ang)*radius);
+          this.planetGraphics.moveTo(cx + Math.cos(ang) * radius * 0.2, cy + Math.sin(ang) * radius * 0.2);
+          this.planetGraphics.lineTo(cx + Math.cos(ang) * radius, cy + Math.sin(ang) * radius);
           this.planetGraphics.strokePath();
         }
         break;
@@ -273,9 +298,9 @@ export class MagicBoardScene extends Phaser.Scene {
           const yOff = -radius * 0.7 + (i * radius * 0.2);
           const alpha = i % 2 === 0 ? 0.08 : 0.12;
           this.planetGraphics.fillStyle(i % 2 === 0 ? 0xffffff : theme.accent, alpha);
-          
+
           // Calculamos el ancho de la elipse en esa altura para que no sobresalga
-          const sliceWidth = radius * 2 * Math.sqrt(1 - Math.pow(yOff/radius, 2));
+          const sliceWidth = radius * 2 * Math.sqrt(1 - Math.pow(yOff / radius, 2));
           if (sliceWidth > 0) {
             this.planetGraphics.fillEllipse(cx, cy + yOff, sliceWidth, 25);
           }
@@ -284,8 +309,8 @@ export class MagicBoardScene extends Phaser.Scene {
       case 'volcanic':
         // Volcanes (Puntos oscuros con brillo)
         for (let i = 0; i < 12; i++) {
-          const px = cx + Phaser.Math.Between(-radius*0.7, radius*0.7);
-          const py = cy + Phaser.Math.Between(-radius*0.7, radius*0.7);
+          const px = cx + Phaser.Math.Between(-radius * 0.7, radius * 0.7);
+          const py = cy + Phaser.Math.Between(-radius * 0.7, radius * 0.7);
           this.planetGraphics.fillStyle(0x000000, 0.3);
           this.planetGraphics.fillCircle(px, py, 25);
           this.planetGraphics.fillStyle(theme.accent, 0.3);
@@ -298,21 +323,21 @@ export class MagicBoardScene extends Phaser.Scene {
           const d = Phaser.Math.FloatBetween(0, radius * 0.85);
           const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
           this.planetGraphics.fillStyle(0x000000, 0.15);
-          this.planetGraphics.fillCircle(cx + Math.cos(a)*d, cy + Math.sin(a)*d, Phaser.Math.Between(15, 45));
+          this.planetGraphics.fillCircle(cx + Math.cos(a) * d, cy + Math.sin(a) * d, Phaser.Math.Between(15, 45));
         }
         break;
       case 'gas':
         // Remolinos de gas
         for (let i = 0; i < 5; i++) {
           this.planetGraphics.lineStyle(20, theme.accent, 0.1);
-          this.planetGraphics.strokeEllipse(cx, cy, radius * (0.4 + i*0.3), radius * (0.2 + i*0.1));
+          this.planetGraphics.strokeEllipse(cx, cy, radius * (0.4 + i * 0.3), radius * (0.2 + i * 0.1));
         }
         break;
       case 'rocky':
         // Manchas irregulares
         for (let i = 0; i < 10; i++) {
           this.planetGraphics.fillStyle(0x000000, 0.1);
-          this.planetGraphics.fillCircle(cx + Phaser.Math.Between(-radius*0.7, radius*0.7), cy + Phaser.Math.Between(-radius*0.7, radius*0.7), Phaser.Math.Between(40, 90));
+          this.planetGraphics.fillCircle(cx + Phaser.Math.Between(-radius * 0.7, radius * 0.7), cy + Phaser.Math.Between(-radius * 0.7, radius * 0.7), Phaser.Math.Between(40, 90));
         }
         break;
     }
@@ -416,7 +441,7 @@ export class MagicBoardScene extends Phaser.Scene {
     if (this.pressedBtn) {
       this.pressedBtn.holdTime += delta;
       const progress = Math.min(this.pressedBtn.holdTime / this.pressedBtn.holdDuration, 1);
-      
+
       this.holdGraphics.clear();
       this.holdGraphics.lineStyle(8, 0x00ff00, 0.8);
       this.holdGraphics.beginPath();
@@ -521,21 +546,21 @@ export class MagicBoardScene extends Phaser.Scene {
   _createElegantButton(x, y, iconStr, labelStr, callback, holdDuration = 2000) {
     const { width, height } = this.scale;
     const btn = this.add.container(x, y).setDepth(1000);
-    
+
     // Aura Galáctica (Glow más intenso)
     const aura = this.add.circle(0, 0, 65, 0x9c4eb3, 0.1).setStrokeStyle(3, 0xffffff, 0.1);
     const glow = this.add.circle(0, 0, 50, 0x40c0dd, 0.05);
-    
+
     const core = this.add.circle(0, 0, 45, 0x000000, 0.8).setStrokeStyle(2, 0xffffff, 0.6);
     const icon = this.add.text(0, -6, iconStr, { fontSize: '36px' }).setOrigin(0.5);
-    const label = this.add.text(0, 32, labelStr, { 
+    const label = this.add.text(0, 32, labelStr, {
       fontSize: '14px', fontFamily: 'Luckiest Guy', color: '#ffffff',
       stroke: '#000', strokeThickness: 3
     }).setOrigin(0.5);
-    
+
     btn.add([aura, glow, core, icon, label]);
     this.buttons.push({ x, y, cont: btn, callback, isPressed: false, holdDuration, holdTime: 0 });
-    
+
     // Animación de respiración galáctica
     this.tweens.add({ targets: [aura, glow], scale: 1.15, alpha: 0.2, duration: 1500 + Math.random() * 500, yoyo: true, loop: -1 });
   }
@@ -551,7 +576,7 @@ export class MagicBoardScene extends Phaser.Scene {
       const bg = this.add.circle(0, 0, 40, 0x000000).setStrokeStyle(2, 0xffffff, 0.8);
       const txt = this.add.text(0, 0, s.icon, { fontSize: '28px' }).setOrigin(0.5);
       subBtn.add([glow, bg, txt]);
-      
+
       this.tweens.add({ targets: glow, scale: 1.1, alpha: 0.4, duration: 1000 + i * 200, yoyo: true, loop: -1 });
       this.styleMenuCont.add(subBtn);
       this.buttons.push({
@@ -570,20 +595,20 @@ export class MagicBoardScene extends Phaser.Scene {
       const row = Math.floor(i / 2);
       const xOffset = col === 0 ? -45 : 45;
       const yOffset = -row * 90;
-      
+
       const subBtn = this.add.container(xOffset, yOffset);
       const glow = this.add.circle(0, 0, 40, c.hex, 0.2).setDepth(-1);
-      const bg = c.id === 'rainbow' 
+      const bg = c.id === 'rainbow'
         ? this.add.circle(0, 0, 35, 0xffffff).setStrokeStyle(3, 0xffffff)
         : this.add.circle(0, 0, 35, c.hex).setStrokeStyle(3, 0xffffff, 0.8);
-      
+
       if (c.id === 'rainbow') {
         const txt = this.add.text(0, 0, '🌈', { fontSize: '24px' }).setOrigin(0.5);
         subBtn.add([glow, bg, txt]);
       } else {
         subBtn.add([glow, bg]);
       }
-      
+
       this.tweens.add({ targets: glow, scale: 1.15, alpha: 0.5, duration: 1200 + i * 100, yoyo: true, loop: -1 });
 
       this.colorMenuCont.add(subBtn);
@@ -598,7 +623,7 @@ export class MagicBoardScene extends Phaser.Scene {
   _createBocetoMenu() {
     const { height } = this.scale;
     this.bocetoMenuCont = this.add.container(380, height - 200).setDepth(1000).setVisible(false);
-    
+
     const bocetos = [
       { id: 'boceto_arcoiris', icon: '🌈' },
       { id: 'boceto_carro', icon: '🚗' },
@@ -621,13 +646,13 @@ export class MagicBoardScene extends Phaser.Scene {
       const bg = this.add.circle(0, 0, 35, 0x000000).setStrokeStyle(2, 0xffffff, 0.7);
       const txt = this.add.text(0, 0, b.icon, { fontSize: '24px' }).setOrigin(0.5);
       subBtn.add([glow, bg, txt]);
-      
+
       this.tweens.add({ targets: glow, scale: 1.1, alpha: 0.3, duration: 1500, yoyo: true, loop: -1 });
       this.bocetoMenuCont.add(subBtn);
       this.buttons.push({
         x: 380 + xOffset, y: height - 200 + yOffset, cont: subBtn,
         holdDuration: 1500, holdTime: 0,
-        callback: () => { 
+        callback: () => {
           if (b.id === 'clear') {
             if (this.bocetoImage) { this.bocetoImage.destroy(); this.bocetoImage = null; }
             this.plantillaImg.setVisible(false);
@@ -651,7 +676,7 @@ export class MagicBoardScene extends Phaser.Scene {
             this.moonGraphics.setVisible(false);
             this.planetGraphics.setVisible(false);
           }
-          this.bocetoMenuCont.setVisible(false); 
+          this.bocetoMenuCont.setVisible(false);
         }
       });
     });
@@ -807,7 +832,7 @@ export class MagicBoardScene extends Phaser.Scene {
     this.isClearing = true;
     this._clearingStartTime = null; // El watchdog tomará el tiempo en update()
     const { width, height } = this.scale;
-    
+
     const warpLine = this.add.rectangle(-width / 2, height / 2, width, height, 0xffffff, 0.95).setDepth(200);
     this.sound.play('pop', { volume: 0.5 });
 
@@ -835,11 +860,11 @@ export class MagicBoardScene extends Phaser.Scene {
         try {
           this.bgIndex = (this.bgIndex + 1) % this.planets.length;
           this._updatePlanetGraphics();
-        } catch(e) {
+        } catch (e) {
           console.warn('Error al actualizar planeta, saltando:', e);
           this.bgIndex = (this.bgIndex + 1) % this.planets.length;
         }
-        
+
         // Fase 2: descubrir pantalla
         this.tweens.add({
           targets: warpLine,
@@ -881,10 +906,10 @@ export class MagicBoardScene extends Phaser.Scene {
   }
 
   shutdown() {
-  this.isDrawing = false;
-  this.lastX = null;
-  this.lastY = null;
-  window.removeEventListener('ws-message', this._impactHandler);
-  if (this.canvasTexture) this.canvasTexture.destroy();
-}
+    this.isDrawing = false;
+    this.lastX = null;
+    this.lastY = null;
+    window.removeEventListener('ws-message', this._impactHandler);
+    if (this.canvasTexture) this.canvasTexture.destroy();
+  }
 }
