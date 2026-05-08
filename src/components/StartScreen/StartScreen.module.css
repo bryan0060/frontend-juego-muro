@@ -140,3 +140,58 @@
   0%   { opacity: 0; transform: scale(0.5); }
   100% { opacity: 1; transform: scale(1); }
 }
+
+/* ------------------------------------------- */
+/* SALVAPANTALLAS Y BOTÓN FANTASMA */
+/* ------------------------------------------- */
+
+/* Contenedor a pantalla completa para el video */
+.screensaverOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background-color: black;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* Animación suave al aparecer */
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Video de fondo cubriendo toda la pantalla */
+.screensaverVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Botón con forma de estrella en la esquina inferior izquierda */
+.starButton {
+  position: fixed;
+  bottom: 25px;
+  left: 25px;
+  z-index: 100; /* Asegura que esté por encima de las burbujas */
+  background: transparent;
+  border: none;
+  font-size: 2.5rem; /* Tamaño de la estrella */
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  /* Animación para que encaje con el entorno mágico */
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Al pasar el mouse se agranda un poco y brilla */
+.starButton:hover {
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
