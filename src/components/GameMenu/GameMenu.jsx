@@ -31,6 +31,7 @@ const GameMenu = ({ onSelectGame, onBack }) => {
         const el = cardRefs.current[juego.id];
         if (!el) continue;
         const rect = el.getBoundingClientRect();
+        console.log('chequeando:', juego.id, juego.disponible, rect, x, y);
         if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
           onSelectGame(juego);
           break;
@@ -55,8 +56,10 @@ const GameMenu = ({ onSelectGame, onBack }) => {
             key={juego.id}
             ref={el => cardRefs.current[juego.id] = el}
             className={`${styles.card} ${!juego.disponible ? styles.cardBloqueado : ''}`}
-            onClick={() => juego.disponible && onSelectGame(juego)}
-            disabled={!juego.disponible}
+            onClick={() => {
+              if (!juego.disponible) return; // ← doble guarda
+              onSelectGame(juego);
+            }} disabled={!juego.disponible}
           >
             <span className={styles.cardEmoji}>{juego.emoji}</span>
             {juego.nombre}

@@ -19,6 +19,7 @@ function App() {
   }, [pantalla]);
 
   const handleSelectGame = (juego) => {
+    if (!juego.disponible) return; // ← guarda extra
     setJuegoActivo(juego);
     setPantalla('juego');
   };
