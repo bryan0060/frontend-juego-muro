@@ -76,6 +76,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
       if (!btn) return;
 
       const rect = btn.getBoundingClientRect();
+      const margin = 25;
       const isOverBtn =
         x >= rect.left && x <= rect.right &&
         y >= rect.top && y <= rect.bottom;
@@ -120,7 +121,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
           background: 'rgba(0,0,0,0.6)',
           border: '2px solid rgba(255,255,255,0.4)',
           borderRadius: '50px',
-          padding: '10px 24px',
+          padding: '20px 36px',
           color: '#fff',
           fontSize: '1rem',
           fontFamily: 'var(--font-principal)',
