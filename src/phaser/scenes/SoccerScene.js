@@ -68,10 +68,12 @@ export class SoccerScene extends Phaser.Scene {
 
     this.estado = 'seleccion';
     this.phase = 'aim';
-    
+
+    // Sistema de hold para botones
     // Sistema de hold para botones
     this.holdBtn = null;
     this.holdGraphics = this.add.graphics().setDepth(20000);
+    this.sensorButtons = []; // ← AGREGAR ESTA LÍNEA
 
     if (this.escenarioPreseleccionado) {
       this._iniciarJuego(this.escenarioPreseleccionado);
@@ -81,7 +83,7 @@ export class SoccerScene extends Phaser.Scene {
 
     this._impactHandler = this.handleImpact.bind(this);
     window.addEventListener('ws-message', this._impactHandler);
-    
+
     // IMPORTANTE: Registrar la limpieza al cerrar la escena
     this.events.once('shutdown', () => this.shutdown());
     this.events.once('destroy', () => this.shutdown());
@@ -391,6 +393,8 @@ export class SoccerScene extends Phaser.Scene {
     if (this.menuMusic) this.menuMusic.stop();
     if (this.hoverSound) this.hoverSound.stop();
     if (this.menuContainer) this.menuContainer.destroy();
+    this.sensorButtons = [];
+    // ... resto del método igual
 
     this.escenarioActual = escenarioId;
     this.estado = 'jugando';
@@ -1128,11 +1132,11 @@ export class SoccerScene extends Phaser.Scene {
     if (this.holdBtn) {
       this.holdBtn.time += delta;
       const progress = Math.min(this.holdBtn.time / this.holdBtn.duration, 1);
-      
+
       this.holdGraphics.clear();
       this.holdGraphics.lineStyle(10, 0x00ff00, 0.8);
       this.holdGraphics.beginPath();
-      this.holdGraphics.arc(this.holdBtn.x, this.holdBtn.y, 80, -Math.PI/2, -Math.PI/2 + (Math.PI*2*progress));
+      this.holdGraphics.arc(this.holdBtn.x, this.holdBtn.y, 80, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * progress));
       this.holdGraphics.strokePath();
 
       if (progress >= 1) {
@@ -1340,7 +1344,7 @@ export class SoccerScene extends Phaser.Scene {
 
     hit.on('pointerdown', (ptr) => {
       this.holdBtn = {
-        x: this.scale.width/2 + x, y: this.scale.height/2 + y, // x,y son relativos al modal
+        x: this.scale.width / 2 + x, y: this.scale.height / 2 + y, // x,y son relativos al modal
         duration: 2000, time: 0,
         callback: () => {
           this.sound.play('pop');
@@ -1350,6 +1354,10 @@ export class SoccerScene extends Phaser.Scene {
     });
 
     hit.on('pointerup', () => this._cancelHold());
+
+    const absX = this.scale.width / 2 + x;
+    const absY = this.scale.height / 2 + y;
+    this.sensorButtons.push({ absX, absY, w: 400, h: 70, callback });
 
     return btn;
   }
@@ -1362,7 +1370,7 @@ export class SoccerScene extends Phaser.Scene {
     if (this.estado === 'seleccion') {
       return false; // Ya estamos en el menú, salir al menú principal de React
     }
-    
+
     // Volver al menú del torneo
     this.shutdown();
     this.sound.stopAll();
@@ -1371,17 +1379,50 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   // ─── Compatibilidad con laser-impact externo ─────────────────────
+  // ✅ DESPUÉS
   handleImpact(event) {
-  const { x, y, port } = event.detail;
-  if (port !== 8081) return;
-  
-  if (this.phase === 'aim' && this.estado === 'jugando') {
-    this._shoot(x, y);
-  } else {
-    this.particles.setPosition(x, y);
-    this.particles.explode(25);
+    const { x, y, port } = event.detail;
+    if (port !== 8081) return;
+
+    // Cuando hay modal de gameover, verificar botones manualmente
+    if (this.phase === 'gameover' && this.sensorButtons) {
+      for (const btn of this.sensorButtons) {
+        if (
+          x >= btn.absX - btn.w / 2 && x <= btn.absX + btn.w / 2 &&
+          y >= btn.absY - btn.h / 2 && y <= btn.absY + btn.h / 2
+        ) {
+          if (!this.holdBtn) {
+            this.holdBtn = {
+              x: btn.absX,
+              y: btn.absY,
+              duration: 2000,
+              time: 0,
+              callback: () => {
+                this.sound.play('pop');
+                btn.callback();
+              }
+            };
+          }
+
+          
+          clearTimeout(this._holdCancelTimer);
+          this._holdCancelTimer = setTimeout(() => {
+            this._cancelHold();
+          }, 150);
+
+          return;
+        }
+      }
+      return; // Impacto fuera de botones durante gameover → ignorar
+    }
+
+    if (this.phase === 'aim' && this.estado === 'jugando') {
+      this._shoot(x, y);
+    } else {
+      this.particles.setPosition(x, y);
+      this.particles.explode(25);
+    }
   }
-}
 
   _getRandomMessage(options) {
     return options[Math.floor(Math.random() * options.length)];
