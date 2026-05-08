@@ -11,7 +11,7 @@ const GameMenu = ({ onSelectGame, onBack }) => {
 
     const handleSensor = (e) => {
       if (e.detail.port !== 8081) return;
-      if (Date.now() - mountTime < 500) return; // ← ignorar eventos tempranos
+      if (Date.now() - mountTime < 2000) return; // ← ignorar eventos tempranos
 
       const { x, y } = e.detail;
 
