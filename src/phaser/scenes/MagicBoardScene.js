@@ -104,7 +104,9 @@ export class MagicBoardScene extends Phaser.Scene {
     // --- 7. INPUTS Y SENSOR ---
     this._setupInputs();
     this._impactHandler = (e) => {
-      if (e.detail.port === 8081) this._handleAction(e.detail.x, e.detail.y);
+      if (e.detail.port !== 8081) return;
+      this.isDrawing = true;
+      this._handleAction(e.detail.x, e.detail.y);
     };
     window.addEventListener('ws-message', this._impactHandler);
 
@@ -879,7 +881,10 @@ export class MagicBoardScene extends Phaser.Scene {
   }
 
   shutdown() {
-    window.removeEventListener('ws-message', this._impactHandler);
-    if (this.canvasTexture) this.canvasTexture.destroy();
-  }
+  this.isDrawing = false;
+  this.lastX = null;
+  this.lastY = null;
+  window.removeEventListener('ws-message', this._impactHandler);
+  if (this.canvasTexture) this.canvasTexture.destroy();
+}
 }

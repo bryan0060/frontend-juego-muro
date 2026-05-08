@@ -1372,11 +1372,16 @@ export class SoccerScene extends Phaser.Scene {
 
   // ─── Compatibilidad con laser-impact externo ─────────────────────
   handleImpact(event) {
-    if (!this.particles) return; // Evitar error si se activa antes de iniciar el juego
-    const { x, y } = event.detail;
+  const { x, y, port } = event.detail;
+  if (port !== 8081) return;
+  
+  if (this.phase === 'aim' && this.estado === 'jugando') {
+    this._shoot(x, y);
+  } else {
     this.particles.setPosition(x, y);
     this.particles.explode(25);
   }
+}
 
   _getRandomMessage(options) {
     return options[Math.floor(Math.random() * options.length)];
