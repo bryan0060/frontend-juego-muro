@@ -75,9 +75,8 @@ export class MagicBoardScene extends Phaser.Scene {
 
     // --- 5. BOTONES PRINCIPALES ---
     this.buttons = [];
-    this._createElegantButton(660, height - 100, '🌌', 'VIAJAR', () => this._warpTravel(), 2000);
+    this._createElegantButton(width - 240, height - 100, '🌌', 'VIAJAR', () => this._warpTravel(), 2000);
     this._createElegantButton(width - 100, height - 100, '✨', 'BORRAR TODO', () => this._supernovaClear(), 2000);
-    this._createElegantButton(width - 240, height - 100, '↩️', 'ATRÁS', () => this._undo(), 2000);
     this._createElegantButton(width - 380, height - 100, '🧽', 'BORRADOR', () => this._toggleEraserMenu(), 2000);
     this._createElegantButton(100, height - 100, '✏️', 'ESTILO', () => this._toggleStyleMenu(), 2000);
     this._createElegantButton(240, height - 100, '🎨', 'COLOR', () => this._toggleColorMenu(), 2000);
@@ -100,19 +99,12 @@ export class MagicBoardScene extends Phaser.Scene {
       const touches = e.detail.touches;
       if (!touches || touches.length === 0) return;
 
-      // _activeTraces es un array de { lastX, lastY } — uno por trazo activo
-      // Se inicializa en create() como this._activeTraces = []
-      const MAX_CONNECT_DIST = 120; // px — si el punto nuevo está más lejos, es trazo nuevo
-
-      // Marcar todos los trazos como "no usados en este frame"
-      for (const trace of this._activeTraces) {
-        trace.used = false;
-      }
+      const MAX_CONNECT_DIST = 200;
+      const now = this.time.now;
 
       for (const touch of touches) {
         const { x, y } = touch;
 
-        // Verificar botones
         const btn = this._getButtonAt(x, y);
         if (btn) {
           if (this.pressedBtn && this.pressedBtn !== btn) this._cancelHold();
@@ -126,15 +118,16 @@ export class MagicBoardScene extends Phaser.Scene {
           continue;
         }
 
-        // Buscar el trazo activo más cercano a este punto
+        // Buscar trazo más cercano que no haya sido usado en este frame
         let closestTrace = null;
         let closestDist = MAX_CONNECT_DIST;
 
         for (const trace of this._activeTraces) {
-          if (trace.used) continue; // cada trazo solo se usa una vez por frame
+          if (trace.usedThisFrame) continue;
           if (trace.lastX === null) continue;
           const dist = Math.sqrt(
-            Math.pow(x - trace.lastX, 2) + Math.pow(y - trace.lastY, 2)
+            Math.pow(x - trace.lastX, 2) +
+            Math.pow(y - trace.lastY, 2)
           );
           if (dist < closestDist) {
             closestDist = dist;
@@ -143,19 +136,22 @@ export class MagicBoardScene extends Phaser.Scene {
         }
 
         if (closestTrace) {
-          // Conectar con el trazo más cercano
           this.lastX = closestTrace.lastX;
           this.lastY = closestTrace.lastY;
-          closestTrace.used = true;
           closestTrace.lastX = x;
           closestTrace.lastY = y;
+          closestTrace.lastSeen = now;
+          closestTrace.usedThisFrame = true;
         } else {
-          // Trazo nuevo — no hay ninguno cerca
+          // Trazo nuevo
           this.lastX = null;
           this.lastY = null;
           this._saveHistory();
-          const newTrace = { lastX: x, lastY: y, used: true };
-          this._activeTraces.push(newTrace);
+          this._activeTraces.push({
+            lastX: x, lastY: y,
+            lastSeen: now,
+            usedThisFrame: true
+          });
         }
 
         if (this.time.now % 6 === 0) this.sound.play('tick', { volume: 0.15 });
@@ -165,10 +161,17 @@ export class MagicBoardScene extends Phaser.Scene {
         else if (this.brushStyle === 'comet') this._drawComet(x, y);
       }
 
-      // Limpiar trazos que no fueron usados en este frame (mano levantada)
-      this._activeTraces = this._activeTraces.filter(t => t.used);
+      // Resetear flag de este frame
+      for (const trace of this._activeTraces) {
+        trace.usedThisFrame = false;
+      }
 
-      this.lastActionTime = this.time.now;
+      // Descartar trazos que no han sido vistos en 300ms
+      this._activeTraces = this._activeTraces.filter(
+        t => now - t.lastSeen < 300
+      );
+
+      this.lastActionTime = now;
     };
     window.addEventListener('ws-message', this._impactHandler);
 
@@ -464,14 +467,6 @@ export class MagicBoardScene extends Phaser.Scene {
     this.history.push(this.ctx.getImageData(0, 0, this.scale.width, this.scale.height));
   }
 
-  _undo() {
-    if (this.history.length > 0) {
-      const lastState = this.history.pop();
-      this.ctx.putImageData(lastState, 0, 0);
-      this.canvasTexture.update();
-      this.sound.play('pop');
-    }
-  }
 
   _handleAction(x, y) {
     if (this.time.now % 6 === 0) this.sound.play('tick', { volume: 0.15 });
