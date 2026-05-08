@@ -1,19 +1,3 @@
-/**
- * PhaserGame.jsx — Puente entre React y Phaser.
- *
- * Responsabilidades:
- * 1. Montar el canvas de Phaser en el DOM.
- * 2. Conectar el WebSocket al puerto, path y juego correctos.
- * 3. Destruir el juego y desconectar el WS al salir.
- *
- * Props:
- * - escenaInicial: string  → qué escena de Phaser lanzar
- * - wsPort: number         → puerto del WebSocket (8080 o 8081)
- * - wsPath: string         → path de la URL ('/ws' o '')
- * - wsJuego: string|null   → juego a activar en el backend al conectar
- * - onBack: function       → volver al menú
- */
-
 import { useEffect, useRef, useState } from 'react';
 import * as Phaser from 'phaser';
 import { createPhaserConfig } from '../../phaser/PhaserConfig';
@@ -23,6 +7,7 @@ import { initMockWebSocket } from '../../services/websocket/MockWebSocket';
 const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJuego = null, onBack }) => {
   const gameContainerRef = useRef(null);
   const gameRef = useRef(null);
+  const btnRef = useRef(null); // ← AGREGAR ref al botón
 
   useEffect(() => {
     const container = gameContainerRef.current;
@@ -51,6 +36,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
   const [holdProgress, setHoldProgress] = useState(0);
   const holdTimerRef = useRef(null);
   const startTimeRef = useRef(null);
+  const holdCancelTimerRef = useRef(null); // ← AGREGAR ref para el timeout del sensor
 
   const startHold = () => {
     startTimeRef.current = Date.now();
@@ -70,9 +56,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
             }
           }
         }
-        if (!handled) {
-          onBack();
-        }
+        if (!handled) onBack();
       }
     }, 50);
   };
@@ -82,6 +66,38 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
     setHoldProgress(0);
   };
 
+  // ← AGREGAR: escuchar el sensor
+  useEffect(() => {
+    const handleSensor = (e) => {
+      if (e.detail.port !== 8081) return;
+      const { x, y } = e.detail;
+
+      const btn = btnRef.current;
+      if (!btn) return;
+
+      const rect = btn.getBoundingClientRect();
+      const isOverBtn =
+        x >= rect.left && x <= rect.right &&
+        y >= rect.top && y <= rect.bottom;
+
+      if (isOverBtn) {
+        // Si no hay hold activo, arrancarlo
+        if (!startTimeRef.current) {
+          startHold();
+        }
+        // Resetear el timeout de cancelación
+        clearTimeout(holdCancelTimerRef.current);
+        holdCancelTimerRef.current = setTimeout(() => {
+          cancelHold();
+          startTimeRef.current = null;
+        }, 150);
+      }
+    };
+
+    window.addEventListener('ws-message', handleSensor);
+    return () => window.removeEventListener('ws-message', handleSensor);
+  }, []);
+
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
       <div
@@ -89,6 +105,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
         style={{ width: '100%', height: '100%' }}
       />
       <div
+        ref={btnRef} // ← AGREGAR ref
         onMouseDown={startHold}
         onMouseUp={cancelHold}
         onMouseLeave={cancelHold}

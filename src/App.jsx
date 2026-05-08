@@ -1,22 +1,24 @@
-/**
- * App.jsx — Punto de entrada principal de React.
- *
- * Maneja la navegación entre pantallas y transporta
- * el objeto completo del juego seleccionado.
- */
+// App.jsx
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './styles/global.css';
 import StartScreen from './components/StartScreen/StartScreen';
 import GameMenu from './components/GameMenu/GameMenu';
 import PhaserGame from './components/PhaserGame/PhaserGame';
+import { connectWebSocket } from './services/websocket/WebSocketClient';
 
 function App() {
   const [pantalla, setPantalla] = useState('inicio');
   const [juegoActivo, setJuegoActivo] = useState(null);
 
+  // Reconectar el LiDAR cada vez que se muestra el menú
+  useEffect(() => {
+    if (pantalla === 'menu' || pantalla === 'inicio') {
+      connectWebSocket(8081, '', null);
+    }
+  }, [pantalla]);
+
   const handleSelectGame = (juego) => {
-    // juego = { id, nombre, escena, wsPort, disponible, ... }
     setJuegoActivo(juego);
     setPantalla('juego');
   };

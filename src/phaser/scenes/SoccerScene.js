@@ -97,6 +97,7 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   _mostrarMenuEscenarios() {
+    this.sensorButtons = []; // ← AGREGAR
     const { width: W, height: H } = this.scale;
     this.menuContainer = this.add.container(0, 0).setDepth(200);
 
@@ -242,6 +243,23 @@ export class SoccerScene extends Phaser.Scene {
           this.hoverSound = null;
         }
         if (this.menuMusic) this.menuMusic.setVolume(0.7);
+      });
+
+      this.sensorButtons.push({
+        absX: x,
+        absY: y,
+        w: 480,
+        h: 400,
+        callback: () => {
+          this.sound.play('pop');
+          this.tweens.add({
+            targets: card,
+            scale: 0.95,
+            duration: 100,
+            yoyo: true,
+            onComplete: () => this._iniciarJuego(esc.id)
+          });
+        }
       });
     });
 
@@ -1384,7 +1402,33 @@ export class SoccerScene extends Phaser.Scene {
     const { x, y, port } = event.detail;
     if (port !== 8081) return;
 
-    // Cuando hay modal de gameover, verificar botones manualmente
+    // Botones del menú de torneos
+    if (this.estado === 'seleccion' && this.sensorButtons) {
+      for (const btn of this.sensorButtons) {
+        if (
+          x >= btn.absX - btn.w / 2 && x <= btn.absX + btn.w / 2 &&
+          y >= btn.absY - btn.h / 2 && y <= btn.absY + btn.h / 2
+        ) {
+          if (!this.holdBtn) {
+            this.holdBtn = {
+              x: btn.absX,
+              y: btn.absY,
+              duration: 2000,
+              time: 0,
+              callback: () => btn.callback()
+            };
+          }
+          clearTimeout(this._holdCancelTimer);
+          this._holdCancelTimer = setTimeout(() => {
+            this._cancelHold();
+          }, 150);
+          return;
+        }
+      }
+      return;
+    }
+
+    // Botones del modal de gameover
     if (this.phase === 'gameover' && this.sensorButtons) {
       for (const btn of this.sensorButtons) {
         if (
@@ -1403,17 +1447,14 @@ export class SoccerScene extends Phaser.Scene {
               }
             };
           }
-
-          
           clearTimeout(this._holdCancelTimer);
           this._holdCancelTimer = setTimeout(() => {
             this._cancelHold();
           }, 150);
-
           return;
         }
       }
-      return; // Impacto fuera de botones durante gameover → ignorar
+      return;
     }
 
     if (this.phase === 'aim' && this.estado === 'jugando') {
