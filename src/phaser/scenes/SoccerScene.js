@@ -73,7 +73,9 @@ export class SoccerScene extends Phaser.Scene {
     // Sistema de hold para botones
     this.holdBtn = null;
     this.holdGraphics = this.add.graphics().setDepth(20000);
-    this.sensorButtons = []; // ← AGREGAR ESTA LÍNEA
+    this.sensorButtons = [];
+    this._juegoIniciando = false;
+    this._gameOverIniciado = false;
 
     if (this.escenarioPreseleccionado) {
       this._iniciarJuego(this.escenarioPreseleccionado);
@@ -408,11 +410,13 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   _iniciarJuego(escenarioId) {
+    if (this._juegoIniciando) return; // ← AGREGAR
+    this._juegoIniciando = true;      // ← AGREGAR
+
     if (this.menuMusic) this.menuMusic.stop();
     if (this.hoverSound) this.hoverSound.stop();
     if (this.menuContainer) this.menuContainer.destroy();
     this.sensorButtons = [];
-    // ... resto del método igual
 
     this.escenarioActual = escenarioId;
     this.estado = 'jugando';
@@ -470,6 +474,8 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   _iniciarCuentaRegresiva() {
+    this.sensorButtons = []; // ← AGREGAR
+
     this.estado = 'countdown';
     this.phase = 'countdown';
 
@@ -1280,6 +1286,9 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   _gameOver() {
+    if (this._gameOverIniciado) return; // ← AGREGAR
+    this._gameOverIniciado = true;      // ← AGREGAR
+    this.sensorButtons = [];
     this.phase = 'gameover';
     // No detenemos la música aquí para que continúe al reintentar
     // if (this.gameMusic) this.gameMusic.stop();
@@ -1402,55 +1411,28 @@ export class SoccerScene extends Phaser.Scene {
     const { x, y, port } = event.detail;
     if (port !== 8081) return;
 
-    // Botones del menú de torneos
+    // Menú de torneos — toque directo
     if (this.estado === 'seleccion' && this.sensorButtons) {
       for (const btn of this.sensorButtons) {
         if (
           x >= btn.absX - btn.w / 2 && x <= btn.absX + btn.w / 2 &&
           y >= btn.absY - btn.h / 2 && y <= btn.absY + btn.h / 2
         ) {
-          if (!this.holdBtn) {
-            this.holdBtn = {
-              x: btn.absX,
-              y: btn.absY,
-              duration: 2000,
-              time: 0,
-              callback: () => btn.callback()
-            };
-          }
-          clearTimeout(this._holdCancelTimer);
-          this._holdCancelTimer = setTimeout(() => {
-            this._cancelHold();
-          }, 150);
+          btn.callback();
           return;
         }
       }
       return;
     }
 
-    // Botones del modal de gameover
+    // Modal de gameover — toque directo
     if (this.phase === 'gameover' && this.sensorButtons) {
       for (const btn of this.sensorButtons) {
         if (
           x >= btn.absX - btn.w / 2 && x <= btn.absX + btn.w / 2 &&
           y >= btn.absY - btn.h / 2 && y <= btn.absY + btn.h / 2
         ) {
-          if (!this.holdBtn) {
-            this.holdBtn = {
-              x: btn.absX,
-              y: btn.absY,
-              duration: 2000,
-              time: 0,
-              callback: () => {
-                this.sound.play('pop');
-                btn.callback();
-              }
-            };
-          }
-          clearTimeout(this._holdCancelTimer);
-          this._holdCancelTimer = setTimeout(() => {
-            this._cancelHold();
-          }, 150);
+          btn.callback();
           return;
         }
       }
