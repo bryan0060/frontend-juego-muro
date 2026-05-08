@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import styles from './StartScreen.module.css';
+import { getFirstTouch } from '../../services/websocket/WebSocketClient';
 
 const SONGS_LIST = [
   '/assets/audioyvideosv/songsafepapper_1.mp3',
@@ -20,8 +21,8 @@ const StartScreen = ({ onPlay }) => {
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
-  const playBtnRef = useRef(null);   // ← AGREGAR
-  const starBtnRef = useRef(null);   // ← AGREGAR
+  const playBtnRef = useRef(null);
+  const starBtnRef = useRef(null);
 
   const playRandomSong = () => {
     const randomIndex = Math.floor(Math.random() * SONGS_LIST.length);
@@ -40,19 +41,19 @@ const StartScreen = ({ onPlay }) => {
     setShowScreensaver(true);
   };
 
-  // ← AGREGAR
   useEffect(() => {
     const handleSensor = (e) => {
       if (e.detail.port !== 8081) return;
-      const { x, y } = e.detail;
 
-      // Si el salvapantallas está activo, cualquier toque lo cierra
+      const touch = getFirstTouch(e.detail);
+      if (!touch) return;
+      const { x, y } = touch;
+
       if (showScreensaver) {
         handleCloseScreensaver();
         return;
       }
 
-      // Chequear botón ¡A Jugar!
       const playEl = playBtnRef.current;
       if (playEl) {
         const rect = playEl.getBoundingClientRect();
@@ -62,12 +63,10 @@ const StartScreen = ({ onPlay }) => {
         }
       }
 
-      // Chequear botón salvapantallas
-      // Chequear botón salvapantallas
       const starEl = starBtnRef.current;
       if (starEl) {
         const rect = starEl.getBoundingClientRect();
-        const margin = 20; // ← margen extra alrededor del botón
+        const margin = 20;
         if (
           x >= rect.left - margin && x <= rect.right + margin &&
           y >= rect.top - margin && y <= rect.bottom + margin
@@ -80,11 +79,10 @@ const StartScreen = ({ onPlay }) => {
 
     window.addEventListener('ws-message', handleSensor);
     return () => window.removeEventListener('ws-message', handleSensor);
-  }, [showScreensaver]); // ← depende de showScreensaver para el cierre del salvapantallas
+  }, [showScreensaver]);
 
   return (
     <div className={styles.container}>
-
       {showScreensaver && (
         <div className={styles.screensaverOverlay} onClick={handleCloseScreensaver}>
           <video
@@ -119,7 +117,7 @@ const StartScreen = ({ onPlay }) => {
       />
 
       <button
-        ref={playBtnRef} // ← AGREGAR
+        ref={playBtnRef}
         className={styles.playButton}
         onClick={onPlay}
       >
@@ -131,14 +129,13 @@ const StartScreen = ({ onPlay }) => {
       </p>
 
       <button
-        ref={starBtnRef} // ← AGREGAR
+        ref={starBtnRef}
         className={styles.starButton}
         onClick={handleOpenScreensaver}
         title="Activar Salvapantallas"
       >
         ⭐
       </button>
-
     </div>
   );
 };

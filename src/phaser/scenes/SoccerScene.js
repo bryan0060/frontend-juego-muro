@@ -1408,10 +1408,19 @@ export class SoccerScene extends Phaser.Scene {
   // ─── Compatibilidad con laser-impact externo ─────────────────────
   // ✅ DESPUÉS
   handleImpact(event) {
-    const { x, y, port } = event.detail;
+    const { port } = event.detail;
     if (port !== 8081) return;
 
-    // Menú de torneos — toque directo
+    // Soporte formato nuevo (touches) y viejo (x, y directo)
+    let x, y;
+    if (event.detail.touches && event.detail.touches.length > 0) {
+      x = event.detail.touches[0].x;
+      y = event.detail.touches[0].y;
+    } else if (event.detail.x !== undefined) {
+      x = event.detail.x;
+      y = event.detail.y;
+    } else return;
+
     if (this.estado === 'seleccion' && this.sensorButtons) {
       for (const btn of this.sensorButtons) {
         if (
@@ -1425,7 +1434,6 @@ export class SoccerScene extends Phaser.Scene {
       return;
     }
 
-    // Modal de gameover — toque directo
     if (this.phase === 'gameover' && this.sensorButtons) {
       for (const btn of this.sensorButtons) {
         if (

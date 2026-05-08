@@ -1,21 +1,23 @@
 import { useEffect, useRef } from 'react';
 import styles from './GameMenu.module.css';
 import { GAMES } from '../../config/games.config';
+import { getFirstTouch } from '../../services/websocket/WebSocketClient';
 
 const GameMenu = ({ onSelectGame, onBack }) => {
   const cardRefs = useRef({});
-  const backBtnRef = useRef(null); // ← AGREGAR
+  const backBtnRef = useRef(null);
 
   useEffect(() => {
-    const mountTime = Date.now(); // ← timestamp de cuando montó el componente
+    const mountTime = Date.now();
 
     const handleSensor = (e) => {
       if (e.detail.port !== 8081) return;
-      if (Date.now() - mountTime < 2000) return; // ← ignorar eventos tempranos
+      if (Date.now() - mountTime < 2000) return;
 
-      const { x, y } = e.detail;
+      const touch = getFirstTouch(e.detail);
+      if (!touch) return;
+      const { x, y } = touch;
 
-      // Chequear botón volver
       const backEl = backBtnRef.current;
       if (backEl) {
         const rect = backEl.getBoundingClientRect();
@@ -25,13 +27,11 @@ const GameMenu = ({ onSelectGame, onBack }) => {
         }
       }
 
-      // Chequear cards de juegos
       for (const juego of GAMES) {
         if (!juego.disponible) continue;
         const el = cardRefs.current[juego.id];
         if (!el) continue;
         const rect = el.getBoundingClientRect();
-        console.log('chequeando:', juego.id, juego.disponible, rect, x, y);
         if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
           onSelectGame(juego);
           break;
@@ -57,9 +57,10 @@ const GameMenu = ({ onSelectGame, onBack }) => {
             ref={el => cardRefs.current[juego.id] = el}
             className={`${styles.card} ${!juego.disponible ? styles.cardBloqueado : ''}`}
             onClick={() => {
-              if (!juego.disponible) return; // ← doble guarda
+              if (!juego.disponible) return;
               onSelectGame(juego);
-            }} disabled={!juego.disponible}
+            }}
+            disabled={!juego.disponible}
           >
             <span className={styles.cardEmoji}>{juego.emoji}</span>
             {juego.nombre}
@@ -71,7 +72,7 @@ const GameMenu = ({ onSelectGame, onBack }) => {
       </div>
 
       <button
-        ref={backBtnRef} // ← AGREGAR
+        ref={backBtnRef}
         className={styles.backButton}
         onClick={onBack}
       >

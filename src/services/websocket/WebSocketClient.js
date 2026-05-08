@@ -17,6 +17,20 @@ const _connections = new Map();
 // ─── API pública ──────────────────────────────────────────────────────────────
 
 /**
+ * Extrae el primer toque de un evento ws-message.
+ * Compatible con formato nuevo (touches) y viejo (x, y directo).
+ */
+export const getFirstTouch = (detail) => {
+  if (detail.touches && detail.touches.length > 0) {
+    return { x: detail.touches[0].x, y: detail.touches[0].y };
+  }
+  if (detail.x !== undefined && detail.y !== undefined) {
+    return { x: detail.x, y: detail.y };
+  }
+  return null;
+};
+
+/**
  * Conecta al WebSocket del puerto y path indicados.
  * Si ya existe una conexión abierta al mismo puerto, no hace nada.
  * Múltiples puertos pueden estar conectados simultáneamente.

@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Phaser from 'phaser';
 import { createPhaserConfig } from '../../phaser/PhaserConfig';
-import { connectWebSocket, disconnectWebSocket } from '../../services/websocket/WebSocketClient';
+import { connectWebSocket, disconnectWebSocket, getFirstTouch } from '../../services/websocket/WebSocketClient';
 import { initMockWebSocket } from '../../services/websocket/MockWebSocket';
 
 const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJuego = null, onBack }) => {
   const gameContainerRef = useRef(null);
   const gameRef = useRef(null);
-  const btnRef = useRef(null); // ← AGREGAR ref al botón
+  const btnRef = useRef(null);
 
   useEffect(() => {
     const container = gameContainerRef.current;
@@ -30,7 +30,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
 
     return () => {
       gameRef.current?._mockCleanup?.();
-      disconnectWebSocket(); // cierra todos
+      disconnectWebSocket();
       gameRef.current?.destroy(true);
       gameRef.current = null;
     };
@@ -39,7 +39,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
   const [holdProgress, setHoldProgress] = useState(0);
   const holdTimerRef = useRef(null);
   const startTimeRef = useRef(null);
-  const holdCancelTimerRef = useRef(null); // ← AGREGAR ref para el timeout del sensor
+  const holdCancelTimerRef = useRef(null);
 
   const startHold = () => {
     startTimeRef.current = Date.now();
@@ -67,13 +67,16 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
   const cancelHold = () => {
     clearInterval(holdTimerRef.current);
     setHoldProgress(0);
+    startTimeRef.current = null;
   };
 
-  // ← AGREGAR: escuchar el sensor
   useEffect(() => {
     const handleSensor = (e) => {
       if (e.detail.port !== 8081) return;
-      const { x, y } = e.detail;
+
+      const touch = getFirstTouch(e.detail);
+      if (!touch) return;
+      const { x, y } = touch;
 
       const btn = btnRef.current;
       if (!btn) return;
@@ -81,19 +84,16 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
       const rect = btn.getBoundingClientRect();
       const margin = 25;
       const isOverBtn =
-        x >= rect.left && x <= rect.right &&
-        y >= rect.top && y <= rect.bottom;
+        x >= rect.left - margin && x <= rect.right + margin &&
+        y >= rect.top - margin && y <= rect.bottom + margin;
 
       if (isOverBtn) {
-        // Si no hay hold activo, arrancarlo
         if (!startTimeRef.current) {
           startHold();
         }
-        // Resetear el timeout de cancelación
         clearTimeout(holdCancelTimerRef.current);
         holdCancelTimerRef.current = setTimeout(() => {
           cancelHold();
-          startTimeRef.current = null;
         }, 150);
       }
     };
@@ -109,7 +109,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
         style={{ width: '100%', height: '100%' }}
       />
       <div
-        ref={btnRef} // ← AGREGAR ref
+        ref={btnRef}
         onMouseDown={startHold}
         onMouseUp={cancelHold}
         onMouseLeave={cancelHold}

@@ -91,30 +91,73 @@ export class MagicBoardScene extends Phaser.Scene {
     this._createEraserMenu();
     this._createBrushMenu();
 
+    this._touchStates = {};
+
     // --- 7. INPUTS Y SENSOR ---
     this._setupInputs();
     this._impactHandler = (e) => {
       if (e.detail.port !== 8081) return;
-      const { x, y } = e.detail;
 
-      const btn = this._getButtonAt(x, y);
-      if (btn) {
-        if (this.pressedBtn && this.pressedBtn !== btn) this._cancelHold();
-        if (!this.pressedBtn) {
-          this.pressedBtn = btn;
-          this.pressedBtn.holdTime = 0;
+      const touches = e.detail.touches;
+
+      // Soporte formato viejo (x, y directo) y nuevo (touches array)
+      if (!touches || touches.length === 0) return;
+
+      // Resetear lastX/lastY de IDs que ya no están en el frame actual
+      const activeIds = new Set(touches.map(t => t.id));
+      for (const id of Object.keys(this._touchStates)) {
+        if (!activeIds.has(Number(id))) {
+          this._touchStates[id] = { lastX: null, lastY: null };
         }
-        this.isDrawing = false;
-        clearTimeout(this._holdCancelTimer);
-        this._holdCancelTimer = setTimeout(() => {
-          this._cancelHold();
-        }, 150);
-        return;
       }
 
-      if (this.pressedBtn) this._cancelHold();
-      this.isDrawing = true;
-      this._handleAction(x, y);
+      // Procesar cada toque
+      for (const touch of touches) {
+        const { id, x, y } = touch;
+
+        // Verificar si hay un botón bajo este toque
+        const btn = this._getButtonAt(x, y);
+        if (btn) {
+          if (this.pressedBtn && this.pressedBtn !== btn) this._cancelHold();
+          if (!this.pressedBtn) {
+            this.pressedBtn = btn;
+            this.pressedBtn.holdTime = 0;
+          }
+          this.isDrawing = false;
+          clearTimeout(this._holdCancelTimer);
+          this._holdCancelTimer = setTimeout(() => {
+            this._cancelHold();
+          }, 150);
+          continue; // No dibujar para este toque
+        }
+
+        // Inicializar estado del toque si es nuevo
+        if (!this._touchStates[id]) {
+          this._touchStates[id] = { lastX: null, lastY: null };
+        }
+
+        // Setear lastX/lastY globales con el estado de este ID
+        this.lastX = this._touchStates[id].lastX;
+        this.lastY = this._touchStates[id].lastY;
+
+        // Si es el primer punto de este trazo, guardar historial
+        if (this.lastX === null) {
+          this._saveHistory();
+        }
+
+        // Dibujar
+        if (this.time.now % 6 === 0) this.sound.play('tick', { volume: 0.15 });
+        if (this.brushStyle === 'eraser') this._drawEraser(x, y);
+        else if (this.brushStyle === 'shootingStar') this._drawShootingStar(x, y);
+        else if (this.brushStyle === 'neon') this._drawNeon(x, y);
+        else if (this.brushStyle === 'comet') this._drawComet(x, y);
+
+        // Guardar el nuevo estado de vuelta en este ID
+        this._touchStates[id].lastX = x;
+        this._touchStates[id].lastY = y;
+      }
+
+      this.lastActionTime = this.time.now;
     };
     window.addEventListener('ws-message', this._impactHandler);
 
@@ -138,7 +181,10 @@ export class MagicBoardScene extends Phaser.Scene {
       delay: 100,
       callback: () => {
         if (this.time.now - this.lastActionTime > 150 && !this.pressedBtn) {
-          this.isDrawing = false; this.lastX = null; this.lastY = null;
+          this.isDrawing = false;
+          this.lastX = null;
+          this.lastY = null;
+          this._touchStates = {}; // ← limpiar todos los trazos
         }
       },
       loop: true
@@ -417,17 +463,14 @@ export class MagicBoardScene extends Phaser.Scene {
   }
 
   _handleAction(x, y) {
-    this.lastActionTime = this.time.now;
-    if (!this.isDrawing) { this._saveHistory(); this.isDrawing = true; this.lastX = null; this.lastY = null; }
-    if (this.time.now % 6 === 0) this.sound.play('tick', { volume: 0.15 });
-
-    if (this.brushStyle === 'eraser') this._drawEraser(x, y);
-    else if (this.brushStyle === 'shootingStar') this._drawShootingStar(x, y);
-    else if (this.brushStyle === 'neon') this._drawNeon(x, y);
-    else if (this.brushStyle === 'comet') this._drawComet(x, y);
-
-    this.lastX = x; this.lastY = y;
-  }
+  if (this.time.now % 6 === 0) this.sound.play('tick', { volume: 0.15 });
+  if (this.brushStyle === 'eraser') this._drawEraser(x, y);
+  else if (this.brushStyle === 'shootingStar') this._drawShootingStar(x, y);
+  else if (this.brushStyle === 'neon') this._drawNeon(x, y);
+  else if (this.brushStyle === 'comet') this._drawComet(x, y);
+  this.lastX = x;
+  this.lastY = y;
+}
 
   _drawEraser(x, y) {
     this.ctx.globalCompositeOperation = 'destination-out';
