@@ -52,6 +52,7 @@ export class MagicBoardScene extends Phaser.Scene {
     this.eraserSize = 60;
     this.availableColors = [
       { id: 'white', hex: 0xffffff, str: '255, 255, 255' },
+      { id: 'black', hex: 0x111111, str: '10, 10, 10' },
       { id: 'red', hex: 0xff3333, str: '255, 51, 51' },
       { id: 'green', hex: 0x33ff33, str: '51, 255, 51' },
       { id: 'blue', hex: 0x3399ff, str: '51, 153, 255' },
@@ -74,7 +75,7 @@ export class MagicBoardScene extends Phaser.Scene {
 
     // --- 5. BOTONES PRINCIPALES ---
     this.buttons = [];
-    this._createElegantButton(width - 100, 100, '🌌', 'VIAJAR', () => this._warpTravel(), 2000);
+    this._createElegantButton(660, height - 100, '🌌', 'VIAJAR', () => this._warpTravel(), 2000);
     this._createElegantButton(width - 100, height - 100, '✨', 'BORRAR TODO', () => this._supernovaClear(), 2000);
     this._createElegantButton(width - 240, height - 100, '↩️', 'ATRÁS', () => this._undo(), 2000);
     this._createElegantButton(width - 380, height - 100, '🧽', 'BORRADOR', () => this._toggleEraserMenu(), 2000);
@@ -446,15 +447,32 @@ export class MagicBoardScene extends Phaser.Scene {
       const hue = (this.time.now / 5) % 360;
       colorStr = `hsl(${hue}, 100%, 50%)`;
     }
-    this.ctx.strokeStyle = colorStr; this.ctx.lineCap = 'round'; this.ctx.lineWidth = this.brushSize;
-    this.ctx.shadowBlur = 15; this.ctx.shadowColor = colorStr;
+    this.ctx.strokeStyle = colorStr;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineWidth = this.brushSize;
+    this.ctx.shadowBlur = 15;
+    this.ctx.shadowColor = colorStr;
     this.ctx.beginPath();
-    if (this.lastX !== null && this.lastY !== null) { this.ctx.moveTo(this.lastX, this.lastY); this.ctx.lineTo(x, y); }
-    else { this.ctx.arc(x, y, 8, 0, Math.PI * 2); }
+    if (this.lastX !== null && this.lastY !== null) {
+      this.ctx.moveTo(this.lastX, this.lastY);
+      this.ctx.lineTo(x, y);
+    } else {
+      this.ctx.arc(x, y, 8, 0, Math.PI * 2);
+    }
     this.ctx.stroke();
-    this.ctx.lineWidth = Math.max(2, this.brushSize * 0.25); this.ctx.strokeStyle = 'white'; this.ctx.beginPath();
-    if (this.lastX !== null && this.lastY !== null) { this.ctx.moveTo(this.lastX, this.lastY); this.ctx.lineTo(x, y); }
-    this.ctx.stroke();
+
+    // Segunda pasada de brillo blanco — solo si NO es rainbow
+    if (this.selectedColor.id !== 'rainbow') {
+      this.ctx.lineWidth = Math.max(2, this.brushSize * 0.25);
+      this.ctx.strokeStyle = 'white';
+      this.ctx.beginPath();
+      if (this.lastX !== null && this.lastY !== null) {
+        this.ctx.moveTo(this.lastX, this.lastY);
+        this.ctx.lineTo(x, y);
+      }
+      this.ctx.stroke();
+    }
+
     this.canvasTexture.update();
   }
 
@@ -547,7 +565,11 @@ export class MagicBoardScene extends Phaser.Scene {
       this.buttons.push({
         x: 240 + xOffset, y: height - 200 + yOffset, cont: subBtn,
         holdDuration: 1500, holdTime: 0,
-        callback: () => { this.selectedColor = c; this.colorMenuCont.setVisible(false); }
+        callback: () => {
+          this.selectedColor = c;
+          if (this.brushStyle === 'eraser') this.brushStyle = 'shootingStar';
+          this.colorMenuCont.setVisible(false);
+        }
       });
     });
   }
@@ -643,7 +665,7 @@ export class MagicBoardScene extends Phaser.Scene {
     ];
 
     sizes.forEach((s, i) => {
-      const yOffset = -(i + 1) * 90;
+      const yOffset = -(i + 1) * 110;
       const subBtn = this.add.container(0, yOffset);
       const glow = this.add.circle(0, 0, 45, 0x40c0dd, 0.15).setDepth(-1);
       const bg = this.add.circle(0, 0, 40, 0x000000).setStrokeStyle(2, 0xffffff, 0.7);
@@ -687,7 +709,7 @@ export class MagicBoardScene extends Phaser.Scene {
     ];
 
     sizes.forEach((s, i) => {
-      const yOffset = -(i + 1) * 90;
+      const yOffset = -(i + 1) * 110;
       const subBtn = this.add.container(0, yOffset);
       const glow = this.add.circle(0, 0, 45, 0x9c4eb3, 0.2).setDepth(-1);
       const bg = this.add.circle(0, 0, 40, 0x000000).setStrokeStyle(2, 0xffffff, 0.8);
@@ -700,6 +722,7 @@ export class MagicBoardScene extends Phaser.Scene {
         holdDuration: 1500, holdTime: 0,
         callback: () => {
           this.brushSize = s.size;
+          if (this.brushStyle === 'eraser') this.brushStyle = 'shootingStar';
           this.brushMenuCont.setVisible(false);
           this.sound.play('pop');
         }
