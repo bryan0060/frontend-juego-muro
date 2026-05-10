@@ -1369,18 +1369,10 @@ export class SoccerScene extends Phaser.Scene {
       bg.fillRoundedRect(-200, -35, 400, 70, 15);
     });
 
-    hit.on('pointerdown', (ptr) => {
-      this.holdBtn = {
-        x: this.scale.width / 2 + x, y: this.scale.height / 2 + y, // x,y son relativos al modal
-        duration: 2000, time: 0,
-        callback: () => {
-          this.sound.play('pop');
-          callback();
-        }
-      };
+    hit.on('pointerdown', () => {
+      this.sound.play('pop');
+      callback();
     });
-
-    hit.on('pointerup', () => this._cancelHold());
 
     const absX = this.scale.width / 2 + x;
     const absY = this.scale.height / 2 + y;
