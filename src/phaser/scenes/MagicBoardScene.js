@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { sendMessage } from '../../services/websocket/WebSocketClient.js';
 
 export class MagicBoardScene extends Phaser.Scene {
   constructor() {
@@ -6,6 +7,7 @@ export class MagicBoardScene extends Phaser.Scene {
   }
 
   create() {
+    sendMessage({ event: "set_mode", mode: "pizarra" }, 8081)
     const { width, height } = this.scale;
 
     // --- 1. CONFIGURACIÓN DE PLANETAS ---
