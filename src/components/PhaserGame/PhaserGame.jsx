@@ -94,7 +94,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
         clearTimeout(holdCancelTimerRef.current);
         holdCancelTimerRef.current = setTimeout(() => {
           cancelHold();
-        }, 150);
+        }, 400);
       }
     };
 

@@ -1,4 +1,6 @@
 import * as Phaser from 'phaser';
+import { sendMessage } from '../../services/websocket/WebSocketClient.js';
+
 
 export class SoccerScene extends Phaser.Scene {
   constructor() {
@@ -412,6 +414,7 @@ export class SoccerScene extends Phaser.Scene {
   _iniciarJuego(escenarioId) {
     if (this._juegoIniciando) return; // ← AGREGAR
     this._juegoIniciando = true;      // ← AGREGAR
+    sendMessage({ event: "set_mode", mode: "penaltis" }, 8081)
 
     if (this.menuMusic) this.menuMusic.stop();
     if (this.hoverSound) this.hoverSound.stop();
@@ -474,11 +477,9 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   _iniciarCuentaRegresiva() {
-    this.sensorButtons = []; // ← AGREGAR
-
+    this.sensorButtons = [];
     this.estado = 'countdown';
     this.phase = 'countdown';
-
     const { width: W, height: H } = this.scale;
     const countText = this.add.text(W / 2, H / 2, '3', {
       fontSize: '220px',
@@ -487,9 +488,7 @@ export class SoccerScene extends Phaser.Scene {
       stroke: '#000000',
       strokeThickness: 15
     }).setOrigin(0.5).setDepth(500);
-
     let count = 3;
-
     const updateCount = () => {
       this.tweens.add({
         targets: countText,
@@ -515,6 +514,8 @@ export class SoccerScene extends Phaser.Scene {
                   countText.setColor('#00ff00');
                   this.sound.play('pop');
                   this.sound.play('arbitro');
+                  this.estado = 'jugando';
+                  this.phase = 'aim';
                   updateCount();
                 } else {
                   countText.destroy();
@@ -527,7 +528,6 @@ export class SoccerScene extends Phaser.Scene {
         }
       });
     };
-
     this.sound.play('tick');
     updateCount();
   }
