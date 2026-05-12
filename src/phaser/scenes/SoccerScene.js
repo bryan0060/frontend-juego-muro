@@ -7,17 +7,22 @@ export class SoccerScene extends Phaser.Scene {
     super({ key: 'SoccerScene' });
 
     this.hitbox = {
-      showDebug: false,
+      showDebug: true,
 
+      boxesNeutral: [{ ox: -40, oy: -170, w: 80, h: 240 }],
       boxesSide: [
-        // 🟩 CAJA CENTRAL (Punto de partida - Torso)
         { ox: -50, oy: -50, w: 300, h: 150 },
-        // 🟥 CAJA PARTE DE ARRIBA (Cabeza y brazos)
         { ox: -250, oy: -130, w: 200, h: 150 }
       ],
-
-      boxesNeutral: [
-        { ox: -40, oy: -170, w: 80, h: 240 }
+      boxesCorner: [
+        { ox: -50, oy: -50, w: 300, h: 150 },
+        { ox: -250, oy: -130, w: 200, h: 150 }
+      ],
+      boxesHigh: [{ ox: -40, oy: -170, w: 80, h: 240 }],
+      boxesLow: [{ ox: -40, oy: -170, w: 80, h: 240 }],
+      boxesTopCorner: [
+        { ox: -50, oy: -80, w: 300, h: 250 },
+        { ox: -180, oy: -130, w: 130, h: 100 }
       ],
 
       goalTop: 80,
@@ -425,13 +430,15 @@ export class SoccerScene extends Phaser.Scene {
     this.estado = 'jugando';
 
     if (escenarioId === 'soccer_kids_bg') {
+      this.hitbox.goalTop = 55; // Bajado un poquito a petición del usuario
       this.hitbox.goalWidthRatio = 0.47;
       this.hitbox.goalBottomRatio = 0.95;
-      this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side' };
+      this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side', corner: 'keeper_kids_corner', high: 'keeper_kids_high', low: 'keeper_kids_low' };
     } else {
-      this.hitbox.goalWidthRatio = 0.48;
+      this.hitbox.goalTop = 50; // Ajuste final para liga profesional
+      this.hitbox.goalWidthRatio = 0.48; // Ajuste final para liga profesional
       this.hitbox.goalBottomRatio = 0.90;
-      this.keeperKeys = { neutral: 'keeper_neutral', side: 'keeper_side' };
+      this.keeperKeys = { neutral: 'keeper_neutral', side: 'keeper_side', corner: 'keeper_corner', high: 'keeper_high', low: 'keeper_low', topCorner: 'keeper_top_corner' };
     }
 
     this._buildGraphics();
@@ -707,7 +714,7 @@ export class SoccerScene extends Phaser.Scene {
 
   _buildKeeper() {
     this.scaleNeutral = 0.95;
-    this.scaleSide = 0.95;
+    this.scaleSide = 0.85; // Reducido un poco para que quepa mejor en pantalla al estirarse
 
     const sp = this.add.sprite(0, 0, this.keeperKeys?.neutral || 'keeper_neutral');
     sp.setScale(this.scaleNeutral);
@@ -1016,8 +1023,8 @@ export class SoccerScene extends Phaser.Scene {
     let keeperDestX = randomDestX * (1 - intelligence) + tx * intelligence;
     keeperDestX = Phaser.Math.Clamp(
       keeperDestX,
-      this.W / 2 - this.W * 0.5,
-      this.W / 2 + this.W * 0.5
+      this.W / 2 - this.W * 0.32, // Volvemos a 0.32 para que llegue a la esquina, con el arquero un pelín más pequeño para que no se corte
+      this.W / 2 + this.W * 0.32
     );
 
     const isLowShot = ty > this.H * 0.7;
@@ -1028,7 +1035,27 @@ export class SoccerScene extends Phaser.Scene {
 
     const reactionTime = Math.max(240, 380 - (this.score * 40));
 
-    this.keeperSprite.setTexture(this.keeperKeys.side);
+    const gWidth = this.W * this.hitbox.goalWidthRatio;
+    const isTopCorner = ty < this.H * 0.35 && Math.abs(tx - this.W / 2) > (gWidth * 0.65);
+    const isLowCorner = ty > this.H * 0.65 && Math.abs(tx - this.W / 2) > (gWidth * 0.65);
+    const isCornerDive = Math.abs(tx - this.W / 2) > (gWidth * 0.80) && !isTopCorner && !isLowCorner;
+    const isHighZone = ty < this.H * 0.30 && !isCornerDive && !isTopCorner && !isLowCorner;
+    const isLowZone = ty > this.H * 0.65 && !isCornerDive && !isTopCorner && !isLowCorner;
+
+    let tex = this.keeperKeys.side;
+    if (isTopCorner) {
+      tex = this.keeperKeys.topCorner || this.keeperKeys.corner; // Fallback para niños
+    } else if (isLowCorner) {
+      tex = this.keeperKeys.side; // Forzar "posicion iz2" en esquinas inferiores
+    } else if (isCornerDive) {
+      tex = this.keeperKeys.corner;
+    } else if (isHighZone) {
+      tex = this.keeperKeys.high;
+    } else if (isLowZone) {
+      tex = this.keeperKeys.low;
+    }
+
+    this.keeperSprite.setTexture(tex);
     this.keeperSprite.setScale(this.scaleSide);
     this.keeperSprite.setFlipX(keeperDestX > this.W / 2);
 
@@ -1058,9 +1085,14 @@ export class SoccerScene extends Phaser.Scene {
     const isNeutral = this.keeperSprite.texture.key === (this.keeperKeys?.neutral || 'keeper_neutral');
     const isLowShot = ty > this.H * 0.7;
 
-    const activeBoxes = isNeutral
-      ? this.hitbox.boxesNeutral
-      : this.hitbox.boxesSide;
+    let activeBoxes = this.hitbox.boxesNeutral;
+    const currentTex = this.keeperSprite.texture.key;
+
+    if (currentTex === this.keeperKeys.side) activeBoxes = this.hitbox.boxesSide;
+    else if (currentTex === this.keeperKeys.corner) activeBoxes = this.hitbox.boxesCorner;
+    else if (currentTex === this.keeperKeys.high) activeBoxes = this.hitbox.boxesHigh;
+    else if (currentTex === this.keeperKeys.low) activeBoxes = this.hitbox.boxesLow;
+    else if (currentTex === this.keeperKeys.topCorner) activeBoxes = this.hitbox.boxesTopCorner;
 
     const sortedBoxes = [...activeBoxes];
     // El guante (menor ox) siempre primero
