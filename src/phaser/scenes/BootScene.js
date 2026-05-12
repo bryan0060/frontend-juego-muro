@@ -44,8 +44,15 @@ export class BootScene extends Phaser.Scene {
     this.load.audio('europa', 'assets/audio/sonidos futbol/europa.mp3');
     this.load.image('keeper_neutral', 'assets/images/futbol/posicion1.png');
     this.load.image('keeper_side', 'assets/images/futbol/posicion iz.png');
+    this.load.image('keeper_corner', 'assets/images/futbol/atajada 4.png');
+    this.load.image('keeper_top_corner', 'assets/images/futbol/atajada 3.png');
+    this.load.image('keeper_high', 'assets/images/futbol/atajada2.png');
+    this.load.image('keeper_low', 'assets/images/futbol/atajada5.png');
     this.load.image('keeper_kids_neutral', 'assets/images/futbol/porteria1.png');
     this.load.image('keeper_kids_side', 'assets/images/futbol/posicion iz2.png');
+    this.load.image('keeper_kids_corner', 'assets/images/futbol/atajada4-2.png');
+    this.load.image('keeper_kids_high', 'assets/images/futbol/atajada2-2.png');
+    this.load.image('keeper_kids_low', 'assets/images/futbol/atajada5-2.png');
     this.load.image('ball', 'assets/images/futbol/Balon.png');
     this.load.image('fans_bg', 'assets/images/futbol/hinchas.png');
     this.load.image('soccer_kids_bg', 'assets/images/futbol/hinchas2.png');
