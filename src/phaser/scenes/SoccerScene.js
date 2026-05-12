@@ -24,6 +24,9 @@ export class SoccerScene extends Phaser.Scene {
         { ox: -50, oy: -80, w: 300, h: 250 },
         { ox: -180, oy: -130, w: 130, h: 100 }
       ],
+      boxesTopCenter: [
+        { ox: -150, oy: -200, w: 300, h: 280 }
+      ],
 
       goalTop: 80,
       goalWidthRatio: 0.45,
@@ -440,13 +443,28 @@ export class SoccerScene extends Phaser.Scene {
       this.hitbox.goalWidthRatio = 0.47;
       this.hitbox.goalBottomRatio = 0.95;
       this.difficultyBase = 0.1; 
-      this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side', corner: 'keeper_kids_corner', high: 'keeper_kids_high', low: 'keeper_kids_low' };
+      this.keeperKeys = { 
+        neutral: 'keeper_kids_neutral', 
+        side: 'keeper_kids_side', 
+        corner: 'keeper_kids_corner', 
+        topCenter: 'keeper_kids_top_center',
+        high: 'keeper_kids_high', 
+        low: 'keeper_kids_low' 
+      };
     } else {
       this.hitbox.goalTop = 50; // Ajuste final para liga profesional
       this.hitbox.goalWidthRatio = 0.48; // Ajuste final para liga profesional
       this.hitbox.goalBottomRatio = 0.90;
       this.difficultyBase = 0.3;
-      this.keeperKeys = { neutral: 'keeper_neutral', side: 'keeper_side', corner: 'keeper_corner', high: 'keeper_high', low: 'keeper_low', topCorner: 'keeper_top_corner' };
+      this.keeperKeys = { 
+        neutral: 'keeper_neutral', 
+        side: 'keeper_side', 
+        corner: 'keeper_corner', 
+        topCorner: 'keeper_top_corner', 
+        topCenter: 'keeper_top_center',
+        high: 'keeper_high', 
+        low: 'keeper_low' 
+      };
     }
 
     this._buildGraphics();
@@ -1033,30 +1051,42 @@ export class SoccerScene extends Phaser.Scene {
     let keeperDestX = randomDestX * (1 - intelligence) + tx * intelligence;
     keeperDestX = Phaser.Math.Clamp(
       keeperDestX,
-      this.W / 2 - this.W * 0.32, // Volvemos a 0.32 para que llegue a la esquina, con el arquero un pelín más pequeño para que no se corte
-      this.W / 2 + this.W * 0.32
+      this.W * 0.12, // Margen izquierdo para que no se salga
+      this.W * 0.88  // Margen derecho para que no se salga
     );
 
     const isLowShot = ty > this.H * 0.7;
+    const gWidth = this.W * this.hitbox.goalWidthRatio;
+    const isTopCorner = ty < this.H * 0.35 && Math.abs(tx - this.W / 2) > (gWidth * 0.65);
+    const isTopCenter = ty < this.H * 0.35 && Math.abs(tx - this.W / 2) <= (gWidth * 0.65);
+
+    // Probabilidad de que el portero decida hacer la atajada central perfecta
+    // Aumenta con la inteligencia (dificultad), pero nunca es 100% para que siempre haya chance
+    const saveSuccessChance = 0.35 + (intelligence * 0.55); // Entre 35% y 90% aprox.
+    const performsTopCenterSave = isTopCenter && (Math.random() < saveSuccessChance);
+
+    if (performsTopCenterSave) {
+      keeperDestX = this.W / 2; // Mantener derecho en el centro solo si decide bien
+    }
 
     const jumpPower = isLowShot
-      ? Phaser.Math.Between(-20, 10) // Ahora se mantiene más pegado al suelo o baja un poco
-      : Phaser.Math.Clamp(Math.max(120, (this.H * 0.75 - ty) * 0.9), 0, 350);
+      ? Phaser.Math.Between(-20, 10) 
+      : Phaser.Math.Clamp(Math.max(120, (this.H * 0.75 - ty) * 0.9), 0, this.H * 0.45); // Clampeado al 45% de la altura total para que no suba de más
 
     const reactionTime = this.escenarioActual === 'soccer_adults_bg'
       ? Math.max(150, 280 - (this.score * 40))
       : Math.max(240, 380 - (this.score * 40));
 
-    const gWidth = this.W * this.hitbox.goalWidthRatio;
-    const isTopCorner = ty < this.H * 0.35 && Math.abs(tx - this.W / 2) > (gWidth * 0.65);
     const isLowCorner = ty > this.H * 0.65 && Math.abs(tx - this.W / 2) > (gWidth * 0.65);
-    const isCornerDive = Math.abs(tx - this.W / 2) > (gWidth * 0.80) && !isTopCorner && !isLowCorner;
-    const isHighZone = ty < this.H * 0.30 && !isCornerDive && !isTopCorner && !isLowCorner;
-    const isLowZone = ty > this.H * 0.65 && !isCornerDive && !isTopCorner && !isLowCorner;
+    const isCornerDive = Math.abs(tx - this.W / 2) > (gWidth * 0.80) && !isTopCorner && !isLowCorner && !performsTopCenterSave;
+    const isHighZone = ty < this.H * 0.30 && !isCornerDive && !isTopCorner && !isLowCorner && !performsTopCenterSave;
+    const isLowZone = ty > this.H * 0.65 && !isCornerDive && !isTopCorner && !isLowCorner && !performsTopCenterSave;
 
     let tex = this.keeperKeys.side;
     if (isTopCorner) {
       tex = this.keeperKeys.topCorner || this.keeperKeys.corner; // Fallback para niños
+    } else if (performsTopCenterSave) {
+      tex = this.keeperKeys.topCenter;
     } else if (isLowCorner) {
       tex = this.keeperKeys.side; // Forzar "posicion iz2" en esquinas inferiores
     } else if (isCornerDive) {
@@ -1069,13 +1099,13 @@ export class SoccerScene extends Phaser.Scene {
 
     this.keeperSprite.setTexture(tex);
     this.keeperSprite.setScale(this.scaleSide);
-    this.keeperSprite.setFlipX(keeperDestX > this.W / 2);
+    this.keeperSprite.setFlipX(performsTopCenterSave ? false : (keeperDestX > this.W / 2));
 
     this.tweens.add({
       targets: [this.keeperContainer, this.keeperShadow],
       x: keeperDestX,
       y: (targets) => targets === this.keeperShadow ? this.H * 0.75 + 45 : this.H * 0.75 - jumpPower,
-      angle: (keeperDestX > this.W / 2 ? 1 : -1) * 35,
+      angle: performsTopCenterSave ? 0 : (keeperDestX > this.W / 2 ? 1 : -1) * 35,
       duration: reactionTime,
       ease: 'Quad.easeOut',
     });
@@ -1105,6 +1135,7 @@ export class SoccerScene extends Phaser.Scene {
     else if (currentTex === this.keeperKeys.high) activeBoxes = this.hitbox.boxesHigh;
     else if (currentTex === this.keeperKeys.low) activeBoxes = this.hitbox.boxesLow;
     else if (currentTex === this.keeperKeys.topCorner) activeBoxes = this.hitbox.boxesTopCorner;
+    else if (currentTex === this.keeperKeys.topCenter) activeBoxes = this.hitbox.boxesTopCenter;
 
     const sortedBoxes = [...activeBoxes];
     // El guante (menor ox) siempre primero
@@ -1234,7 +1265,7 @@ export class SoccerScene extends Phaser.Scene {
     const isNeutral = this.keeperSprite.texture.key === (this.keeperKeys?.neutral || 'keeper_neutral');
     const activeBoxes = isNeutral
       ? this.hitbox.boxesNeutral
-      : this.hitbox.boxesSide;
+      : (this.keeperSprite.texture.key === this.keeperKeys.topCenter ? this.hitbox.boxesTopCenter : this.hitbox.boxesSide);
 
     // Verde = cuerpo, Rojo = guante, Azul = pies, Amarillo = neutral
     const debugColors = [0x00ff00, 0xff4400, 0x0088ff, 0xffff00];
