@@ -7,7 +7,7 @@ export class SoccerScene extends Phaser.Scene {
     super({ key: 'SoccerScene' });
 
     this.hitbox = {
-      showDebug: true,
+      showDebug: false,
 
       boxesNeutral: [{ ox: -40, oy: -170, w: 80, h: 240 }],
       boxesSide: [
@@ -439,12 +439,14 @@ export class SoccerScene extends Phaser.Scene {
       this.hitbox.goalTop = 55; // Bajado un poquito a petición del usuario
       this.hitbox.goalWidthRatio = 0.47;
       this.hitbox.goalBottomRatio = 0.95;
-      this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side' };
+      this.difficultyBase = 0.1; 
+      this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side', corner: 'keeper_kids_corner', high: 'keeper_kids_high', low: 'keeper_kids_low' };
     } else {
       this.hitbox.goalTop = 50; // Ajuste final para liga profesional
       this.hitbox.goalWidthRatio = 0.48; // Ajuste final para liga profesional
       this.hitbox.goalBottomRatio = 0.90;
-      this.keeperKeys = { neutral: 'keeper_neutral', side: 'keeper_side' };
+      this.difficultyBase = 0.3;
+      this.keeperKeys = { neutral: 'keeper_neutral', side: 'keeper_side', corner: 'keeper_corner', high: 'keeper_high', low: 'keeper_low', topCorner: 'keeper_top_corner' };
     }
 
     this._buildGraphics();
