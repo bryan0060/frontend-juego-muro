@@ -442,28 +442,21 @@ export class SoccerScene extends Phaser.Scene {
       this.hitbox.goalTop = 55; // Bajado un poquito a petición del usuario
       this.hitbox.goalWidthRatio = 0.47;
       this.hitbox.goalBottomRatio = 0.95;
-      this.difficultyBase = 0.1; 
-      this.keeperKeys = { 
-        neutral: 'keeper_kids_neutral', 
-        side: 'keeper_kids_side', 
-        corner: 'keeper_kids_corner', 
-        topCenter: 'keeper_kids_top_center',
-        high: 'keeper_kids_high', 
-        low: 'keeper_kids_low' 
-      };
+      this.difficultyBase = 0.1;
+      this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side', corner: 'keeper_kids_corner', high: 'keeper_kids_high', low: 'keeper_kids_low' };
     } else {
       this.hitbox.goalTop = 50; // Ajuste final para liga profesional
       this.hitbox.goalWidthRatio = 0.48; // Ajuste final para liga profesional
       this.hitbox.goalBottomRatio = 0.90;
       this.difficultyBase = 0.3;
-      this.keeperKeys = { 
-        neutral: 'keeper_neutral', 
-        side: 'keeper_side', 
-        corner: 'keeper_corner', 
-        topCorner: 'keeper_top_corner', 
+      this.keeperKeys = {
+        neutral: 'keeper_neutral',
+        side: 'keeper_side',
+        corner: 'keeper_corner',
+        topCorner: 'keeper_top_corner',
         topCenter: 'keeper_top_center',
-        high: 'keeper_high', 
-        low: 'keeper_low' 
+        high: 'keeper_high',
+        low: 'keeper_low'
       };
     }
 
@@ -1070,7 +1063,7 @@ export class SoccerScene extends Phaser.Scene {
     }
 
     const jumpPower = isLowShot
-      ? Phaser.Math.Between(-20, 10) 
+      ? Phaser.Math.Between(-20, 10)
       : Phaser.Math.Clamp(Math.max(120, (this.H * 0.75 - ty) * 0.9), 0, this.H * 0.45); // Clampeado al 45% de la altura total para que no suba de más
 
     const reactionTime = this.escenarioActual === 'soccer_adults_bg'
@@ -1194,6 +1187,8 @@ export class SoccerScene extends Phaser.Scene {
       this.particles.explode(40);
       this._launchFireworks();
     } else if (blocked) {
+      this.sound.play('publico_decepcionado', { volume: 1.0 });
+      this.sound.play('error_fail', { volume: 1.0 });
       const msg = this._getRandomMessage([
         'ATAJADO', '¡QUÉ REFLEJOS!', '¡MURALLA!', '¡ATAJADÓN!',
         '¡NO PASAS!', '¡MANO SALVADORA!', '¡IMPEDIDO!', '¡BLOQUEADO!'
@@ -1211,8 +1206,10 @@ export class SoccerScene extends Phaser.Scene {
       this.shotResults.push(false);
       this.sound.play('tick');
     } else {
+      this.sound.play('publico_decepcionado', { volume: 1.0 });
+      this.sound.play('error_fail', { volume: 1.0 });
       const msg = this._getRandomMessage([
-        'MUY FUERTE', '¡AHHH!', '¡AFUERA!', '¡POR POCO!',
+        'MUY FUERTE', '¡AFUERA!', '¡POR POCO!',
         '¡AL CIELO!', '¡FUERA!', '¡TE PASASTE!', '¡OTRA VEZ SERÁ!'
       ]);
       this._showResult(msg, '#757575');
