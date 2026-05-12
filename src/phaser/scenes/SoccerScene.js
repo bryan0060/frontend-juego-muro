@@ -20,7 +20,7 @@ export class SoccerScene extends Phaser.Scene {
         { ox: -40, oy: -170, w: 80, h: 240 }
       ],
 
-      goalTop: 60,
+      goalTop: 80,
       goalWidthRatio: 0.45,
       goalBottomRatio: 0.90
     };
@@ -429,7 +429,7 @@ export class SoccerScene extends Phaser.Scene {
       this.hitbox.goalBottomRatio = 0.95;
       this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side' };
     } else {
-      this.hitbox.goalWidthRatio = 0.46;
+      this.hitbox.goalWidthRatio = 0.48;
       this.hitbox.goalBottomRatio = 0.90;
       this.keeperKeys = { neutral: 'keeper_neutral', side: 'keeper_side' };
     }
@@ -537,7 +537,12 @@ export class SoccerScene extends Phaser.Scene {
     const W = this.W, H = this.H;
 
     const bgKey = this.escenarioActual || 'soccer_adults_bg';
-    this.add.image(W / 2, H / 2, bgKey).setDisplaySize(W, H).setDepth(0);
+    const bgImg = this.add.image(W / 2, H / 2, bgKey).setDepth(0);
+    if (this.escenarioActual === 'soccer_adults_bg') {
+      bgImg.setDisplaySize(W * 1.04, H * 1.04);
+    } else {
+      bgImg.setDisplaySize(W, H);
+    }
 
     // Se eliminó la viñeta y las adBoards (manchas negras) a petición del usuario
     // this._drawAdBoards();
