@@ -10,7 +10,6 @@ export class MagicBoardScene extends Phaser.Scene {
     sendMessage({ event: "set_mode", mode: "pizarra" }, 8081)
     const { width, height } = this.scale;
 
-    // --- 1. CONFIGURACIÓN DE PLANETAS ---
     this.bgIndex = 0;
     this.planets = [
       { name: 'SOL', colors: [0x1a0a00, 0x3a1a00, 0x5a2a00, 0x8a3a00], accent: 0xffaa00, planetColor: 0xff4400, type: 'sun' },
@@ -25,7 +24,6 @@ export class MagicBoardScene extends Phaser.Scene {
       { name: 'NEPTUNO', colors: [0x050515, 0x0a0a25, 0x1a1a4a, 0x2a2a6a], accent: 0x40c0dd, planetColor: 0x1a1a4a, type: 'gas' }
     ];
 
-    // --- 2. ELEMENTOS DE FONDO ---
     this.bg = this.add.graphics().setDepth(0);
     this.nebulaGraphics = this.add.graphics().setDepth(0.5);
     this.starGraphics = this.add.graphics().setDepth(1);
@@ -34,12 +32,10 @@ export class MagicBoardScene extends Phaser.Scene {
     this.planetCenter = { x: width / 2, y: height / 2, radius: 300 };
     this._updatePlanetGraphics();
 
-    // --- 3. LIENZO Y HISTORIAL ---
     this.canvasTexture = this.textures.createCanvas('drawingCanvas', width, height);
     this.canvasImage = this.add.image(0, 0, 'drawingCanvas').setOrigin(0).setDepth(5);
     this.bocetoImage = null;
 
-    // --- 4. PLANTILLA DE FONDO ---
     this.plantillaImg = this.add.image(width / 2, height / 2, 'plantilla').setDepth(1).setVisible(false);
     const scaleX = width / this.plantillaImg.width;
     const scaleY = height / this.plantillaImg.height;
@@ -69,23 +65,22 @@ export class MagicBoardScene extends Phaser.Scene {
     this.pressedBtn = null;
     this.holdGraphics = this.add.graphics().setDepth(1500);
 
-    // --- 4. PARTÍCULAS ---
     this.particles = this.add.particles(0, 0, '__DEFAULT', {
       scale: { start: 0.6, end: 0 }, alpha: { start: 1, end: 0 },
       speed: { min: 60, max: 200 }, lifespan: 400, blendMode: 'ADD'
     }).setDepth(10);
 
-    // --- 5. BOTONES PRINCIPALES ---
     this.buttons = [];
-    this._createElegantButton(width - 240, height - 100, '🌌', 'VIAJAR', () => this._warpTravel(), 2000);
-    this._createElegantButton(width - 100, height - 100, '✨', 'BORRAR TODO', () => this._supernovaClear(), 2000);
-    this._createElegantButton(width - 380, height - 100, '🧽', 'BORRADOR', () => this._toggleEraserMenu(), 2000);
-    this._createElegantButton(100, height - 100, '✏️', 'ESTILO', () => this._toggleStyleMenu(), 2000);
-    this._createElegantButton(240, height - 100, '🎨', 'COLOR', () => this._toggleColorMenu(), 2000);
-    this._createElegantButton(380, height - 100, '🖼️', 'BOCETO', () => this._toggleBocetoMenu(), 2000);
-    this._createElegantButton(520, height - 100, '🖌️', 'PINCEL', () => this._toggleBrushMenu(), 2000);
+    // Derecha
+    this._createElegantButton(width - 100, height / 2 - 120, '🧽', 'BORRADOR', () => this._toggleEraserMenu(), 2000);
+    this._createElegantButton(width - 100, height / 2, '🌌', 'VIAJAR', () => this._warpTravel(), 2000);
+    this._createElegantButton(width - 100, height / 2 + 120, '✨', 'BORRAR TODO', () => this._supernovaClear(), 2000);
+    // Izquierda
+    this._createElegantButton(100, height / 2 - 180, '✏️', 'ESTILO', () => this._toggleStyleMenu(), 2000);
+    this._createElegantButton(100, height / 2 - 60, '🎨', 'COLOR', () => this._toggleColorMenu(), 2000);
+    this._createElegantButton(100, height / 2 + 60, '🖼️', 'BOCETO', () => this._toggleBocetoMenu(), 2000);
+    this._createElegantButton(100, height / 2 + 180, '🖌️', 'PINCEL', () => this._toggleBrushMenu(), 2000);
 
-    // --- 6. MENÚS DESPLEGABLES ---
     this._createStyleMenu();
     this._createColorMenu();
     this._createBocetoMenu();
@@ -93,20 +88,16 @@ export class MagicBoardScene extends Phaser.Scene {
     this._createBrushMenu();
 
     this._activeTraces = [];
-    // --- 7. INPUTS Y SENSOR ---
     this._setupInputs();
     this._impactHandler = (e) => {
       if (e.detail.port !== 8081) return;
-
       const touches = e.detail.touches;
       if (!touches || touches.length === 0) return;
-
-      const MAX_CONNECT_DIST = 200;
+      const MAX_CONNECT_DIST = 150;
       const now = this.time.now;
 
       for (const touch of touches) {
         const { x, y } = touch;
-
         const btn = this._getButtonAt(x, y);
         if (btn) {
           if (this.pressedBtn && this.pressedBtn !== btn) this._cancelHold();
@@ -116,44 +107,50 @@ export class MagicBoardScene extends Phaser.Scene {
           }
           this.isDrawing = false;
           clearTimeout(this._holdCancelTimer);
-          this._holdCancelTimer = setTimeout(() => this._cancelHold(), 150);
+          this._holdCancelTimer = setTimeout(() => this._cancelHold(), 1200);
           continue;
         }
 
-        // Buscar trazo más cercano que no haya sido usado en este frame
         let closestTrace = null;
         let closestDist = MAX_CONNECT_DIST;
-
         for (const trace of this._activeTraces) {
           if (trace.usedThisFrame) continue;
           if (trace.lastX === null) continue;
-          const dist = Math.sqrt(
-            Math.pow(x - trace.lastX, 2) +
-            Math.pow(y - trace.lastY, 2)
-          );
-          if (dist < closestDist) {
-            closestDist = dist;
-            closestTrace = trace;
-          }
+          const dist = Math.sqrt(Math.pow(x - trace.lastX, 2) + Math.pow(y - trace.lastY, 2));
+          if (dist < closestDist) { closestDist = dist; closestTrace = trace; }
         }
 
         if (closestTrace) {
-          this.lastX = closestTrace.lastX;
-          this.lastY = closestTrace.lastY;
+          const prevX = closestTrace.lastX;
+          const prevY = closestTrace.lastY;
+          const dist = Math.sqrt(Math.pow(x - prevX, 2) + Math.pow(y - prevY, 2));
+
+          if (dist > 50) {
+            const steps = Math.floor(dist / 30);
+            for (let s = 1; s <= steps; s++) {
+              const t = s / (steps + 1);
+              const ix = prevX + (x - prevX) * t;
+              const iy = prevY + (y - prevY) * t;
+              this.lastX = prevX + (x - prevX) * (s - 1) / (steps + 1);
+              this.lastY = prevY + (y - prevY) * (s - 1) / (steps + 1);
+              if (this.brushStyle === 'eraser') this._drawEraser(ix, iy);
+              else if (this.brushStyle === 'shootingStar') this._drawShootingStar(ix, iy);
+              else if (this.brushStyle === 'neon') this._drawNeon(ix, iy);
+              else if (this.brushStyle === 'comet') this._drawComet(ix, iy);
+            }
+          }
+
+          this.lastX = prevX;
+          this.lastY = prevY;
           closestTrace.lastX = x;
           closestTrace.lastY = y;
           closestTrace.lastSeen = now;
           closestTrace.usedThisFrame = true;
         } else {
-          // Trazo nuevo
           this.lastX = null;
           this.lastY = null;
           this._saveHistory();
-          this._activeTraces.push({
-            lastX: x, lastY: y,
-            lastSeen: now,
-            usedThisFrame: true
-          });
+          this._activeTraces.push({ lastX: x, lastY: y, lastSeen: now, usedThisFrame: true });
         }
 
         if (this.time.now % 6 === 0) this.sound.play('tick', { volume: 0.15 });
@@ -163,29 +160,16 @@ export class MagicBoardScene extends Phaser.Scene {
         else if (this.brushStyle === 'comet') this._drawComet(x, y);
       }
 
-      // Resetear flag de este frame
-      for (const trace of this._activeTraces) {
-        trace.usedThisFrame = false;
-      }
-
-      // Descartar trazos que no han sido vistos en 300ms
-      this._activeTraces = this._activeTraces.filter(
-        t => now - t.lastSeen < 300
-      );
-
+      for (const trace of this._activeTraces) trace.usedThisFrame = false;
+      this._activeTraces = this._activeTraces.filter(t => now - t.lastSeen < 600);
       this.lastActionTime = now;
     };
     window.addEventListener('ws-message', this._impactHandler);
 
-    // --- 8. ELEMENTOS DINÁMICOS ---
     this.dynamicStars = [];
     this._createDynamicStars(width, height);
 
-    this.time.addEvent({
-      delay: 2000,
-      callback: () => this._spawnShootingStar(width, height),
-      loop: true
-    });
+    this.time.addEvent({ delay: 2000, callback: () => this._spawnShootingStar(width, height), loop: true });
 
     this.add.text(width / 2, 60, '✨ PIZARRA GALÁCTICA ✨', {
       fontSize: '52px', fontFamily: 'Luckiest Guy', color: '#ffffff',
@@ -196,11 +180,11 @@ export class MagicBoardScene extends Phaser.Scene {
     this.time.addEvent({
       delay: 100,
       callback: () => {
-        if (this.time.now - this.lastActionTime > 200 && !this.pressedBtn) {
+        if (this.time.now - this.lastActionTime > 600 && !this.pressedBtn) {
           this.isDrawing = false;
           this.lastX = null;
           this.lastY = null;
-          this._activeTraces = []; // limpiar todos los trazos
+          this._activeTraces = [];
         }
       },
       loop: true
@@ -211,12 +195,7 @@ export class MagicBoardScene extends Phaser.Scene {
   _createDynamicStars(w, h) {
     for (let i = 0; i < 50; i++) {
       const star = this.add.circle(Phaser.Math.Between(0, w), Phaser.Math.Between(0, h), Phaser.Math.FloatBetween(1, 3), 0xffffff, 0.8).setDepth(1);
-      this.tweens.add({
-        targets: star, alpha: 0.1,
-        duration: Phaser.Math.Between(1000, 3000),
-        yoyo: true, repeat: -1,
-        delay: Phaser.Math.Between(0, 2000)
-      });
+      this.tweens.add({ targets: star, alpha: 0.1, duration: Phaser.Math.Between(1000, 3000), yoyo: true, repeat: -1, delay: Phaser.Math.Between(0, 2000) });
       this.dynamicStars.push(star);
     }
   }
@@ -228,10 +207,7 @@ export class MagicBoardScene extends Phaser.Scene {
     line.lineStyle(2, 0xffffff, 0.8);
     line.strokeLineShape(new Phaser.Geom.Line(0, 0, 150, -5));
     line.setPosition(x, y);
-    this.tweens.add({
-      targets: line, x: x + 800, y: y + 200, alpha: 0, duration: 800,
-      onComplete: () => line.destroy()
-    });
+    this.tweens.add({ targets: line, x: x + 800, y: y + 200, alpha: 0, duration: 800, onComplete: () => line.destroy() });
   }
 
   _updatePlanetGraphics() {
@@ -276,12 +252,10 @@ export class MagicBoardScene extends Phaser.Scene {
 
     this.planetGraphics.clear();
     const radius = this.planetCenter.radius;
-
     for (let i = 0; i < 8; i++) {
       this.planetGraphics.lineStyle(15 - i, theme.accent, 0.12 - (i * 0.015));
       this.planetGraphics.strokeCircle(cx, cy, radius + (i * 5));
     }
-
     this.planetGraphics.fillStyle(theme.planetColor, 0.4);
     this.planetGraphics.fillCircle(cx, cy, radius);
 
@@ -388,33 +362,18 @@ export class MagicBoardScene extends Phaser.Scene {
   _setupInputs() {
     this.input.on('pointerdown', (p) => {
       const btn = this._getButtonAt(p.x, p.y);
-      if (btn) {
-        this.pressedBtn = btn;
-        this.pressedBtn.holdTime = 0;
-        this.isDrawing = false;
-      } else {
-        this.isDrawing = false;
-        this._handleAction(p.x, p.y);
-      }
+      if (btn) { this.pressedBtn = btn; this.pressedBtn.holdTime = 0; this.isDrawing = false; }
+      else { this.isDrawing = false; this._handleAction(p.x, p.y); }
     });
-
     this.input.on('pointermove', (p) => {
       if (p.isDown) {
         if (this.pressedBtn) {
           const dist = Phaser.Math.Distance.Between(p.x, p.y, this.pressedBtn.x, this.pressedBtn.y);
           if (dist > 80) this._cancelHold();
-        } else {
-          this._handleAction(p.x, p.y);
-        }
+        } else { this._handleAction(p.x, p.y); }
       }
     });
-
-    this.input.on('pointerup', () => {
-      this._cancelHold();
-      this.isDrawing = false;
-      this.lastX = null;
-      this.lastY = null;
-    });
+    this.input.on('pointerup', () => { this._cancelHold(); this.isDrawing = false; this.lastX = null; this.lastY = null; });
   }
 
   _getButtonAt(x, y) {
@@ -427,10 +386,7 @@ export class MagicBoardScene extends Phaser.Scene {
     return null;
   }
 
-  _cancelHold() {
-    this.pressedBtn = null;
-    this.holdGraphics.clear();
-  }
+  _cancelHold() { this.pressedBtn = null; this.holdGraphics.clear(); }
 
   update(time, delta) {
     if (this.isClearing) {
@@ -438,29 +394,19 @@ export class MagicBoardScene extends Phaser.Scene {
       if (time - this._clearingStartTime > 3000) {
         this.isClearing = false;
         this._clearingStartTime = null;
-        this.children.list
-          .filter(c => c.type === 'Rectangle' && c.depth === 200)
-          .forEach(c => c.destroy());
+        this.children.list.filter(c => c.type === 'Rectangle' && c.depth === 200).forEach(c => c.destroy());
       }
-    } else {
-      this._clearingStartTime = null;
-    }
+    } else { this._clearingStartTime = null; }
 
     if (this.pressedBtn) {
       this.pressedBtn.holdTime += delta;
       const progress = Math.min(this.pressedBtn.holdTime / this.pressedBtn.holdDuration, 1);
-
       this.holdGraphics.clear();
       this.holdGraphics.lineStyle(8, 0x00ff00, 0.8);
       this.holdGraphics.beginPath();
       this.holdGraphics.arc(this.pressedBtn.x, this.pressedBtn.y, 65, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * progress));
       this.holdGraphics.strokePath();
-
-      if (progress >= 1) {
-        const cb = this.pressedBtn.callback;
-        this._cancelHold();
-        cb();
-      }
+      if (progress >= 1) { const cb = this.pressedBtn.callback; this._cancelHold(); cb(); }
     }
   }
 
@@ -468,7 +414,6 @@ export class MagicBoardScene extends Phaser.Scene {
     if (this.history.length > 20) this.history.shift();
     this.history.push(this.ctx.getImageData(0, 0, this.scale.width, this.scale.height));
   }
-
 
   _handleAction(x, y) {
     if (this.time.now % 6 === 0) this.sound.play('tick', { volume: 0.15 });
@@ -494,45 +439,29 @@ export class MagicBoardScene extends Phaser.Scene {
 
   _drawShootingStar(x, y) {
     let colorStr = `rgb(${this.selectedColor.str})`;
-    if (this.selectedColor.id === 'rainbow') {
-      const hue = (this.time.now / 5) % 360;
-      colorStr = `hsl(${hue}, 100%, 50%)`;
-    }
+    if (this.selectedColor.id === 'rainbow') { const hue = (this.time.now / 5) % 360; colorStr = `hsl(${hue}, 100%, 50%)`; }
     this.ctx.strokeStyle = colorStr;
     this.ctx.lineCap = 'round';
     this.ctx.lineWidth = this.brushSize;
     this.ctx.shadowBlur = 15;
     this.ctx.shadowColor = colorStr;
     this.ctx.beginPath();
-    if (this.lastX !== null && this.lastY !== null) {
-      this.ctx.moveTo(this.lastX, this.lastY);
-      this.ctx.lineTo(x, y);
-    } else {
-      this.ctx.arc(x, y, 8, 0, Math.PI * 2);
-    }
+    if (this.lastX !== null && this.lastY !== null) { this.ctx.moveTo(this.lastX, this.lastY); this.ctx.lineTo(x, y); }
+    else { this.ctx.arc(x, y, 8, 0, Math.PI * 2); }
     this.ctx.stroke();
-
-    // Segunda pasada de brillo blanco — solo si NO es rainbow
     if (this.selectedColor.id !== 'rainbow') {
       this.ctx.lineWidth = Math.max(2, this.brushSize * 0.25);
       this.ctx.strokeStyle = 'white';
       this.ctx.beginPath();
-      if (this.lastX !== null && this.lastY !== null) {
-        this.ctx.moveTo(this.lastX, this.lastY);
-        this.ctx.lineTo(x, y);
-      }
+      if (this.lastX !== null && this.lastY !== null) { this.ctx.moveTo(this.lastX, this.lastY); this.ctx.lineTo(x, y); }
       this.ctx.stroke();
     }
-
     this.canvasTexture.update();
   }
 
   _drawNeon(x, y) {
     let colorStr = `rgba(${this.selectedColor.str}, 0.8)`;
-    if (this.selectedColor.id === 'rainbow') {
-      const hue = (this.time.now / 5) % 360;
-      colorStr = `hsla(${hue}, 100%, 50%, 0.8)`;
-    }
+    if (this.selectedColor.id === 'rainbow') { const hue = (this.time.now / 5) % 360; colorStr = `hsla(${hue}, 100%, 50%, 0.8)`; }
     this.ctx.strokeStyle = colorStr; this.ctx.lineWidth = this.brushSize * 2; this.ctx.shadowBlur = this.brushSize * 1.5; this.ctx.shadowColor = colorStr;
     this.ctx.beginPath();
     if (this.lastX !== null && this.lastY !== null) { this.ctx.moveTo(this.lastX, this.lastY); this.ctx.lineTo(x, y); }
@@ -543,10 +472,7 @@ export class MagicBoardScene extends Phaser.Scene {
 
   _drawComet(x, y) {
     let colorStr = `rgba(${this.selectedColor.str}, 0.6)`;
-    if (this.selectedColor.id === 'rainbow') {
-      const hue = (this.time.now / 5) % 360;
-      colorStr = `hsla(${hue}, 100%, 50%, 0.6)`;
-    }
+    if (this.selectedColor.id === 'rainbow') { const hue = (this.time.now / 5) % 360; colorStr = `hsla(${hue}, 100%, 50%, 0.6)`; }
     this.ctx.fillStyle = colorStr; this.ctx.shadowBlur = 10; this.ctx.shadowColor = colorStr;
     for (let i = 0; i < 6; i++) {
       const ox = Phaser.Math.Between(-15, 15); const oy = Phaser.Math.Between(-15, 15);
@@ -562,10 +488,7 @@ export class MagicBoardScene extends Phaser.Scene {
     const glow = this.add.circle(0, 0, 50, 0x40c0dd, 0.05);
     const core = this.add.circle(0, 0, 45, 0x000000, 0.8).setStrokeStyle(2, 0xffffff, 0.6);
     const icon = this.add.text(0, -6, iconStr, { fontSize: '36px' }).setOrigin(0.5);
-    const label = this.add.text(0, 32, labelStr, {
-      fontSize: '14px', fontFamily: 'Luckiest Guy', color: '#ffffff',
-      stroke: '#000', strokeThickness: 3
-    }).setOrigin(0.5);
+    const label = this.add.text(0, 32, labelStr, { fontSize: '14px', fontFamily: 'Luckiest Guy', color: '#ffffff', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5);
     btn.add([aura, glow, core, icon, label]);
     this.buttons.push({ x, y, cont: btn, callback, isPressed: false, holdDuration, holdTime: 0 });
     this.tweens.add({ targets: [aura, glow], scale: 1.15, alpha: 0.2, duration: 1500 + Math.random() * 500, yoyo: true, loop: -1 });
@@ -573,76 +496,60 @@ export class MagicBoardScene extends Phaser.Scene {
 
   _createStyleMenu() {
     const { height } = this.scale;
-    this.styleMenuCont = this.add.container(100, height - 200).setDepth(1000).setVisible(false);
+    const btnY = height / 2 - 180;
+    this.styleMenuCont = this.add.container(100, btnY).setDepth(1000).setVisible(false);
     const styles = [{ id: 'shootingStar', icon: '✨' }, { id: 'neon', icon: '🔦' }, { id: 'comet', icon: '☄️' }];
     styles.forEach((s, i) => {
-      const spacing = 90;
-      const subBtn = this.add.container(0, -i * spacing);
+      const xOffset = (i + 1) * 110;
+      const subBtn = this.add.container(xOffset, 0);
       const glow = this.add.circle(0, 0, 45, 0x9c4eb3, 0.2).setDepth(-1);
       const bg = this.add.circle(0, 0, 40, 0x000000).setStrokeStyle(2, 0xffffff, 0.8);
       const txt = this.add.text(0, 0, s.icon, { fontSize: '28px' }).setOrigin(0.5);
       subBtn.add([glow, bg, txt]);
       this.tweens.add({ targets: glow, scale: 1.1, alpha: 0.4, duration: 1000 + i * 200, yoyo: true, loop: -1 });
       this.styleMenuCont.add(subBtn);
-      this.buttons.push({
-        x: 100, y: height - 200 - i * spacing, cont: subBtn,
-        holdDuration: 1500, holdTime: 0,
-        callback: () => { this.brushStyle = s.id; this.styleMenuCont.setVisible(false); }
-      });
+      this.buttons.push({ x: 100 + xOffset, y: btnY, cont: subBtn, holdDuration: 1500, holdTime: 0, callback: () => { this.brushStyle = s.id; this.styleMenuCont.setVisible(false); } });
     });
   }
 
   _createColorMenu() {
     const { height } = this.scale;
-    this.colorMenuCont = this.add.container(240, height - 200).setDepth(1000).setVisible(false);
+    const btnY = height / 2 - 60;
+    this.colorMenuCont = this.add.container(100, btnY).setDepth(1000).setVisible(false);
     this.availableColors.forEach((c, i) => {
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      const xOffset = col === 0 ? -45 : 45;
-      const yOffset = -row * 90;
+      const col = i % 4;
+      const row = Math.floor(i / 4);
+      const xOffset = (col + 1) * 110;
+      const yOffset = row === 0 ? -55 : 55;
       const subBtn = this.add.container(xOffset, yOffset);
       const glow = this.add.circle(0, 0, 40, c.hex, 0.2).setDepth(-1);
-      const bg = c.id === 'rainbow'
-        ? this.add.circle(0, 0, 35, 0xffffff).setStrokeStyle(3, 0xffffff)
-        : this.add.circle(0, 0, 35, c.hex).setStrokeStyle(3, 0xffffff, 0.8);
-      if (c.id === 'rainbow') {
-        const txt = this.add.text(0, 0, '🌈', { fontSize: '24px' }).setOrigin(0.5);
-        subBtn.add([glow, bg, txt]);
-      } else {
-        subBtn.add([glow, bg]);
-      }
+      const bg = c.id === 'rainbow' ? this.add.circle(0, 0, 35, 0xffffff).setStrokeStyle(3, 0xffffff) : this.add.circle(0, 0, 35, c.hex).setStrokeStyle(3, 0xffffff, 0.8);
+      if (c.id === 'rainbow') { const txt = this.add.text(0, 0, '🌈', { fontSize: '24px' }).setOrigin(0.5); subBtn.add([glow, bg, txt]); }
+      else { subBtn.add([glow, bg]); }
       this.tweens.add({ targets: glow, scale: 1.15, alpha: 0.5, duration: 1200 + i * 100, yoyo: true, loop: -1 });
       this.colorMenuCont.add(subBtn);
       this.buttons.push({
-        x: 240 + xOffset, y: height - 200 + yOffset, cont: subBtn,
-        holdDuration: 1500, holdTime: 0,
-        callback: () => {
-          this.selectedColor = c;
-          if (this.brushStyle === 'eraser') this.brushStyle = 'shootingStar';
-          this.colorMenuCont.setVisible(false);
-        }
+        x: 100 + xOffset, y: btnY + yOffset, cont: subBtn, holdDuration: 1500, holdTime: 0,
+        callback: () => { this.selectedColor = c; if (this.brushStyle === 'eraser') this.brushStyle = 'shootingStar'; this.colorMenuCont.setVisible(false); }
       });
     });
   }
 
   _createBocetoMenu() {
     const { height } = this.scale;
-    this.bocetoMenuCont = this.add.container(380, height - 200).setDepth(1000).setVisible(false);
+    const btnY = height / 2 + 60;
+    this.bocetoMenuCont = this.add.container(100, btnY).setDepth(1000).setVisible(false);
     const bocetos = [
-      { id: 'boceto_arcoiris', icon: '🌈' },
-      { id: 'boceto_carro', icon: '🚗' },
-      { id: 'boceto_castillo', icon: '🏰' },
-      { id: 'boceto_oso', icon: '🐻' },
-      { id: 'boceto_parke', icon: '🎪' },
-      { id: 'boceto_sol', icon: '☀️' },
-      { id: 'cohete', icon: '🚀' },
-      { id: 'clear', icon: '❌' }
+      { id: 'boceto_arcoiris', icon: '🌈' }, { id: 'boceto_carro', icon: '🚗' },
+      { id: 'boceto_castillo', icon: '🏰' }, { id: 'boceto_oso', icon: '🐻' },
+      { id: 'boceto_parke', icon: '🎪' }, { id: 'boceto_sol', icon: '☀️' },
+      { id: 'cohete', icon: '🚀' }, { id: 'clear', icon: '❌' }
     ];
     bocetos.forEach((b, i) => {
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      const xOffset = col === 0 ? -45 : 45;
-      const yOffset = -row * 90;
+      const col = i % 4;
+      const row = Math.floor(i / 4);
+      const xOffset = (col + 1) * 110;
+      const yOffset = row === 0 ? -55 : 55;
       const subBtn = this.add.container(xOffset, yOffset);
       const glow = this.add.circle(0, 0, 40, 0x40c0dd, 0.15).setDepth(-1);
       const bg = this.add.circle(0, 0, 35, 0x000000).setStrokeStyle(2, 0xffffff, 0.7);
@@ -651,31 +558,62 @@ export class MagicBoardScene extends Phaser.Scene {
       this.tweens.add({ targets: glow, scale: 1.1, alpha: 0.3, duration: 1500, yoyo: true, loop: -1 });
       this.bocetoMenuCont.add(subBtn);
       this.buttons.push({
-        x: 380 + xOffset, y: height - 200 + yOffset, cont: subBtn,
-        holdDuration: 1500, holdTime: 0,
+        x: 100 + xOffset, y: btnY + yOffset, cont: subBtn, holdDuration: 1500, holdTime: 0,
         callback: () => {
           if (b.id === 'clear') {
             if (this.bocetoImage) { this.bocetoImage.destroy(); this.bocetoImage = null; }
             this.plantillaImg.setVisible(false);
-            this.bg.setVisible(true);
-            this.nebulaGraphics.setVisible(true);
-            this.starGraphics.setVisible(true);
-            this.moonGraphics.setVisible(true);
-            this.planetGraphics.setVisible(true);
+            this.bg.setVisible(true); this.nebulaGraphics.setVisible(true); this.starGraphics.setVisible(true); this.moonGraphics.setVisible(true); this.planetGraphics.setVisible(true);
           } else {
             if (this.bocetoImage) { this.bocetoImage.destroy(); this.bocetoImage = null; }
-            this.bocetoImage = this.add.image(this.scale.width / 2, this.scale.height / 2, b.id)
-              .setDepth(900).setAlpha(0.85)
-              .setDisplaySize(this.scale.width * 0.70, this.scale.height * 0.70);
+            this.bocetoImage = this.add.image(this.scale.width / 2, this.scale.height / 2, b.id).setDepth(900).setAlpha(0.85).setDisplaySize(this.scale.width * 0.70, this.scale.height * 0.70);
             this.plantillaImg.setVisible(true).setDepth(1);
-            this.bg.setVisible(false);
-            this.nebulaGraphics.setVisible(false);
-            this.starGraphics.setVisible(false);
-            this.moonGraphics.setVisible(false);
-            this.planetGraphics.setVisible(false);
+            this.bg.setVisible(false); this.nebulaGraphics.setVisible(false); this.starGraphics.setVisible(false); this.moonGraphics.setVisible(false); this.planetGraphics.setVisible(false);
           }
           this.bocetoMenuCont.setVisible(false);
         }
+      });
+    });
+  }
+
+  _createEraserMenu() {
+    const { width, height } = this.scale;
+    const btnY = height / 2 - 120;
+    this.eraserMenuCont = this.add.container(width - 100, btnY).setDepth(1000).setVisible(false);
+    const sizes = [{ size: 20, dotR: 6 }, { size: 80, dotR: 14 }, { size: 180, dotR: 22 }];
+    sizes.forEach((s, i) => {
+      const xOffset = -(i + 1) * 110;
+      const subBtn = this.add.container(xOffset, 0);
+      const glow = this.add.circle(0, 0, 45, 0x40c0dd, 0.15).setDepth(-1);
+      const bg = this.add.circle(0, 0, 40, 0x000000).setStrokeStyle(2, 0xffffff, 0.7);
+      const dot = this.add.circle(0, 0, s.dotR, 0xffffff, 1);
+      subBtn.add([glow, bg, dot]);
+      this.tweens.add({ targets: glow, scale: 1.1, alpha: 0.3, duration: 1500, yoyo: true, loop: -1 });
+      this.eraserMenuCont.add(subBtn);
+      this.buttons.push({
+        x: width - 100 + xOffset, y: btnY, cont: subBtn, holdDuration: 1500, holdTime: 0,
+        callback: () => { this.eraserSize = s.size; this.brushStyle = 'eraser'; this.eraserMenuCont.setVisible(false); this.sound.play('pop'); }
+      });
+    });
+  }
+
+  _createBrushMenu() {
+    const { height } = this.scale;
+    const btnY = height / 2 + 180;
+    this.brushMenuCont = this.add.container(100, btnY).setDepth(1000).setVisible(false);
+    const sizes = [{ size: 6, dotR: 4 }, { size: 16, dotR: 10 }, { size: 40, dotR: 18 }];
+    sizes.forEach((s, i) => {
+      const xOffset = (i + 1) * 110;
+      const subBtn = this.add.container(xOffset, 0);
+      const glow = this.add.circle(0, 0, 45, 0x9c4eb3, 0.2).setDepth(-1);
+      const bg = this.add.circle(0, 0, 40, 0x000000).setStrokeStyle(2, 0xffffff, 0.8);
+      const dot = this.add.circle(0, 0, s.dotR, 0xffffff, 1);
+      subBtn.add([glow, bg, dot]);
+      this.tweens.add({ targets: glow, scale: 1.1, alpha: 0.4, duration: 1000 + i * 200, yoyo: true, loop: -1 });
+      this.brushMenuCont.add(subBtn);
+      this.buttons.push({
+        x: 100 + xOffset, y: btnY, cont: subBtn, holdDuration: 1500, holdTime: 0,
+        callback: () => { this.brushSize = s.size; if (this.brushStyle === 'eraser') this.brushStyle = 'shootingStar'; this.brushMenuCont.setVisible(false); this.sound.play('pop'); }
       });
     });
   }
@@ -702,41 +640,6 @@ export class MagicBoardScene extends Phaser.Scene {
     this.sound.play('pop');
   }
 
-  // ✅ NUEVO: 3 botones con puntos de diferente tamaño para el borrador
-  _createEraserMenu() {
-    const { width, height } = this.scale;
-    const btnX = width - 380;
-    const btnY = height - 100;
-    this.eraserMenuCont = this.add.container(btnX, btnY).setDepth(1000).setVisible(false);
-
-    const sizes = [
-      { size: 20, dotR: 6 },
-      { size: 80, dotR: 14 },
-      { size: 180, dotR: 22 }
-    ];
-
-    sizes.forEach((s, i) => {
-      const yOffset = -(i + 1) * 110;
-      const subBtn = this.add.container(0, yOffset);
-      const glow = this.add.circle(0, 0, 45, 0x40c0dd, 0.15).setDepth(-1);
-      const bg = this.add.circle(0, 0, 40, 0x000000).setStrokeStyle(2, 0xffffff, 0.7);
-      const dot = this.add.circle(0, 0, s.dotR, 0xffffff, 1);
-      subBtn.add([glow, bg, dot]);
-      this.tweens.add({ targets: glow, scale: 1.1, alpha: 0.3, duration: 1500, yoyo: true, loop: -1 });
-      this.eraserMenuCont.add(subBtn);
-      this.buttons.push({
-        x: btnX, y: btnY + yOffset, cont: subBtn,
-        holdDuration: 1500, holdTime: 0,
-        callback: () => {
-          this.eraserSize = s.size;
-          this.brushStyle = 'eraser';
-          this.eraserMenuCont.setVisible(false);
-          this.sound.play('pop');
-        }
-      });
-    });
-  }
-
   _toggleEraserMenu() {
     this.eraserMenuCont.setVisible(!this.eraserMenuCont.visible);
     if (this.styleMenuCont) this.styleMenuCont.setVisible(false);
@@ -744,41 +647,6 @@ export class MagicBoardScene extends Phaser.Scene {
     if (this.bocetoMenuCont) this.bocetoMenuCont.setVisible(false);
     if (this.brushMenuCont) this.brushMenuCont.setVisible(false);
     this.sound.play('pop');
-  }
-
-  // ✅ NUEVO: 3 botones con puntos de diferente tamaño para el pincel
-  _createBrushMenu() {
-    const { height } = this.scale;
-    const btnX = 520;
-    const btnY = height - 100;
-    this.brushMenuCont = this.add.container(btnX, btnY).setDepth(1000).setVisible(false);
-
-    const sizes = [
-      { size: 6, dotR: 4 },
-      { size: 16, dotR: 10 },
-      { size: 40, dotR: 18 }
-    ];
-
-    sizes.forEach((s, i) => {
-      const yOffset = -(i + 1) * 110;
-      const subBtn = this.add.container(0, yOffset);
-      const glow = this.add.circle(0, 0, 45, 0x9c4eb3, 0.2).setDepth(-1);
-      const bg = this.add.circle(0, 0, 40, 0x000000).setStrokeStyle(2, 0xffffff, 0.8);
-      const dot = this.add.circle(0, 0, s.dotR, 0xffffff, 1);
-      subBtn.add([glow, bg, dot]);
-      this.tweens.add({ targets: glow, scale: 1.1, alpha: 0.4, duration: 1000 + i * 200, yoyo: true, loop: -1 });
-      this.brushMenuCont.add(subBtn);
-      this.buttons.push({
-        x: btnX, y: btnY + yOffset, cont: subBtn,
-        holdDuration: 1500, holdTime: 0,
-        callback: () => {
-          this.brushSize = s.size;
-          if (this.brushStyle === 'eraser') this.brushStyle = 'shootingStar';
-          this.brushMenuCont.setVisible(false);
-          this.sound.play('pop');
-        }
-      });
-    });
   }
 
   _toggleBrushMenu() {
@@ -802,22 +670,10 @@ export class MagicBoardScene extends Phaser.Scene {
       onComplete: () => {
         if (this.bocetoImage) { this.bocetoImage.destroy(); this.bocetoImage = null; }
         this.plantillaImg.setVisible(false);
-        this.bg.setVisible(true);
-        this.nebulaGraphics.setVisible(true);
-        this.starGraphics.setVisible(true);
-        this.moonGraphics.setVisible(true);
-        this.planetGraphics.setVisible(true);
-        try {
-          this.bgIndex = (this.bgIndex + 1) % this.planets.length;
-          this._updatePlanetGraphics();
-        } catch (e) {
-          console.warn('Error al actualizar planeta, saltando:', e);
-          this.bgIndex = (this.bgIndex + 1) % this.planets.length;
-        }
-        this.tweens.add({
-          targets: warpLine, x: width * 1.5, duration: 500, ease: 'Cubic.easeOut',
-          onComplete: () => { warpLine.destroy(); this.isClearing = false; }
-        });
+        this.bg.setVisible(true); this.nebulaGraphics.setVisible(true); this.starGraphics.setVisible(true); this.moonGraphics.setVisible(true); this.planetGraphics.setVisible(true);
+        try { this.bgIndex = (this.bgIndex + 1) % this.planets.length; this._updatePlanetGraphics(); }
+        catch (e) { console.warn('Error al actualizar planeta:', e); this.bgIndex = (this.bgIndex + 1) % this.planets.length; }
+        this.tweens.add({ targets: warpLine, x: width * 1.5, duration: 500, ease: 'Cubic.easeOut', onComplete: () => { warpLine.destroy(); this.isClearing = false; } });
       }
     });
   }
@@ -829,17 +685,10 @@ export class MagicBoardScene extends Phaser.Scene {
     const flash = this.add.circle(this.scale.width - 100, this.scale.height - 100, 10, 0xffffff, 1).setDepth(100);
     this.tweens.add({
       targets: flash, radius: this.scale.width * 1.5, alpha: 0, duration: 1000,
-      onStart: () => {
-        this.time.delayedCall(300, () => {
-          this.ctx.clearRect(0, 0, this.scale.width, this.scale.height);
-          this.canvasTexture.update();
-        });
-      },
+      onStart: () => { this.time.delayedCall(300, () => { this.ctx.clearRect(0, 0, this.scale.width, this.scale.height); this.canvasTexture.update(); }); },
       onComplete: () => { flash.destroy(); this.isClearing = false; }
     });
-    this.time.delayedCall(2000, () => {
-      if (flash && flash.active) { flash.destroy(); this.isClearing = false; }
-    });
+    this.time.delayedCall(2000, () => { if (flash && flash.active) { flash.destroy(); this.isClearing = false; } });
   }
 
   shutdown() {
