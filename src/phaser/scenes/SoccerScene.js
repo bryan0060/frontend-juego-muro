@@ -439,7 +439,7 @@ export class SoccerScene extends Phaser.Scene {
       this.hitbox.goalTop = 55; // Bajado un poquito a petición del usuario
       this.hitbox.goalWidthRatio = 0.47;
       this.hitbox.goalBottomRatio = 0.95;
-      this.difficultyBase = 0.1; 
+      this.difficultyBase = 0.1;
       this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side', corner: 'keeper_kids_corner', high: 'keeper_kids_high', low: 'keeper_kids_low' };
     } else {
       this.hitbox.goalTop = 50; // Ajuste final para liga profesional
@@ -1163,6 +1163,8 @@ export class SoccerScene extends Phaser.Scene {
       this.particles.explode(40);
       this._launchFireworks();
     } else if (blocked) {
+      this.sound.play('publico_decepcionado', { volume: 1.0 });
+      this.sound.play('error_fail', { volume: 1.0 });
       const msg = this._getRandomMessage([
         'ATAJADO', '¡QUÉ REFLEJOS!', '¡MURALLA!', '¡ATAJADÓN!',
         '¡NO PASAS!', '¡MANO SALVADORA!', '¡IMPEDIDO!', '¡BLOQUEADO!'
@@ -1180,8 +1182,10 @@ export class SoccerScene extends Phaser.Scene {
       this.shotResults.push(false);
       this.sound.play('tick');
     } else {
+      this.sound.play('publico_decepcionado', { volume: 1.0 });
+      this.sound.play('error_fail', { volume: 1.0 });
       const msg = this._getRandomMessage([
-        'MUY FUERTE', '¡AHHH!', '¡AFUERA!', '¡POR POCO!',
+        'MUY FUERTE', '¡AFUERA!', '¡POR POCO!',
         '¡AL CIELO!', '¡FUERA!', '¡TE PASASTE!', '¡OTRA VEZ SERÁ!'
       ]);
       this._showResult(msg, '#757575');

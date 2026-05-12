@@ -56,11 +56,13 @@ export class BootScene extends Phaser.Scene {
     this.load.image('ball', 'assets/images/futbol/Balon.png');
     this.load.image('fans_bg', 'assets/images/futbol/hinchas.png');
     this.load.image('soccer_kids_bg', 'assets/images/futbol/hinchas2.png');
-    this.load.image('soccer_adults_bg', 'assets/images/futbol/hinchas.png'); 
+    this.load.image('soccer_adults_bg', 'assets/images/futbol/hinchas.png');
     this.load.image('soccer_menu_bg', 'assets/images/futbol/estadio.png');
     this.load.image('juvenil', 'assets/images/futbol/juvenil.png');
     this.load.image('profesional', 'assets/images/futbol/profesional.png');
     this.load.image('neon_stage', 'assets/images/neon_stage.png');
+    this.load.audio('publico_decepcionado', 'assets/audio/sonidos futbol/publico-decepcionado.mp3');
+    this.load.audio('error_fail', 'assets/audio/sonidos futbol/sonido-error-fail.mp3');
 
     // Imágenes Pizarra Mágica (Bocetos)
     this.load.image('plantilla', 'assets/images/PizarraMagica/plantilla.png');
@@ -79,7 +81,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('scenery_pantano', 'assets/images/animales/pantano.png');
     this.load.image('jaula_hada', 'assets/images/animales/jaula_hada.png');
     this.load.image('hada', 'assets/images/animales/hada.png');
-    
+
     // Animales del Bosque
     this.load.image('bosque_lobo', 'assets/images/animales/animales%20para%20el%20bosque/lobo.png');
     this.load.image('bosque_lobo2', 'assets/images/animales/animales%20para%20el%20bosque/lobo%202.png');
