@@ -443,7 +443,7 @@ export class SoccerScene extends Phaser.Scene {
       this.hitbox.goalWidthRatio = 0.47;
       this.hitbox.goalBottomRatio = 0.95;
       this.difficultyBase = 0.1;
-      this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side', corner: 'keeper_kids_corner', high: 'keeper_kids_high', low: 'keeper_kids_low' };
+      this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side', corner: 'keeper_kids_corner', high: 'keeper_kids_high', low: 'keeper_kids_low', topCenter: 'keeper_kids_top_center' };
     } else {
       this.hitbox.goalTop = 50; // Ajuste final para liga profesional
       this.hitbox.goalWidthRatio = 0.48; // Ajuste final para liga profesional
