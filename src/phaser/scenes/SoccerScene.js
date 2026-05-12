@@ -412,9 +412,15 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   _iniciarJuego(escenarioId) {
-    if (this._juegoIniciando) return; // ← AGREGAR
-    this._juegoIniciando = true;      // ← AGREGAR
-    sendMessage({ event: "set_mode", mode: "penaltis" }, 8081)
+    if (this._juegoIniciando) return;
+    this._juegoIniciando = true;
+
+    const enviarModo = () => {
+      sendMessage({ event: "set_mode", mode: "penaltis" }, 8081);
+    };
+    enviarModo();
+    setTimeout(enviarModo, 500);
+    setTimeout(enviarModo, 1500);
 
     if (this.menuMusic) this.menuMusic.stop();
     if (this.hoverSound) this.hoverSound.stop();
@@ -428,10 +434,12 @@ export class SoccerScene extends Phaser.Scene {
       this.hitbox.goalWidthRatio = 0.47;
       this.hitbox.goalBottomRatio = 0.95;
       this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side' };
+      this.difficultyBase = 0.1;
     } else {
       this.hitbox.goalWidthRatio = 0.48;
       this.hitbox.goalBottomRatio = 0.90;
       this.keeperKeys = { neutral: 'keeper_neutral', side: 'keeper_side' };
+      this.difficultyBase = 0.7;
     }
 
     this._buildGraphics();
@@ -1001,6 +1009,8 @@ export class SoccerScene extends Phaser.Scene {
 
   // ─── Lógica de disparo ───────────────────────────────────────────
   _shoot(tx, ty) {
+    console.log(`[SHOOT] difficultyBase: ${this.difficultyBase} precisionExtra: ${this.precisionExtra}`);
+
     this.phase = 'shoot';
     this.shots++;
     this._updateHUDStats();
@@ -1009,7 +1019,7 @@ export class SoccerScene extends Phaser.Scene {
     this.ballSprite.setVisible(true);
     this.ballShadow.setVisible(true);
 
-    const intelligence = Math.min(this.precisionExtra + (this.score * 0.22), 0.95);
+    const intelligence = Math.min(this.difficultyBase + (this.score * 0.22), 0.95);
     const randomDir = Math.random() > 0.5 ? 1 : -1;
     const randomDestX = this.W / 2 + randomDir * 280;
 
@@ -1026,7 +1036,9 @@ export class SoccerScene extends Phaser.Scene {
       ? Phaser.Math.Between(-20, 10) // Ahora se mantiene más pegado al suelo o baja un poco
       : Phaser.Math.Clamp(Math.max(120, (this.H * 0.75 - ty) * 0.9), 0, 350);
 
-    const reactionTime = Math.max(240, 380 - (this.score * 40));
+    const reactionTime = this.escenarioActual === 'soccer_adults_bg'
+      ? Math.max(150, 280 - (this.score * 40))
+      : Math.max(240, 380 - (this.score * 40));
 
     this.keeperSprite.setTexture(this.keeperKeys.side);
     this.keeperSprite.setScale(this.scaleSide);
