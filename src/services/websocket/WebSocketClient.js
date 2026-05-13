@@ -180,7 +180,7 @@ function _scheduleRetry(port) {
     if (!conn.isIntentionalClose && _connections.has(port)) {
       _openConnection(port);
     }
-  }, 3000);
+  }, 500);
 }
 
 function _dispatch(port, data) {

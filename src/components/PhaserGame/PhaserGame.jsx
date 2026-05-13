@@ -94,7 +94,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
         clearTimeout(holdCancelTimerRef.current);
         holdCancelTimerRef.current = setTimeout(() => {
           cancelHold();
-        }, 150);
+        }, 600);
       }
     };
 
@@ -117,8 +117,8 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
         onTouchEnd={cancelHold}
         style={{
           position: 'absolute',
-          bottom: escenaInicial === 'MagicBoardScene' ? 'auto' : '20px',
-          top: escenaInicial === 'MagicBoardScene' ? '20px' : 'auto',
+          bottom: 'auto',
+          top: '20px',
           left: '20px',
           zIndex: 10,
           background: 'rgba(0,0,0,0.6)',
