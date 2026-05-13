@@ -215,7 +215,7 @@
 /* Botón con forma de estrella en la esquina inferior izquierda */
 .starButton {
   position: fixed;
-  bottom: 15px;
+  top: 15px;
   left: 15px;
   z-index: 100;
   background: transparent;

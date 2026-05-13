@@ -1,4 +1,6 @@
 import * as Phaser from 'phaser';
+import { sendMessage } from '../../services/websocket/WebSocketClient.js';
+
 
 export class SoccerScene extends Phaser.Scene {
   constructor() {
@@ -7,18 +9,26 @@ export class SoccerScene extends Phaser.Scene {
     this.hitbox = {
       showDebug: false,
 
+      boxesNeutral: [{ ox: -40, oy: -170, w: 80, h: 240 }],
       boxesSide: [
-        // 🟩 CAJA CENTRAL (Punto de partida - Torso)
         { ox: -50, oy: -50, w: 300, h: 150 },
-        // 🟥 CAJA PARTE DE ARRIBA (Cabeza y brazos)
         { ox: -250, oy: -130, w: 200, h: 150 }
       ],
-
-      boxesNeutral: [
-        { ox: -40, oy: -170, w: 80, h: 240 }
+      boxesCorner: [
+        { ox: -50, oy: -50, w: 300, h: 150 },
+        { ox: -250, oy: -130, w: 200, h: 150 }
+      ],
+      boxesHigh: [{ ox: -40, oy: -170, w: 80, h: 240 }],
+      boxesLow: [{ ox: -40, oy: -170, w: 80, h: 240 }],
+      boxesTopCorner: [
+        { ox: -50, oy: -80, w: 300, h: 250 },
+        { ox: -180, oy: -130, w: 130, h: 100 }
+      ],
+      boxesTopCenter: [
+        { ox: -150, oy: -200, w: 300, h: 280 }
       ],
 
-      goalTop: 60,
+      goalTop: 80,
       goalWidthRatio: 0.45,
       goalBottomRatio: 0.90
     };
@@ -410,8 +420,15 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   _iniciarJuego(escenarioId) {
-    if (this._juegoIniciando) return; // ← AGREGAR
-    this._juegoIniciando = true;      // ← AGREGAR
+    if (this._juegoIniciando) return;
+    this._juegoIniciando = true;
+
+    const enviarModo = () => {
+      sendMessage({ event: "set_mode", mode: "penaltis" }, 8081);
+    };
+    enviarModo();
+    setTimeout(enviarModo, 500);
+    setTimeout(enviarModo, 1500);
 
     if (this.menuMusic) this.menuMusic.stop();
     if (this.hoverSound) this.hoverSound.stop();
@@ -422,13 +439,25 @@ export class SoccerScene extends Phaser.Scene {
     this.estado = 'jugando';
 
     if (escenarioId === 'soccer_kids_bg') {
+      this.hitbox.goalTop = 55; // Bajado un poquito a petición del usuario
       this.hitbox.goalWidthRatio = 0.47;
       this.hitbox.goalBottomRatio = 0.95;
-      this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side' };
+      this.difficultyBase = 0.1;
+      this.keeperKeys = { neutral: 'keeper_kids_neutral', side: 'keeper_kids_side', corner: 'keeper_kids_corner', high: 'keeper_kids_high', low: 'keeper_kids_low', topCenter: 'keeper_kids_top_center' };
     } else {
-      this.hitbox.goalWidthRatio = 0.46;
+      this.hitbox.goalTop = 50; // Ajuste final para liga profesional
+      this.hitbox.goalWidthRatio = 0.48; // Ajuste final para liga profesional
       this.hitbox.goalBottomRatio = 0.90;
-      this.keeperKeys = { neutral: 'keeper_neutral', side: 'keeper_side' };
+      this.difficultyBase = 0.3;
+      this.keeperKeys = {
+        neutral: 'keeper_neutral',
+        side: 'keeper_side',
+        corner: 'keeper_corner',
+        topCorner: 'keeper_top_corner',
+        topCenter: 'keeper_top_center',
+        high: 'keeper_high',
+        low: 'keeper_low'
+      };
     }
 
     this._buildGraphics();
@@ -474,11 +503,9 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   _iniciarCuentaRegresiva() {
-    this.sensorButtons = []; // ← AGREGAR
-
+    this.sensorButtons = [];
     this.estado = 'countdown';
     this.phase = 'countdown';
-
     const { width: W, height: H } = this.scale;
     const countText = this.add.text(W / 2, H / 2, '3', {
       fontSize: '220px',
@@ -487,9 +514,7 @@ export class SoccerScene extends Phaser.Scene {
       stroke: '#000000',
       strokeThickness: 15
     }).setOrigin(0.5).setDepth(500);
-
     let count = 3;
-
     const updateCount = () => {
       this.tweens.add({
         targets: countText,
@@ -515,6 +540,8 @@ export class SoccerScene extends Phaser.Scene {
                   countText.setColor('#00ff00');
                   this.sound.play('pop');
                   this.sound.play('arbitro');
+                  this.estado = 'jugando';
+                  this.phase = 'aim';
                   updateCount();
                 } else {
                   countText.destroy();
@@ -527,7 +554,6 @@ export class SoccerScene extends Phaser.Scene {
         }
       });
     };
-
     this.sound.play('tick');
     updateCount();
   }
@@ -537,7 +563,12 @@ export class SoccerScene extends Phaser.Scene {
     const W = this.W, H = this.H;
 
     const bgKey = this.escenarioActual || 'soccer_adults_bg';
-    this.add.image(W / 2, H / 2, bgKey).setDisplaySize(W, H).setDepth(0);
+    const bgImg = this.add.image(W / 2, H / 2, bgKey).setDepth(0);
+    if (this.escenarioActual === 'soccer_adults_bg') {
+      bgImg.setDisplaySize(W * 1.04, H * 1.04);
+    } else {
+      bgImg.setDisplaySize(W, H);
+    }
 
     // Se eliminó la viñeta y las adBoards (manchas negras) a petición del usuario
     // this._drawAdBoards();
@@ -702,7 +733,7 @@ export class SoccerScene extends Phaser.Scene {
 
   _buildKeeper() {
     this.scaleNeutral = 0.95;
-    this.scaleSide = 0.95;
+    this.scaleSide = 0.85; // Reducido un poco para que quepa mejor en pantalla al estirarse
 
     const sp = this.add.sprite(0, 0, this.keeperKeys?.neutral || 'keeper_neutral');
     sp.setScale(this.scaleNeutral);
@@ -996,6 +1027,8 @@ export class SoccerScene extends Phaser.Scene {
 
   // ─── Lógica de disparo ───────────────────────────────────────────
   _shoot(tx, ty) {
+    console.log(`[SHOOT] difficultyBase: ${this.difficultyBase} precisionExtra: ${this.precisionExtra}`);
+
     this.phase = 'shoot';
     this.shots++;
     this._updateHUDStats();
@@ -1004,34 +1037,68 @@ export class SoccerScene extends Phaser.Scene {
     this.ballSprite.setVisible(true);
     this.ballShadow.setVisible(true);
 
-    const intelligence = Math.min(this.precisionExtra + (this.score * 0.22), 0.95);
+    const intelligence = Math.min(this.difficultyBase + (this.score * 0.22), 0.95);
     const randomDir = Math.random() > 0.5 ? 1 : -1;
     const randomDestX = this.W / 2 + randomDir * 280;
 
     let keeperDestX = randomDestX * (1 - intelligence) + tx * intelligence;
     keeperDestX = Phaser.Math.Clamp(
       keeperDestX,
-      this.W / 2 - this.W * 0.5,
-      this.W / 2 + this.W * 0.5
+      this.W * 0.12, // Margen izquierdo para que no se salga
+      this.W * 0.88  // Margen derecho para que no se salga
     );
 
     const isLowShot = ty > this.H * 0.7;
+    const gWidth = this.W * this.hitbox.goalWidthRatio;
+    const isTopCorner = ty < this.H * 0.35 && Math.abs(tx - this.W / 2) > (gWidth * 0.65);
+    const isTopCenter = ty < this.H * 0.35 && Math.abs(tx - this.W / 2) <= (gWidth * 0.65);
+
+    // Probabilidad de que el portero decida hacer la atajada central perfecta
+    // Aumenta con la inteligencia (dificultad), pero nunca es 100% para que siempre haya chance
+    const saveSuccessChance = 0.35 + (intelligence * 0.55); // Entre 35% y 90% aprox.
+    const performsTopCenterSave = isTopCenter && (Math.random() < saveSuccessChance);
+
+    if (performsTopCenterSave) {
+      keeperDestX = this.W / 2; // Mantener derecho en el centro solo si decide bien
+    }
 
     const jumpPower = isLowShot
-      ? Phaser.Math.Between(-20, 10) // Ahora se mantiene más pegado al suelo o baja un poco
-      : Phaser.Math.Clamp(Math.max(120, (this.H * 0.75 - ty) * 0.9), 0, 350);
+      ? Phaser.Math.Between(-20, 10)
+      : Phaser.Math.Clamp(Math.max(120, (this.H * 0.75 - ty) * 0.9), 0, this.H * 0.45); // Clampeado al 45% de la altura total para que no suba de más
 
-    const reactionTime = Math.max(240, 380 - (this.score * 40));
+    const reactionTime = this.escenarioActual === 'soccer_adults_bg'
+      ? Math.max(150, 280 - (this.score * 40))
+      : Math.max(240, 380 - (this.score * 40));
 
-    this.keeperSprite.setTexture(this.keeperKeys.side);
+    const isLowCorner = ty > this.H * 0.65 && Math.abs(tx - this.W / 2) > (gWidth * 0.65);
+    const isCornerDive = Math.abs(tx - this.W / 2) > (gWidth * 0.80) && !isTopCorner && !isLowCorner && !performsTopCenterSave;
+    const isHighZone = ty < this.H * 0.30 && !isCornerDive && !isTopCorner && !isLowCorner && !performsTopCenterSave;
+    const isLowZone = ty > this.H * 0.65 && !isCornerDive && !isTopCorner && !isLowCorner && !performsTopCenterSave;
+
+    let tex = this.keeperKeys.side;
+    if (isTopCorner) {
+      tex = this.keeperKeys.topCorner || this.keeperKeys.corner; // Fallback para niños
+    } else if (performsTopCenterSave) {
+      tex = this.keeperKeys.topCenter;
+    } else if (isLowCorner) {
+      tex = this.keeperKeys.side; // Forzar "posicion iz2" en esquinas inferiores
+    } else if (isCornerDive) {
+      tex = this.keeperKeys.corner;
+    } else if (isHighZone) {
+      tex = this.keeperKeys.high;
+    } else if (isLowZone) {
+      tex = this.keeperKeys.low;
+    }
+
+    this.keeperSprite.setTexture(tex);
     this.keeperSprite.setScale(this.scaleSide);
-    this.keeperSprite.setFlipX(keeperDestX > this.W / 2);
+    this.keeperSprite.setFlipX(performsTopCenterSave ? false : (keeperDestX > this.W / 2));
 
     this.tweens.add({
       targets: [this.keeperContainer, this.keeperShadow],
       x: keeperDestX,
       y: (targets) => targets === this.keeperShadow ? this.H * 0.75 + 45 : this.H * 0.75 - jumpPower,
-      angle: (keeperDestX > this.W / 2 ? 1 : -1) * 35,
+      angle: performsTopCenterSave ? 0 : (keeperDestX > this.W / 2 ? 1 : -1) * 35,
       duration: reactionTime,
       ease: 'Quad.easeOut',
     });
@@ -1053,9 +1120,15 @@ export class SoccerScene extends Phaser.Scene {
     const isNeutral = this.keeperSprite.texture.key === (this.keeperKeys?.neutral || 'keeper_neutral');
     const isLowShot = ty > this.H * 0.7;
 
-    const activeBoxes = isNeutral
-      ? this.hitbox.boxesNeutral
-      : this.hitbox.boxesSide;
+    let activeBoxes = this.hitbox.boxesNeutral;
+    const currentTex = this.keeperSprite.texture.key;
+
+    if (currentTex === this.keeperKeys.side) activeBoxes = this.hitbox.boxesSide;
+    else if (currentTex === this.keeperKeys.corner) activeBoxes = this.hitbox.boxesCorner;
+    else if (currentTex === this.keeperKeys.high) activeBoxes = this.hitbox.boxesHigh;
+    else if (currentTex === this.keeperKeys.low) activeBoxes = this.hitbox.boxesLow;
+    else if (currentTex === this.keeperKeys.topCorner) activeBoxes = this.hitbox.boxesTopCorner;
+    else if (currentTex === this.keeperKeys.topCenter) activeBoxes = this.hitbox.boxesTopCenter;
 
     const sortedBoxes = [...activeBoxes];
     // El guante (menor ox) siempre primero
@@ -1114,6 +1187,8 @@ export class SoccerScene extends Phaser.Scene {
       this.particles.explode(40);
       this._launchFireworks();
     } else if (blocked) {
+      this.sound.play('publico_decepcionado', { volume: 1.0 });
+      this.sound.play('error_fail', { volume: 1.0 });
       const msg = this._getRandomMessage([
         'ATAJADO', '¡QUÉ REFLEJOS!', '¡MURALLA!', '¡ATAJADÓN!',
         '¡NO PASAS!', '¡MANO SALVADORA!', '¡IMPEDIDO!', '¡BLOQUEADO!'
@@ -1131,8 +1206,10 @@ export class SoccerScene extends Phaser.Scene {
       this.shotResults.push(false);
       this.sound.play('tick');
     } else {
+      this.sound.play('publico_decepcionado', { volume: 1.0 });
+      this.sound.play('error_fail', { volume: 1.0 });
       const msg = this._getRandomMessage([
-        'MUY FUERTE', '¡AHHH!', '¡AFUERA!', '¡POR POCO!',
+        'MUY FUERTE', '¡AFUERA!', '¡POR POCO!',
         '¡AL CIELO!', '¡FUERA!', '¡TE PASASTE!', '¡OTRA VEZ SERÁ!'
       ]);
       this._showResult(msg, '#757575');
@@ -1185,7 +1262,7 @@ export class SoccerScene extends Phaser.Scene {
     const isNeutral = this.keeperSprite.texture.key === (this.keeperKeys?.neutral || 'keeper_neutral');
     const activeBoxes = isNeutral
       ? this.hitbox.boxesNeutral
-      : this.hitbox.boxesSide;
+      : (this.keeperSprite.texture.key === this.keeperKeys.topCenter ? this.hitbox.boxesTopCenter : this.hitbox.boxesSide);
 
     // Verde = cuerpo, Rojo = guante, Azul = pies, Amarillo = neutral
     const debugColors = [0x00ff00, 0xff4400, 0x0088ff, 0xffff00];
