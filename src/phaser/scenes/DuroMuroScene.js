@@ -25,8 +25,8 @@ const C = {
 const CONFIG = {
   totalRondas: 5,
   duracionPorPose: 8,
-  toleranciaAngulo: 25,
-  umbralExito: 0.60,
+  toleranciaAngulo: 18,
+  umbralExito: 0.75,
   poses: [
     {
       id: 'estrella',
@@ -618,7 +618,7 @@ export class DuroMuroScene extends Phaser.Scene {
     this.tiempoRestante = CONFIG.duracionPorPose;
     this._escalaMuro = { v: 0.12 };
 
-    const pose = this.posesRonda[this.rondaActual];  // ← primero
+    const pose = this.posesRonda[this.rondaActual];
     this.rondaActual++;
     this._poseActual = pose;
     this._crearMuro(pose);
@@ -651,6 +651,44 @@ export class DuroMuroScene extends Phaser.Scene {
           this.cameras.main.shake(80, 0.003);
         }
       },
+    });
+
+    // A los 5 segundos — fade esqueleto + texto quieto
+    this._timerQuieto = this.time.delayedCall((CONFIG.duracionPorPose - 3) * 1000, () => {
+      if (!this.juegoActivo) return;
+
+      this.tweens.add({
+        targets: [this.grafEsqueleto, this.grafFeedback],
+        alpha: 0,
+        duration: 400,
+      });
+
+      const { width, height } = this.scale;
+      this._textoQuieto = this.add.text(width / 2, height / 2 - 40, '¡QUIETO!\n¡No te muevas!', {
+        fontSize: '72px',
+        fontFamily: 'Fredoka, sans-serif',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 10,
+        align: 'center',
+      }).setOrigin(0.5).setDepth(25).setAlpha(0);
+
+      this.tweens.add({
+        targets: this._textoQuieto,
+        alpha: 1,
+        duration: 200,
+      });
+
+      this.tweens.add({
+        targets: this._textoQuieto,
+        alpha: 0.3,
+        duration: 300,
+        yoyo: true,
+        repeat: -1,
+        delay: 200,
+      });
+
+      this.cameras.main.shake(200, 0.006);
     });
   }
 
@@ -737,11 +775,12 @@ export class DuroMuroScene extends Phaser.Scene {
     } else {
       if (this.esqueleto) {
         this.textoSinJugador.setVisible(false);
-        const esqueletoNorm = this._normalizarEsqueleto(this.esqueleto);
+        const esqueletoEval = this._normalizarEsqueleto(this.esqueleto);
+        const esqueletoNorm = this._espejearEsqueleto(esqueletoEval);
         this._dibujarEsqueleto(this.grafEsqueleto, esqueletoNorm, 0, 0, width, height, C.azul, 48, 36);
         this._dibujarEsqueleto(this.grafEsqueleto, esqueletoNorm, 0, 0, width, height, 0xffffff, 18, 18);
         if (this.juegoActivo && this._poseActual) {
-          this._dibujarFeedback(this._poseActual, esqueletoNorm);
+          this._dibujarFeedback(this._poseActual, esqueletoNorm, esqueletoEval);
         }
       } else if (this.juegoActivo) {
         this.textoSinJugador.setText('👤 Buscando jugador...').setVisible(true);
@@ -760,83 +799,127 @@ export class DuroMuroScene extends Phaser.Scene {
   _crearMuro(pose) {
     this._limpiarMuro();
     const { width, height } = this.scale;
+    const cx = width / 2;
+    const cy = height / 2;
 
-    this._muroContainer = this.add.container(width / 2, height / 2).setDepth(10);
+    this._muroCuadrantes = [];
 
-    // Sombra
-    const sombra = this.add.rectangle(8, 8, width, height, 0x000000, 0.35);
-    this._muroContainer.add(sombra);
-
-    // Imagen del muro
-    const img = this.add.image(0, 0, 'duro_muro_textura').setDisplaySize(width, height);
-    this._muroContainer.add(img);
+    // Crear 4 cuadrantes — cada uno es la mitad del muro en su dirección
+    const cuadrantes = [
+      { ox: -width / 2, oy: -height / 2, w: width / 2, h: height / 2, dir: { x: -1, y: -1 } }, // top-left
+      { ox: 0, oy: -height / 2, w: width / 2, h: height / 2, dir: { x: 1, y: -1 } }, // top-right
+      { ox: -width / 2, oy: 0, w: width / 2, h: height / 2, dir: { x: -1, y: 1 } }, // bottom-left
+      { ox: 0, oy: 0, w: width / 2, h: height / 2, dir: { x: 1, y: 1 } }, // bottom-right
+    ];
 
     const siluetaH = height * 0.82;
     const siluetaW = siluetaH * 0.55;
 
-    // Capas de glow — de más exterior a más interior
-    // Blanco sobre púrpura + cyan del brandbook = corte láser
+    cuadrantes.forEach((q) => {
+      const container = this.add.container(cx, cy).setDepth(10);
+
+      // Fondo del cuadrante
+      const bg = this.add.graphics();
+      bg.fillStyle(0x000000, 0); // transparente — la imagen cubre todo
+      bg.fillRect(q.ox, q.oy, q.w, q.h);
+      container.add(bg);
+
+      // Imagen del muro — cada cuadrante muestra la misma imagen completa
+      // La máscara recorta solo su cuadrante
+      const img = this.add.image(0, 0, 'duro_muro_textura').setDisplaySize(width, height);
+      container.add(img);
+
+      // Máscara para recortar el cuadrante
+      const maskShape = this.make.graphics({ x: cx, y: cy, add: false });
+      maskShape.fillStyle(0xffffff);
+      maskShape.fillRect(cx + q.ox, cy + q.oy, q.w, q.h);
+      const mask = maskShape.createGeometryMask();
+      container.setMask(mask);
+      container._mask = maskShape; // guardar referencia para destruir
+
+      this._muroCuadrantes.push({ container, dir: q.dir, maskShape });
+    });
+
+    // Silueta y glow — en un container separado encima de todo
+    this._muroSilueta = this.add.container(cx, cy).setDepth(11);
+
     const capasGlow = [
       { extra: 1.28, alpha: 0.06, tint: 0x40c0dd },
       { extra: 1.18, alpha: 0.12, tint: 0x40c0dd },
       { extra: 1.10, alpha: 0.25, tint: 0x40c0dd },
       { extra: 1.05, alpha: 0.50, tint: 0x40c0dd },
       { extra: 1.02, alpha: 0.80, tint: 0x40c0dd },
-      { extra: 1.00, alpha: 0.60, tint: 0xffffff }, // ← núcleo blanco
+      { extra: 1.00, alpha: 0.60, tint: 0xffffff },
     ];
 
     capasGlow.forEach(({ extra, alpha, tint }) => {
       const g = this.add.image(0, 0, pose.imagenKey)
         .setDisplaySize(siluetaW * extra, siluetaH * extra)
-        .setTint(tint)
-        .setAlpha(alpha);
-      this._muroContainer.add(g);
+        .setTint(tint).setAlpha(alpha);
+      this._muroSilueta.add(g);
     });
 
-    // Silueta central — blanco brillante, no negro
     const silueta = this.add.image(0, 0, pose.imagenKey)
       .setDisplaySize(siluetaW, siluetaH)
-      .setTint(0xffffff)
-      .setAlpha(1);
-    this._muroContainer.add(silueta);
+      .setTint(0xffffff).setAlpha(1);
+    this._muroSilueta.add(silueta);
 
-    // Sin borde extra — el marco amarillo ya viene en la imagen
-    this._muroContainer.setScale(0.12);
+    // Escalar todo al inicio
+    this._muroCuadrantes.forEach(({ container }) => container.setScale(0.12));
+    this._muroSilueta.setScale(0.12);
+
+    // Referencia unificada para el setScale en update
+    this._muroContainer = {
+      setScale: (v) => {
+        this._muroCuadrantes.forEach(({ container }) => container.setScale(v));
+        this._muroSilueta?.setScale(v);
+      }
+    };
   }
 
+
   _limpiarMuro() {
-    this._muroContainer?.destroy();
+    if (this._muroCuadrantes) {
+      this._muroCuadrantes.forEach(({ container, maskShape }) => {
+        maskShape?.destroy();
+        container.destroy();
+      });
+      this._muroCuadrantes = null;
+    }
+    this._muroSilueta?.destroy();
+    this._muroSilueta = null;
     this._muroContainer = null;
   }
 
   // ─── Dibujar silueta gruesa para el hueco ────────────────────────────────
   // Las líneas y círculos deben ser MUY gruesos para que el hueco
   // sea suficientemente grande para que el niño "entre" visualmente
-  _dibujarSiluetaParaHueco(graphics, silueta, offsetX, offsetY, areaW, areaH) {
-    graphics.lineStyle(GROSOR_SILUETA, 0xffffff, 1);
+  _dibujarSiluetaProcedural(g, silueta, ox, oy, areaW, areaH, color, grosor, radio) {
+    g.lineStyle(grosor, color, 1);
 
     CONEXIONES.forEach(([a, b]) => {
       if (!silueta[a] || !silueta[b]) return;
-      graphics.beginPath();
-      graphics.moveTo(
-        offsetX + silueta[a].x * areaW,
-        offsetY + silueta[a].y * areaH,
-      );
-      graphics.lineTo(
-        offsetX + silueta[b].x * areaW,
-        offsetY + silueta[b].y * areaH,
-      );
-      graphics.strokePath();
+      g.beginPath();
+      g.moveTo(ox + silueta[a].x * areaW, oy + silueta[a].y * areaH);
+      g.lineTo(ox + silueta[b].x * areaW, oy + silueta[b].y * areaH);
+      g.strokePath();
     });
 
-    graphics.fillStyle(0xffffff, 1);
+    g.fillStyle(color, 1);
     Object.values(silueta).forEach((p) => {
-      graphics.fillCircle(
-        offsetX + p.x * areaW,
-        offsetY + p.y * areaH,
-        RADIO_SILUETA,
-      );
+      if (!p) return;
+      g.fillCircle(ox + p.x * areaW, oy + p.y * areaH, radio);
     });
+
+    // Cabeza
+    const n = silueta.nariz;
+    const hI = silueta.hombro_izquierdo;
+    const hD = silueta.hombro_derecho;
+    if (n && hI && hD) {
+      const anchoH = Math.abs(hD.x - hI.x) * areaW;
+      const rHead = Phaser.Math.Clamp(anchoH * 0.42, 16, 50);
+      g.fillCircle(ox + n.x * areaW, oy + n.y * areaH, rHead);
+    }
   }
 
   // ─── Esqueleto genérico ───────────────────────────────────────────────────
@@ -983,27 +1066,13 @@ export class DuroMuroScene extends Phaser.Scene {
 
 
   // ─── Feedback en tiempo real ──────────────────────────────────────────────
-  _dibujarFeedback(pose, esqueletoNorm) {
+  _dibujarFeedback(pose, esqueletoNorm, esqueletoEval = esqueletoNorm) {
     if (!esqueletoNorm) return;
     const { width, height } = this.scale;
 
-    // Centro de hombros para el feedback
-    const hIzq = esqueletoNorm['hombro_izquierdo'];
-    const hDer = esqueletoNorm['hombro_derecho'];
-    const esqueletoAjustado = { ...esqueletoNorm };
-
-    if (hIzq && hDer) {
-      const centroHombros = {
-        x: (hIzq.x + hDer.x) / 2,
-        y: (hIzq.y + hDer.y) / 2,
-      };
-      esqueletoAjustado['hombro_izquierdo'] = centroHombros;
-      esqueletoAjustado['hombro_derecho'] = centroHombros;
-    }
-
     Object.entries(pose.angulos).forEach(([nombreJoint, def]) => {
-      const encaja = this._evaluarAngulo(def, esqueletoNorm);
-      const punto = esqueletoAjustado[nombreJoint];
+      const encaja = this._evaluarAngulo(def, esqueletoEval); // ← evalúa sin espejo
+      const punto = esqueletoNorm[nombreJoint];               // ← dibuja con espejo
       if (!punto) return;
 
       const px = punto.x * width;
@@ -1051,7 +1120,8 @@ export class DuroMuroScene extends Phaser.Scene {
     const angulos = Object.values(pose.angulos);
     const totalAngulos = angulos.length;
     let aciertos = 0;
-    angulos.forEach((def) => { if (this._evaluarAngulo(def, this.esqueleto)) aciertos++; });
+    const esqNorm = this._normalizarEsqueleto(this.esqueleto);
+    angulos.forEach((def) => { if (this._evaluarAngulo(def, esqNorm)) aciertos++; });
 
     const porcentaje = aciertos / totalAngulos;
     const exito = porcentaje >= CONFIG.umbralExito;
@@ -1074,7 +1144,62 @@ export class DuroMuroScene extends Phaser.Scene {
 
   // ─── Mostrar resultado ────────────────────────────────────────────────────
   _mostrarResultado(exito, aciertos, total, mensajeExtra = null) {
+    // Limpiar texto quieto y restaurar alpha
+    this._textoQuieto?.destroy();
+    this._textoQuieto = null;
+    this.grafEsqueleto.setAlpha(1);
+    this.grafFeedback.setAlpha(1);
+
     const { width, height } = this.scale;
+
+    if (exito) {
+      this._sonido('victoria');
+      // Muro explota en 4 pedazos volando hacia afuera
+      this._muroCuadrantes?.forEach(({ container, dir }) => {
+        this.tweens.add({
+          targets: container,
+          x: container.x + dir.x * width * 0.8,
+          y: container.y + dir.y * height * 0.8,
+          angle: dir.x * 45,
+          alpha: 0,
+          duration: 700,
+          ease: 'Quad.easeIn',
+        });
+      });
+      this.tweens.add({
+        targets: this._muroSilueta,
+        scaleX: 1.4, scaleY: 1.4,
+        alpha: 0,
+        duration: 400,
+        ease: 'Quad.easeOut',
+      });
+    } else {
+      this._sonido('error_fail');
+      // Muro aplasta — crece hasta cubrir toda la pantalla
+      this._muroCuadrantes?.forEach(({ container }) => {
+        this.tweens.add({
+          targets: container,
+          scaleX: 1.8, scaleY: 1.8,
+          duration: 220,
+          ease: 'Quad.easeIn',
+          onComplete: () => {
+            this.cameras.main.shake(500, 0.03);
+            this.tweens.add({
+              targets: container,
+              alpha: 0,
+              duration: 280,
+              delay: 100,
+            });
+          },
+        });
+      });
+      this.tweens.add({
+        targets: this._muroSilueta,
+        scaleX: 1.8, scaleY: 1.8,
+        alpha: 0,
+        duration: 400,
+      });
+    }
 
     // Flash
     const flash = this.add.rectangle(0, 0, width, height,
@@ -1089,10 +1214,8 @@ export class DuroMuroScene extends Phaser.Scene {
       color: exito ? '#3dc9a1' : '#fa804f',
       stroke: '#000000',
       strokeThickness: 12,
-    }
-    ).setOrigin(0.5).setDepth(26).setAlpha(0).setScale(0.4);
+    }).setOrigin(0.5).setDepth(26).setAlpha(0).setScale(0.4);
 
-    // Detalle
     const detalle = mensajeExtra ?? `${aciertos} de ${total} posiciones correctas`;
     const textoDetalle = this.add.text(width / 2, height / 2 + 60, detalle, {
       fontSize: '38px',
@@ -1170,6 +1293,8 @@ export class DuroMuroScene extends Phaser.Scene {
     this.juegoActivo = false;
     const { width, height } = this.scale;
 
+    this.sensorButtons = [];
+
     this.rtMuro.clear();
     this.textoInstruccion.setVisible(false);
     this.textoTimer.setVisible(false);
@@ -1179,7 +1304,6 @@ export class DuroMuroScene extends Phaser.Scene {
     this.add.rectangle(0, 0, width, height, 0x000000, 0.80)
       .setOrigin(0).setDepth(30);
 
-    // Panel
     const panelW = 580, panelH = 420;
     this.add.rectangle(width / 2, height / 2, panelW, panelH, 0x1a0a2e)
       .setDepth(31).setStrokeStyle(6, C.purpura);
@@ -1217,14 +1341,9 @@ export class DuroMuroScene extends Phaser.Scene {
       color: '#ffffff',
     }).setOrigin(0.5).setDepth(33);
 
-    btn.on('pointerdown', (ptr) => {
-      this.holdBtn = {
-        x: ptr.x, y: ptr.y, duration: 2000, time: 0,
-        callback: () => this.scene.restart()
-      };
-    });
-    btn.on('pointerup', () => this._cancelHold());
-    btn.on('pointerout', () => this._cancelHold());
+    const onReiniciar = () => this.scene.restart();
+
+    btn.on('pointerdown', onReiniciar);
     btn.on('pointerover', () => {
       btn.setFillColor(0x7a3690);
       this.tweens.add({ targets: btn, scaleX: 1.06, scaleY: 1.06, duration: 100 });
@@ -1233,11 +1352,47 @@ export class DuroMuroScene extends Phaser.Scene {
       btn.setFillColor(C.purpura);
       this.tweens.add({ targets: btn, scaleX: 1, scaleY: 1, duration: 100 });
     });
+
+    // Registrar para LiDAR
+    this.sensorButtons.push({
+      absX: width / 2,
+      absY: height / 2 + 175,
+      w: 340,
+      h: 75,
+      callback: onReiniciar,
+    });
   }
 
   // ─── WebSocket ────────────────────────────────────────────────────────────
   _onWsMessage(event) {
     const data = event.detail;
+
+    // ── Puerto 8081 — LiDAR ──────────────────────────────────
+    if (data.port === 8081) {
+      let x, y;
+      if (data.touches?.length > 0) {
+        x = data.touches[0].x;
+        y = data.touches[0].y;
+      } else if (data.x !== undefined) {
+        x = data.x;
+        y = data.y;
+      } else return;
+
+      for (const btn of this.sensorButtons) {
+        if (
+          x >= btn.absX - btn.w / 2 &&
+          x <= btn.absX + btn.w / 2 &&
+          y >= btn.absY - btn.h / 2 &&
+          y <= btn.absY + btn.h / 2
+        ) {
+          btn.callback();
+          return;
+        }
+      }
+      return;
+    }
+
+    // ── Puerto 8080 — Cámara ─────────────────────────────────
     if (data.port !== 8080) return;
     if (data.juego_activo !== 'poses') return;
 
@@ -1247,12 +1402,10 @@ export class DuroMuroScene extends Phaser.Scene {
     if (this.modo === 'duo') {
       this.esq1 = data.poses?.jugador_1?.esqueleto ?? null;
       this.esq2 = data.poses?.jugador_2?.esqueleto ?? null;
-      // Fallback si backend aún manda formato solo
       if (!this.esq1 && !this.esq2 && data.poses?.esqueleto) {
         this.esq1 = data.poses.esqueleto;
       }
       if (numJugadores === 0) { this.esq1 = null; this.esq2 = null; }
-      // Compatibilidad con this.esqueleto
       this.esqueleto = this.esq1 ?? this.esq2;
     } else {
       if (numJugadores === 0) { this.esqueleto = null; return; }
@@ -1261,6 +1414,15 @@ export class DuroMuroScene extends Phaser.Scene {
         ?? null;
       this.esq1 = this.esqueleto;
     }
+  }
+
+  _espejearEsqueleto(esq) {
+    const result = {};
+    Object.entries(esq).forEach(([key, p]) => {
+      if (!p) { result[key] = p; return; }
+      result[key] = { x: 1 - p.x, y: p.y };
+    });
+    return result;
   }
 
   _sonido(key, cfg = {}) {
