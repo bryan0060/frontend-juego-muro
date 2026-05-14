@@ -1,5 +1,32 @@
 import * as Phaser from 'phaser';
 
+const SCENARIOS = [
+  {
+    id: 'calle',
+    intro: 'intro_calle',
+    loop: 'loop_calle',
+    threshold: 0
+  },
+  {
+    id: 'piso1',
+    intro: 'intro_piso1',
+    loop: 'loop_piso1',
+    threshold: 1000
+  },
+  {
+    id: 'piso2',
+    intro: null,
+    loop: null,
+    threshold: 2500
+  },
+  {
+    id: 'piso3',
+    intro: null,
+    loop: null,
+    threshold: 4000
+  }
+];
+
 export class SubwaySurfersScene extends Phaser.Scene {
   constructor() {
     super('SubwaySurfersScene');
@@ -18,7 +45,13 @@ export class SubwaySurfersScene extends Phaser.Scene {
   preload() {
     // Escenario Base Generado
     this.load.image('background_mall', 'assets/images/subway/scenario_base.png');
-    
+
+    // Videos de Escenarios
+    this.load.video('intro_calle', 'assets/images/subway/INTRO CALLE.mp4');
+    this.load.video('loop_calle', 'assets/images/subway/ESCENARIO CALLE.mp4');
+    this.load.video('intro_piso1', 'assets/images/subway/INTRO PRIMER PISO CC.mp4');
+    this.load.video('loop_piso1', 'assets/images/subway/ESCENARIO PRIMER PISO CC.mp4');
+
     // Assets de marca
     this.load.image('player', 'assets/images/subway/ada.jpeg');
     this.load.image('logo_game', 'assets/images/subway/image26.png');
@@ -37,7 +70,12 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.currentLane = 1;
     this.spawnDelay = 2000;
     this._isRestarting = false; // MUY IMPORTANTE: reiniciar esta bandera
-    
+
+    // Estado de Escenarios
+    this.currentScenarioIndex = 0;
+    this.isIntroPlaying = true;
+    this.introCountdown = 7;
+
     // Resetear estados críticos
     this.isJumping = false;
     this.isSliding = false;
@@ -48,10 +86,53 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.cameras.main.fadeIn(300, 0, 0, 0);
     this._createUI();
 
-    // 2. Fondo del Mall (Imagen Generada de alta calidad)
+    // 2. Fondo de Video (Escenarios dinámicos)
+    this.bgVideo = this.add.video(width / 2, height / 2, SCENARIOS[this.currentScenarioIndex].intro)
+      .setDepth(0);
+    this.bgVideo.setMute(true); // Evitar bloqueo de autoplay por el navegador
+
+    // Ajustar escala para cubrir la pantalla (estilo object-fit: cover)
+    // Se ejecuta al reproducir para asegurar que el video ya tiene dimensiones
+    this.bgVideo.on('play', () => {
+      if (this.bgVideo.width > 0 && this.bgVideo.height > 0) {
+        const scaleX = width / this.bgVideo.width;
+        const scaleY = height / this.bgVideo.height;
+        const scale = Math.max(scaleX, scaleY);
+        this.bgVideo.setScale(scale);
+      }
+    });
+
+    this.bgVideo.play();
+
+    // Forzar el final de la intro a los 7 segundos exactos
+    if (this.introTimerEvent) this.introTimerEvent.destroy();
+    this.introTimerEvent = this.time.delayedCall(7000, () => {
+      this._finishIntro();
+    });
+
+    // Contador Visual
+    this.countdownText = this.add.text(width / 2, height / 2, '7', {
+      fontSize: '180px', color: '#ffffff', stroke: '#fa804f', strokeThickness: 18, fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(200);
+
+    this.countdownTimer = this.time.addEvent({
+      delay: 1000,
+      callback: () => {
+        if (this.isIntroPlaying && this.introCountdown > 1) {
+          this.introCountdown--;
+          this.countdownText.setText(this.introCountdown);
+        }
+      },
+      loop: true
+    });
+
+
+
+    // Mantener la referencia anterior por si la necesitamos como fallback
     this.background = this.add.image(width / 2, height / 2, 'background_mall')
-        .setDisplaySize(width, height)
-        .setDepth(0);
+      .setDisplaySize(width, height)
+      .setDepth(-1);
+    this.background.setVisible(false);
 
     // 3. Pista de Carreras (Perspectiva)
     this.trackGraphics = this.add.graphics().setDepth(1);
@@ -69,12 +150,12 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
     // Animación de correr (bounce)
     this.tweens.add({
-        targets: this.player,
-        y: -10,
-        duration: 200,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
+      targets: this.player,
+      y: -10,
+      duration: 200,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
     });
 
     // 4. Logo en la esquina
@@ -83,17 +164,17 @@ export class SubwaySurfersScene extends Phaser.Scene {
     // 5. Decoraciones laterales (Paredes/Edificios que se mueven)
     this.sideDecorations = this.add.group();
     this.time.addEvent({
-        delay: 1500, // Menos frecuente aún para no saturar
-        callback: () => this._spawnSideDecoration(),
-        loop: true
+      delay: 1500, // Menos frecuente aún para no saturar
+      callback: () => this._spawnSideDecoration(),
+      loop: true
     });
 
     // 6. Líneas de velocidad
     this.speedLines = this.add.group();
     this.time.addEvent({
-        delay: 100,
-        callback: () => this._spawnSpeedLine(),
-        loop: true
+      delay: 100,
+      callback: () => this._spawnSpeedLine(),
+      loop: true
     });
 
     // 7. Timers
@@ -103,15 +184,15 @@ export class SubwaySurfersScene extends Phaser.Scene {
     // 6. Líneas de movimiento en el suelo (para simular avance)
     this.floorStrips = this.add.group();
     this.time.addEvent({
-        delay: 200,
-        callback: () => this._spawnFloorStrip(),
-        loop: true
+      delay: 200,
+      callback: () => this._spawnFloorStrip(),
+      loop: true
     });
 
     // 7. Controles (Máxima compatibilidad)
     this.cursors = this.input.keyboard.createCursorKeys();
     this.input.keyboard.addCapture([37, 38, 39, 40]); // Prevenir scroll del navegador
-    
+
     // Sistema de hold
     this.holdBtn = null;
     this.holdGraphics = this.add.graphics().setDepth(20000);
@@ -121,24 +202,95 @@ export class SubwaySurfersScene extends Phaser.Scene {
   }
 
   _updateScore() {
-    if (this.isGameOver) return;
+    if (this.isGameOver || this.isIntroPlaying) return;
     this.score += 5; // Puntaje fijo para asegurar que siempre suba
     this.scoreText.setText(this.score);
-    if (this.score >= this.nextDifficultyScore) {
-        this.nextDifficultyScore += 1000; // Aumento de dificultad más lento
-        this.gameSpeed += 0.1; // Casi no aumenta la velocidad
-        this.spawnDelay = Math.max(2000, this.spawnDelay - 100); // Mínimo 2s entre obstáculos
-        this._startSpawnTimer(); 
-        this.cameras.main.flash(400, 255, 255, 255, 0.05);
+
+    // Transiciones de Escenario
+    const nextScenarioIndex = this.currentScenarioIndex + 1;
+    if (nextScenarioIndex < SCENARIOS.length) {
+      const nextScenario = SCENARIOS[nextScenarioIndex];
+      if (nextScenario.intro && this.score >= nextScenario.threshold) {
+        this._transitionToNextScenario();
+      }
     }
+
+    if (this.score >= this.nextDifficultyScore) {
+      this.nextDifficultyScore += 1000; // Aumento de dificultad más lento
+      this.gameSpeed += 0.1; // Casi no aumenta la velocidad
+      this.spawnDelay = Math.max(2000, this.spawnDelay - 100); // Mínimo 2s entre obstáculos
+      this._startSpawnTimer();
+      this.cameras.main.flash(400, 255, 255, 255, 0.05);
+    }
+  }
+
+  _finishIntro() {
+    if (!this.isIntroPlaying) return;
+    const currentScenario = SCENARIOS[this.currentScenarioIndex];
+    if (currentScenario.loop) {
+      this.bgVideo.changeSource(currentScenario.loop);
+      this.bgVideo.setMute(true);
+      this.bgVideo.setLoop(true);
+      this.bgVideo.play();
+    } else {
+      // Fallback a imagen si no hay video
+      this.bgVideo.stop();
+      this.bgVideo.setVisible(false);
+      if (this.background) {
+        this.background.setVisible(true);
+      }
+    }
+    this.isIntroPlaying = false;
+    if (this.countdownText) {
+      this.countdownText.setText('¡GO!');
+      this.time.delayedCall(1000, () => {
+        this.countdownText.setVisible(false);
+      });
+    }
+  }
+
+  _transitionToNextScenario() {
+    this.currentScenarioIndex++;
+    const currentScenario = SCENARIOS[this.currentScenarioIndex];
+    this.isIntroPlaying = true;
+    this.introCountdown = 7;
+
+    // Mostrar y resetear el texto del contador
+    this.countdownText.setText(this.introCountdown);
+    this.countdownText.setVisible(true);
+
+    // Cambiar video a la nueva intro
+    if (currentScenario.intro) {
+      if (this.background) this.background.setVisible(false);
+      this.bgVideo.setVisible(true);
+      this.bgVideo.changeSource(currentScenario.intro);
+      this.bgVideo.setMute(true);
+      this.bgVideo.play();
+    }
+
+    // Forzar transición de la intro a los 7 segundos exactos
+    if (this.introTimerEvent) this.introTimerEvent.destroy();
+    this.introTimerEvent = this.time.delayedCall(7000, () => {
+      this._finishIntro();
+    });
+
+    // Limpiar obstáculos actuales de la pantalla para una pausa limpia
+    if (this.obstacles) {
+      this.obstacles.clear(true, true);
+    }
+    if (this.collectibles) {
+      this.collectibles.clear(true, true);
+    }
+
+    this.cameras.main.flash(500, 255, 255, 255);
   }
 
   _startSpawnTimer() {
     if (this.spawnTimer) this.spawnTimer.destroy();
-    this.spawnTimer = this.time.addEvent({ 
-        delay: this.spawnDelay, 
-        callback: () => this._spawnCycle(), 
-        loop: true 
+    this.spawnTimer = this.time.addEvent({
+      delay: this.spawnDelay,
+      callback: () => this._spawnCycle(),
+      loop: true
     });
   }
 
@@ -171,84 +323,90 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
     }
     if (this.isGameOver) return;
-    
+
     // Leer controles en update (más fiable)
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) {
+    if (!this.isIntroPlaying) {
+      if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) {
         this._setLane(Math.max(0, this.currentLane - 1));
-    } else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) {
+      } else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) {
         this._setLane(Math.min(2, this.currentLane + 1));
-    }
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) {
+      }
+      if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) {
         this._jump();
-    }
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.down)) {
+      }
+      if (Phaser.Input.Keyboard.JustDown(this.cursors.down)) {
         this._slide();
+      }
     }
 
     const horizonY = this.scale.height * 0.45;
-    
+
     // Efecto de movimiento en el fondo (escenario vivo)
-    this.background.y = (this.scale.height / 2) + Math.sin(this.time.now * 0.01) * 2;
-    
+    const floatY = (this.scale.height / 2) + Math.sin(this.time.now * 0.01) * 2;
+    this.bgVideo.y = floatY;
+    if (this.background && this.background.visible) {
+      this.background.y = floatY;
+    }
+
     // Redibujar la pista con un ligero desfase para simular movimiento
     this._drawDynamicTrack();
 
     // Actualizar líneas de reflejo en el suelo (Sensación de avance)
     this.floorStrips.getChildren().forEach(strip => {
-        strip.y += this.gameSpeed * 1.5;
-        const progress = (strip.y - horizonY) / (this.scale.height - horizonY);
-        const targetX = this.scale.width / 2 + this.lanes[strip.lane];
-        const startX = this.scale.width / 2 + (this.lanes[strip.lane] * 0.02);
-        strip.x = Phaser.Math.Linear(startX, targetX, progress);
-        
-        strip.scaleX = 0.1 + progress * 2;
-        strip.alpha = Phaser.Math.Clamp(progress * 2, 0, 0.4);
+      strip.y += this.gameSpeed * 1.5;
+      const progress = (strip.y - horizonY) / (this.scale.height - horizonY);
+      const targetX = this.scale.width / 2 + this.lanes[strip.lane];
+      const startX = this.scale.width / 2 + (this.lanes[strip.lane] * 0.02);
+      strip.x = Phaser.Math.Linear(startX, targetX, progress);
 
-        if (strip.y > this.scale.height + 100) strip.destroy();
+      strip.scaleX = 0.1 + progress * 2;
+      strip.alpha = Phaser.Math.Clamp(progress * 2, 0, 0.4);
+
+      if (strip.y > this.scale.height + 100) strip.destroy();
     });
 
     // Actualizar decoraciones laterales
     this.sideDecorations.getChildren().forEach(dec => {
-        dec.y += this.gameSpeed * 1.5;
-        const progress = (dec.y - horizonY) / (this.scale.height - horizonY);
-        const sideFactor = dec.side === 'left' ? -1 : 1;
-        
-        // Movimiento desde el punto de fuga hacia los extremos
-        const startX = this.scale.width / 2 + (sideFactor * 20);
-        const targetX = this.scale.width / 2 + (sideFactor * 800);
-        dec.x = Phaser.Math.Linear(startX, targetX, progress);
-        
-        dec.setScale(0.01 + progress * 1.5); // Escala moderada
-        dec.alpha = Phaser.Math.Clamp(progress * 4, 0, 1);
+      dec.y += this.gameSpeed * 1.5;
+      const progress = (dec.y - horizonY) / (this.scale.height - horizonY);
+      const sideFactor = dec.side === 'left' ? -1 : 1;
 
-        if (dec.y > this.scale.height + 200) dec.destroy();
+      // Movimiento desde el punto de fuga hacia los extremos
+      const startX = this.scale.width / 2 + (sideFactor * 20);
+      const targetX = this.scale.width / 2 + (sideFactor * 800);
+      dec.x = Phaser.Math.Linear(startX, targetX, progress);
+
+      dec.setScale(0.01 + progress * 1.5); // Escala moderada
+      dec.alpha = Phaser.Math.Clamp(progress * 4, 0, 1);
+
+      if (dec.y > this.scale.height + 200) dec.destroy();
     });
 
     // Actualizar líneas de velocidad
     this.speedLines.getChildren().forEach(line => {
-        line.y += this.gameSpeed * 2;
-        line.alpha -= 0.02;
-        if (line.y > this.scale.height || line.alpha <= 0) line.destroy();
+      line.y += this.gameSpeed * 2;
+      line.alpha -= 0.02;
+      if (line.y > this.scale.height || line.alpha <= 0) line.destroy();
     });
 
     const objs = [];
     if (this.obstacles) objs.push(...this.obstacles.getChildren());
     if (this.collectibles) objs.push(...this.collectibles.getChildren());
-    
+
     objs.forEach(obj => {
       obj.y += this.gameSpeed;
       // Interpolación basada en el punto de fuga de la imagen
       const progress = (obj.y - horizonY) / (this.scale.height - horizonY);
-      
+
       // Perspectiva corregida para la imagen de fondo
       const startX = this.scale.width / 2 + (this.lanes[obj.lane] * 0.02);
       const targetX = this.scale.width / 2 + this.lanes[obj.lane];
       obj.x = Phaser.Math.Linear(startX, targetX, progress);
-      
+
       // Aumentamos el tamaño máximo para que se vean bien
-      const targetSize = 250 * progress; 
+      const targetSize = 250 * progress;
       obj.setDisplaySize(targetSize, targetSize);
-      
+
       obj.setAlpha(Phaser.Math.Clamp(progress * 4, 0, 1));
       obj.setDepth(20); // Asegurar que estén sobre la pista (depth 1)
 
@@ -257,19 +415,19 @@ export class SubwaySurfersScene extends Phaser.Scene {
       // Colisiones (Basadas en pies y carril)
       const playerY = this.playerContainer.y;
       const verticalDist = Math.abs(obj.y - playerY);
-      
+
       if (verticalDist < 50 && obj.lane === this.currentLane) {
         if (this.obstacles && this.obstacles.contains(obj)) {
-            if (!this.isJumping) this._gameOver();
+          if (!this.isJumping) this._gameOver();
         } else {
-            this._collectSun(obj);
+          this._collectSun(obj);
         }
       }
     });
   }
 
   _spawnCycle() {
-    if (this.isGameOver) return;
+    if (this.isGameOver || this.isIntroPlaying) return;
     const lane = Phaser.Math.Between(0, 2);
     if (Phaser.Math.Between(0, 10) > 4) this._spawnObstacle(lane);
     else this._spawnCollectible(lane);
@@ -281,7 +439,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     const type = 'obs_valla';
     const obs = this.add.sprite(this.scale.width / 2, this.scale.height * 0.45, type);
     obs.lane = lane;
-    obs.setOrigin(0.5, 1); 
+    obs.setOrigin(0.5, 1);
     this.obstacles.add(obs);
   }
 
@@ -339,21 +497,21 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
   _setupControls() {
     this._handleKeyDown = (event) => {
-        if (this.isGameOver) return;
-        switch (event.keyCode) {
-            case Phaser.Input.Keyboard.KeyCodes.LEFT:
-                this._setLane(Math.max(0, this.currentLane - 1));
-                break;
-            case Phaser.Input.Keyboard.KeyCodes.RIGHT:
-                this._setLane(Math.min(2, this.currentLane + 1));
-                break;
-            case Phaser.Input.Keyboard.KeyCodes.UP:
-                this._jump();
-                break;
-            case Phaser.Input.Keyboard.KeyCodes.DOWN:
-                this._slide();
-                break;
-        }
+      if (this.isGameOver || this.isIntroPlaying) return;
+      switch (event.keyCode) {
+        case Phaser.Input.Keyboard.KeyCodes.LEFT:
+          this._setLane(Math.max(0, this.currentLane - 1));
+          break;
+        case Phaser.Input.Keyboard.KeyCodes.RIGHT:
+          this._setLane(Math.min(2, this.currentLane + 1));
+          break;
+        case Phaser.Input.Keyboard.KeyCodes.UP:
+          this._jump();
+          break;
+        case Phaser.Input.Keyboard.KeyCodes.DOWN:
+          this._slide();
+          break;
+      }
     };
     this.input.keyboard.on('keydown', this._handleKeyDown);
   }
@@ -361,6 +519,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
   _cleanup() {
     if (this.spawnTimer) this.spawnTimer.destroy();
     if (this.timeScoreTimer) this.timeScoreTimer.destroy();
+    if (this.countdownTimer) this.countdownTimer.destroy();
+    if (this.introTimerEvent) this.introTimerEvent.destroy();
   }
 
   _drawStaticTrack() {
@@ -390,32 +550,32 @@ export class SubwaySurfersScene extends Phaser.Scene {
     // 2. Líneas de los carriles (Efecto de movimiento)
     const speedFactor = this.time.now * 0.001 * this.gameSpeed;
     g.lineStyle(4, 0xffffff, 0.4);
-    
+
     // Carriles calculados por perspectiva
     [-1, 1].forEach(dir => {
-        g.beginPath();
-        g.moveTo(width / 2 + dir * 15, horizonY);
-        g.lineTo(width / 2 + dir * 300, height);
-        g.strokePath();
+      g.beginPath();
+      g.moveTo(width / 2 + dir * 15, horizonY);
+      g.lineTo(width / 2 + dir * 300, height);
+      g.strokePath();
     });
 
     // 3. Líneas discontinuas de movimiento (Sense of speed)
     g.lineStyle(6, 0xffffff, 0.8);
     for (let i = 0; i < 5; i++) {
-        const p = ((i + speedFactor) % 5) / 5;
-        const y = horizonY + p * (height - horizonY);
-        const w = 20 + p * 100;
-        const xStart = width / 2 - w / 2;
-        g.lineBetween(xStart, y, xStart + w, y);
+      const p = ((i + speedFactor) % 5) / 5;
+      const y = horizonY + p * (height - horizonY);
+      const w = 20 + p * 100;
+      const xStart = width / 2 - w / 2;
+      g.lineBetween(xStart, y, xStart + w, y);
     }
 
     // 4. Bordes laterales (Veredas/Sidewalks) con movimiento
     g.lineStyle(12, 0x3dc9a1, 0.9); // Color verde del brandbook
     [-1, 1].forEach(dir => {
-        g.beginPath();
-        g.moveTo(width / 2 + dir * 50, horizonY);
-        g.lineTo(width / 2 + dir * 800, height);
-        g.strokePath();
+      g.beginPath();
+      g.moveTo(width / 2 + dir * 50, horizonY);
+      g.lineTo(width / 2 + dir * 800, height);
+      g.strokePath();
     });
   }
 
@@ -423,7 +583,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     if (this.isGameOver) return;
     const lane = Phaser.Math.Between(0, 2);
     const horizonY = this.scale.height * 0.45;
-    
+
     const strip = this.add.rectangle(this.scale.width / 2, horizonY, 100, 10, 0xffffff, 0.3);
     strip.lane = lane;
     this.floorStrips.add(strip);
@@ -433,7 +593,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     if (this.isGameOver) return;
     const side = Phaser.Math.RND.pick(['left', 'right']);
     const horizonY = this.scale.height * 0.45;
-    
+
     // Usamos líneas o luces abstractas como decoración para no confundir con obstáculos
     const dec = this.add.rectangle(this.scale.width / 2, horizonY, 20, 100, 0x40c0dd, 0.4);
     dec.side = side;
@@ -452,69 +612,69 @@ export class SubwaySurfersScene extends Phaser.Scene {
   _gameOver() {
     if (this.isGameOver) return;
     this.isGameOver = true;
-    
+
     this.cameras.main.shake(600, 0.03);
     const { width, height } = this.scale;
-    
+
     // Panel de Game Over estilizado
     const panel = this.add.container(width / 2, height / 2).setDepth(200);
-    
+
     const bg = this.add.rectangle(0, 0, 700, 500, 0x9c4eb3, 0.95)
-        .setStrokeStyle(4, 0xffffff);
+      .setStrokeStyle(4, 0xffffff);
     panel.add(bg);
 
-    const title = this.add.text(0, -120, '¡FIN DEL JUEGO!', { 
-        fontSize: '75px', color: '#ffffff', fontWeight: 'bold' 
+    const title = this.add.text(0, -120, '¡FIN DEL JUEGO!', {
+      fontSize: '75px', color: '#ffffff', fontWeight: 'bold'
     }).setOrigin(0.5);
     panel.add(title);
 
-    const scoreFinal = this.add.text(0, 10, `PUNTUACIÓN: ${this.score}`, { 
-        fontSize: '45px', color: '#ffffff' 
+    const scoreFinal = this.add.text(0, 10, `PUNTUACIÓN: ${this.score}`, {
+      fontSize: '45px', color: '#ffffff'
     }).setOrigin(0.5);
     panel.add(scoreFinal);
 
     // Botón Reintentar (Color de alto contraste Naranja Brandbook)
-    const btn = this.add.text(0, 140, ' REINTENTAR ', { 
-        fontSize: '40px', 
-        color: '#ffffff', 
-        backgroundColor: '#fa804f', // Naranja brillante
-        padding: { x: 40, y: 20 },
-        fontWeight: 'bold'
+    const btn = this.add.text(0, 140, ' REINTENTAR ', {
+      fontSize: '40px',
+      color: '#ffffff',
+      backgroundColor: '#fa804f', // Naranja brillante
+      padding: { x: 40, y: 20 },
+      fontWeight: 'bold'
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    
+
     panel.add(btn);
-    
+
     const restartAction = () => {
-        if (!this.isGameOver || this._isRestarting) return;
-        this._isRestarting = true;
-        this.input.off('pointerdown', restartAction);
-        this.scene.restart();
+      if (!this.isGameOver || this._isRestarting) return;
+      this._isRestarting = true;
+      this.input.off('pointerdown', restartAction);
+      this.scene.restart();
     };
 
     btn.on('pointerdown', (ptr) => {
-        this.holdBtn = {
-            x: ptr.x, y: ptr.y, duration: 2000, time: 0,
-            callback: () => restartAction()
-        };
+      this.holdBtn = {
+        x: ptr.x, y: ptr.y, duration: 2000, time: 0,
+        callback: () => restartAction()
+      };
     });
     btn.on('pointerup', () => this._cancelHold());
     btn.on('pointerout', () => this._cancelHold());
-    
+
     // Fallback GLOBAL e INFALIBLE: Cualquier clic en la pantalla reinicia el juego
     this.time.delayedCall(500, () => {
-        if (!this._isRestarting) {
-            this.input.on('pointerdown', restartAction);
-        }
+      if (!this._isRestarting) {
+        this.input.on('pointerdown', restartAction);
+      }
     });
-    
+
 
     // Animación de entrada del panel
     panel.setScale(0);
     this.tweens.add({
-        targets: panel,
-        scale: 1,
-        duration: 500,
-        ease: 'Back.easeOut'
+      targets: panel,
+      scale: 1,
+      duration: 500,
+      ease: 'Back.easeOut'
     });
   }
 }
