@@ -68,9 +68,9 @@ export class BootScene extends Phaser.Scene {
 
     // Imágenes Pizarra Mágica (Bocetos)
     this.load.image('plantilla', 'assets/images/PizarraMagica/plantilla.png');
-    this.load.image('boceto_arcoiris', 'assets/images/PizarraMagica/Arcoiris.png');
+    this.load.image('boceto_arcoiris', 'assets/images/PizarraMagica/arcoiris.png');
     this.load.image('boceto_carro', 'assets/images/PizarraMagica/Carro.png');
-    this.load.image('boceto_castillo', 'assets/images/PizarraMagica/Castillo.png');
+    this.load.image('boceto_castillo', 'assets/images/PizarraMagica/castillo.png');
     this.load.image('boceto_oso', 'assets/images/PizarraMagica/Oso (2).png');
     this.load.image('boceto_parke', 'assets/images/PizarraMagica/ParkeTr3s.png');
     this.load.image('boceto_sol', 'assets/images/PizarraMagica/sol.png');

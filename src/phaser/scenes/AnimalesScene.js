@@ -87,8 +87,14 @@ export class AnimalesScene extends Phaser.Scene {
         this.holdGraphics = this.add.graphics().setDepth(10000);
 
         // 1. Jaula y Hada (Más abajo, en el suelo)
-        // Forzamos el fallback por ahora si el usuario no tiene el archivo
-        const jaulaKey = this.textures.exists('jaula_hada') && this.textures.get('jaula_hada').key !== '__MISSING' ? 'jaula_hada' : 'jaula_fallback';
+        // Verificamos si la textura existe y es válida
+        let jaulaKey = 'jaula_fallback';
+        if (this.textures.exists('jaula_hada')) {
+            const tex = this.textures.get('jaula_hada');
+            if (tex.key !== '__MISSING' && tex.getSourceImage()) {
+                jaulaKey = 'jaula_hada';
+            }
+        }
         this.jaula = this.add.image(W / 2, H - 120, jaulaKey).setScale(0.8).setDepth(5).setVisible(false);
         
         // Hada dentro de la jaula
@@ -123,10 +129,6 @@ export class AnimalesScene extends Phaser.Scene {
 
         // 5. HUD
         this._buildHUD();
-        this.textoPuntaje.setVisible(false);
-        this.barraEnergiaBg.setVisible(false);
-        this.barraEnergia.setVisible(false);
-        this.textoInstruccion.setVisible(false);
 
         // 6. Mostrar Menú
         this._mostrarMenuEscenarios();
@@ -297,8 +299,14 @@ export class AnimalesScene extends Phaser.Scene {
 
             // Imagen
             const img = this.add.image(0, -20, esc.id).setDisplaySize(400, 170);
-            const maskShape = this.add.graphics().fillRoundedRect(-200, -105, 400, 170, 12);
-            img.setMask(maskShape.createGeometryMask());
+            const maskShape = this.add.graphics();
+            maskShape.fillStyle(0xffffff);
+            maskShape.fillRoundedRect(-200, -105, 400, 170, 12);
+            maskShape.setVisible(false);
+            cardContainer.add(maskShape);
+            
+            const mask = maskShape.createGeometryMask();
+            img.setMask(mask);
 
             // Barra inferior para el nombre
             const labelBg = this.add.graphics();
@@ -374,11 +382,7 @@ export class AnimalesScene extends Phaser.Scene {
         // Mostrar elementos de juego
         this.jaula.setVisible(true);
         this.hada.setVisible(true);
-        this.textoPuntaje.setVisible(true);
-        this.barraEnergiaBg.setVisible(true);
-        this.barraEnergia.setVisible(true);
-        this.textoInstruccion.setVisible(true).setText('¡PREPÁRATE!');
-        this.btnMenu.setVisible(true);
+        this.hudGroup.setVisible(true);
 
         // Detener sonidos de menú y empezar música ambiental en loop
         this.sound.stopAll();
@@ -399,32 +403,90 @@ export class AnimalesScene extends Phaser.Scene {
     }
 
     _buildHUD() {
-        // Puntaje
-        this.textoPuntaje = this.add.text(30, 30, 'PUNTOS: 0', {
-            fontSize: '32px', fontFamily: 'Bangers', color: '#ffffff', stroke: '#000', strokeThickness: 4
-        });
+        this.hudGroup = this.add.group();
+        const hudY = 40;
+        
+        // 1. Puntaje
+        this.textoPuntaje = this.add.text(40, hudY, 'PUNTOS: 0', {
+            fontSize: '32px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+        }).setShadow(2, 2, '#000000', 4, true, true);
+        this.hudGroup.add(this.textoPuntaje);
 
-        // Barra de energía mejorada
-        const energyX = this.W - 240;
-        const energyY = 55;
-        // Sombra y fondo de la barra
-        this.add.rectangle(energyX + 1, energyY + 1, 210, 28, 0x000000, 0.6).setOrigin(0, 0.5);
-        this.barraEnergiaBg = this.add.rectangle(energyX, energyY, 210, 28, 0x1a0a2e).setOrigin(0, 0.5);
-        // Borde de la barra
-        const barBorder = this.add.graphics();
-        barBorder.lineStyle(2, 0xa855f7, 1);
-        barBorder.strokeRoundedRect(energyX - 1, energyY - 15, 212, 30, 6);
-        // Barra de energía con color vibrante
-        this.barraEnergia = this.add.rectangle(energyX, energyY, 210, 28, 0x00ff88).setOrigin(0, 0.5);
-        // Icono + label
-        this.add.text(energyX, energyY - 28, '✨ ENERGÍA DEL HADA', {
-            fontSize: '15px', fontFamily: 'Bangers', color: '#e0aaff', stroke: '#000', strokeThickness: 3
-        });
+        // 2. Barra de energía mágica
+        const energyX = this.W - 300;
+        const barWidth = 240;
+        const barHeight = 24;
 
-        // Texto de instrucción - centro superior (más abajo)
-        this.textoInstruccion = this.add.text(this.W / 2, 130, '¡PREPÁRATE!', {
-            fontSize: '40px', fontFamily: 'Luckiest Guy', color: '#ffffff', stroke: '#000', strokeThickness: 6
-        }).setOrigin(0.5);
+        // Fondo de la barra (Glassmorphism)
+        const hudBg = this.add.graphics()
+            .fillStyle(0x000000, 0.4)
+            .fillRoundedRect(energyX - 10, hudY - 15, barWidth + 60, 50, 15)
+            .lineStyle(2, 0xffffff, 0.2)
+            .strokeRoundedRect(energyX - 10, hudY - 15, barWidth + 60, 50, 15);
+        this.hudGroup.add(hudBg);
+
+        this.barraEnergiaBg = this.add.graphics();
+        this.barraEnergiaBg.fillStyle(0x2d1b4e, 1);
+        this.barraEnergiaBg.fillRoundedRect(energyX + 40, hudY - 2, barWidth, barHeight, 8);
+        this.hudGroup.add(this.barraEnergiaBg);
+
+        this.barraEnergia = this.add.graphics();
+        this.hudGroup.add(this.barraEnergia);
+        this._updateBarraEnergia();
+
+        const heart = this.add.text(energyX + 15, hudY + 10, '💖', { fontSize: '28px' }).setOrigin(0.5);
+        this.tweens.add({
+            targets: heart,
+            scale: 1.2,
+            duration: 800,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+        this.hudGroup.add(heart);
+
+        const energyLabel = this.add.text(energyX + 40, hudY - 25, 'VITALIDAD DEL HADA', {
+            fontSize: '14px', fontFamily: 'Bangers', color: '#ffccff', letterSpacing: 2
+        }).setShadow(1, 1, '#000', 2);
+        this.hudGroup.add(energyLabel);
+
+        // Botón Menú
+        this.btnMenu = this.add.text(this.W - 30, this.H - 30, '☰', {
+            fontSize: '32px', color: '#ffffff', alpha: 0.2
+        }).setOrigin(1).setInteractive({ cursor: 'pointer' });
+        this.btnMenu.on('pointerover', () => this.btnMenu.setAlpha(1));
+        this.btnMenu.on('pointerout', () => this.btnMenu.setAlpha(0.2));
+        this.btnMenu.on('pointerdown', () => {
+            this.sound.play('pop');
+            this._volverAlMenu();
+        });
+        this.hudGroup.add(this.btnMenu);
+
+        // Ocultar HUD inicialmente
+        this.hudGroup.setVisible(false);
+    }
+
+    _updateBarraEnergia() {
+        const energyX = this.W - 300 + 40;
+        const hudY = 40 - 2;
+        const barWidth = 240;
+        const barHeight = 24;
+        const pct = this.energia / CONFIG.totalEnergia;
+        
+        this.barraEnergia.clear();
+        
+        if (pct <= 0) return;
+
+        // Color dinámico (Verde -> Amarillo -> Rojo)
+        const color = pct > 0.6 ? 0x00ffcc : pct > 0.3 ? 0xffcc00 : 0xff3344;
+        
+        // Dibujar la barra con gradiente simulado
+        this.barraEnergia.fillStyle(color, 1);
+        this.barraEnergia.fillRoundedRect(energyX, hudY, barWidth * pct, barHeight, 8);
+        
+        // Brillo superior (Efecto cristal)
+        this.barraEnergia.fillStyle(0xffffff, 0.3);
+        this.barraEnergia.fillRoundedRect(energyX, hudY, barWidth * pct, barHeight / 2, { tl: 8, tr: 8, bl: 0, br: 0 });
     }
 
     _spawnEnemigo() {
@@ -432,96 +494,108 @@ export class AnimalesScene extends Phaser.Scene {
 
         const pools = {
             'scenery_bosque': [
-                { key: 'bosque_lobo', pose: 'agachado', speed: 1.2, origin: 'side', scale: 0.45 },
-                { key: 'bosque_lobo2', pose: 'agachado', speed: 1.3, origin: 'side', scale: 0.45 },
-                { key: 'bosque_lobo3', pose: 'agachado', speed: 1.4, origin: 'side', scale: 0.45 },
-                { key: 'bosque_oso', pose: 'manos-cielo', speed: 0.8, origin: 'side', scale: 0.65, reverse: true },
-                { key: 'bosque_oso2', pose: 'manos-cielo', speed: 0.9, origin: 'side', scale: 0.65, reverse: true },
-                { key: 'bosque_oso3', pose: 'manos-cielo', speed: 0.7, origin: 'side', scale: 0.65, reverse: true },
-                { key: 'bosque_serpiente', pose: 'agachado', speed: 1.8, origin: 'side', scale: 0.45, reverse: true },
-                { key: 'bosque_cuervo', pose: 'manos-cielo', speed: 1.4, origin: 'sky', scale: 0.08 },
-                { key: 'bosque_aguila', pose: 'estrella', speed: 1.6, origin: 'sky', scale: 0.35, reverse: true },
-                { key: 'bosque_buho', pose: 'estrella', speed: 1.2, origin: 'sky', scale: 0.35, reverse: true },
-                { key: 'bosque_cazador', pose: 'estrella', speed: 1.0, origin: 'side', scale: 0.2, reverse: true }
+                { key: 'bosque_lobo', scale: 0.25, tipo: 'ground', reverseFlip: true },
+                { key: 'bosque_lobo2', scale: 0.25, tipo: 'ground', reverseFlip: true },
+                { key: 'bosque_lobo3', scale: 0.25, tipo: 'ground', reverseFlip: true },
+                { key: 'bosque_oso', scale: 0.35, tipo: 'ground' },
+                { key: 'bosque_oso2', scale: 0.35, tipo: 'ground' },
+                { key: 'bosque_oso3', scale: 0.35, tipo: 'ground' },
+                { key: 'bosque_serpiente', scale: 0.35, tipo: 'ground' },
+                { key: 'bosque_cuervo', scale: 0.08, tipo: 'flying', reverseFlip: true },
+                { key: 'bosque_aguila', scale: 0.25, tipo: 'flying' },
+                { key: 'bosque_buho', scale: 0.25, tipo: 'flying' },
+                { key: 'bosque_cazador', scale: 0.15, tipo: 'ground', reverseFlip: true }
             ],
             'scenery_desierto': [
-                { key: 'desierto_araña', pose: 'agachado', speed: 1.5, origin: 'side', scale: 0.45, reverse: true },
-                { key: 'desierto_ave', pose: 'estrella', speed: 1.8, origin: 'sky', scale: 0.4, reverse: true },
-                { key: 'desierto_buho', pose: 'estrella', speed: 1.4, origin: 'sky', scale: 0.45, reverse: true },
-                { key: 'desierto_camello', pose: 'manos-cielo', speed: 0.9, origin: 'side', scale: 0.8, reverse: true },
-                { key: 'desierto_canguro', pose: 'manos-cielo', speed: 1.3, origin: 'side', scale: 0.5, reverse: true },
-                { key: 'desierto_cobra', pose: 'agachado', speed: 1.6, origin: 'side', scale: 0.55, reverse: true },
-                { key: 'desierto_cobra2', pose: 'agachado', speed: 1.7, origin: 'side', scale: 0.55, reverse: true },
-                { key: 'desierto_cobra3', pose: 'agachado', speed: 1.6, origin: 'side', scale: 0.55, reverse: true },
-                { key: 'desierto_cobra4', pose: 'agachado', speed: 1.5, origin: 'side', scale: 0.55, reverse: true },
-                { key: 'desierto_coyote', pose: 'agachado', speed: 1.8, origin: 'side', scale: 0.3, reverse: true },
-                { key: 'desierto_escorpion', pose: 'agachado', speed: 2.0, origin: 'side', scale: 0.15, reverse: true }
+                { key: 'desierto_araña', scale: 0.25, tipo: 'ground' },
+                { key: 'desierto_ave', scale: 0.25, tipo: 'flying' },
+                { key: 'desierto_buho', scale: 0.25, tipo: 'flying' },
+                { key: 'desierto_camello', scale: 0.45, tipo: 'ground' },
+                { key: 'desierto_canguro', scale: 0.35, tipo: 'ground' },
+                { key: 'desierto_cobra', scale: 0.3, tipo: 'ground' },
+                { key: 'desierto_cobra2', scale: 0.3, tipo: 'ground' },
+                { key: 'desierto_cobra3', scale: 0.3, tipo: 'ground' },
+                { key: 'desierto_cobra4', scale: 0.3, tipo: 'ground' },
+                { key: 'desierto_coyote', scale: 0.25, tipo: 'ground' },
+                { key: 'desierto_escorpion', scale: 0.1, tipo: 'ground' }
             ],
             'scenery_hielo': [
-                { key: 'hielo_buho', pose: 'estrella', speed: 1.4, origin: 'sky', scale: 0.45, reverse: true },
-                { key: 'hielo_foca', pose: 'agachado', speed: 1.0, origin: 'side', scale: 0.55, reverse: true },
-                { key: 'hielo_leopardo', pose: 'agachado', speed: 1.6, origin: 'side', scale: 0.5, reverse: true },
-                { key: 'hielo_lobo', pose: 'agachado', speed: 1.5, origin: 'side', scale: 0.5, reverse: true },
-                { key: 'hielo_mamut', pose: 'manos-cielo', speed: 0.7, origin: 'side', scale: 0.65, reverse: true },
-                { key: 'hielo_morsa', pose: 'manos-cielo', speed: 0.8, origin: 'side', scale: 0.6, reverse: true },
-                { key: 'hielo_oso', pose: 'manos-cielo', speed: 0.9, origin: 'side', scale: 0.5, reverse: true },
-                { key: 'hielo_pinguino', pose: 'agachado', speed: 1.2, origin: 'side', scale: 0.4 },
-                { key: 'hielo_reno', pose: 'manos-cielo', speed: 1.1, origin: 'side', scale: 0.5 },
-                { key: 'hielo_zorro', pose: 'agachado', speed: 1.4, origin: 'side', scale: 0.35, reverse: true }
+                { key: 'hielo_buho', scale: 0.25, tipo: 'flying' },
+                { key: 'hielo_foca', scale: 0.35, tipo: 'ground' },
+                { key: 'hielo_leopardo', scale: 0.3, tipo: 'ground' },
+                { key: 'hielo_lobo', scale: 0.3, tipo: 'ground' },
+                { key: 'hielo_mamut', scale: 0.4, tipo: 'ground' },
+                { key: 'hielo_morsa', scale: 0.35, tipo: 'ground' },
+                { key: 'hielo_oso', scale: 0.35, tipo: 'ground' },
+                { key: 'hielo_pinguino', scale: 0.25, tipo: 'ground' },
+                { key: 'hielo_reno', scale: 0.35, tipo: 'ground' },
+                { key: 'hielo_zorro', scale: 0.25, tipo: 'ground' }
             ],
             'scenery_pantano': [
-                { key: 'pantano_capibara', pose: 'agachado', speed: 1.1, origin: 'side', scale: 0.45, reverse: true },
-                { key: 'pantano_cisne', pose: 'manos-cielo', speed: 1.2, origin: 'side', scale: 0.5, reverse: true },
-                { key: 'pantano_cocodrilo', pose: 'agachado', speed: 1.4, origin: 'side', scale: 0.6, reverse: true },
-                { key: 'pantano_garza', pose: 'estrella', speed: 1.5, origin: 'sky', scale: 0.45, reverse: true },
-                { key: 'pantano_hipopotamo', pose: 'manos-cielo', speed: 0.8, origin: 'side', scale: 0.65, reverse: true },
-                { key: 'pantano_murcielago', pose: 'estrella', speed: 1.8, origin: 'sky', scale: 0.4, reverse: true },
-                { key: 'pantano_nutria', pose: 'agachado', speed: 1.3, origin: 'side', scale: 0.45, reverse: true },
-                { key: 'pantano_pato_volando', pose: 'estrella', speed: 1.6, origin: 'sky', scale: 0.4, reverse: true },
-                { key: 'pantano_pato', pose: 'agachado', speed: 1.2, origin: 'side', scale: 0.3, reverse: true },
-                { key: 'pantano_sapo', pose: 'agachado', speed: 1.8, origin: 'side', scale: 0.25, reverse: true },
-                { key: 'pantano_sapo2', pose: 'agachado', speed: 1.7, origin: 'side', scale: 0.25, reverse: true },
-                { key: 'pantano_sapo3', pose: 'agachado', speed: 1.9, origin: 'side', scale: 0.25, reverse: true },
-                { key: 'pantano_sapo4', pose: 'agachado', speed: 1.6, origin: 'side', scale: 0.25, reverse: true },
-                { key: 'pantano_sapo5', pose: 'agachado', speed: 2.0, origin: 'side', scale: 0.25, reverse: true },
-                { key: 'pantano_tortuga', pose: 'agachado', speed: 0.9, origin: 'side', scale: 0.35, reverse: true }
+                { key: 'pantano_capibara', scale: 0.25, tipo: 'ground' },
+                { key: 'pantano_cisne', scale: 0.35, tipo: 'ground' },
+                { key: 'pantano_cocodrilo', scale: 0.45, tipo: 'ground' },
+                { key: 'pantano_garza', scale: 0.3, tipo: 'flying' },
+                { key: 'pantano_hipopotamo', scale: 0.45, tipo: 'ground' },
+                { key: 'pantano_murcielago', scale: 0.25, tipo: 'flying' },
+                { key: 'pantano_nutria', scale: 0.25, tipo: 'ground' },
+                { key: 'pantano_pato_volando', scale: 0.25, tipo: 'flying' },
+                { key: 'pantano_pato', scale: 0.2, tipo: 'ground' },
+                { key: 'pantano_sapo', scale: 0.15, tipo: 'ground' },
+                { key: 'pantano_sapo2', scale: 0.15, tipo: 'ground' },
+                { key: 'pantano_sapo3', scale: 0.15, tipo: 'ground' },
+                { key: 'pantano_sapo4', scale: 0.15, tipo: 'ground' },
+                { key: 'pantano_sapo5', scale: 0.15, tipo: 'ground' },
+                { key: 'pantano_tortuga', scale: 0.25, tipo: 'ground' }
             ]
         };
 
         const pool = pools[this.escenarioActual] || pools['scenery_bosque'];
-        const tipo = Phaser.Utils.Array.GetRandom(pool);
+        const anim = Phaser.Utils.Array.GetRandom(pool);
 
         let x, y;
-        const horizonY = this.H / 2 + 50;
-
-        if (tipo.origin === 'sky') {
-            const desdeIzquierda = Math.random() > 0.5;
-            x = desdeIzquierda ? -300 : this.W + 300;
-            y = Phaser.Math.Between(-150, 0); // Vienen desde más arriba
+        const side = Math.random() > 0.5 ? 'left' : 'right';
+        
+        if (anim.tipo === 'flying') {
+            x = side === 'left' ? Phaser.Math.Between(100, 300) : Phaser.Math.Between(this.W - 300, this.W - 100);
+            y = Phaser.Math.Between(80, 300);
         } else {
-            const desdeIzquierda = Math.random() > 0.5;
-            x = desdeIzquierda ? -300 : this.W + 300;
-            y = horizonY + Phaser.Math.Between(-30, 30);
+            x = side === 'left' ? Phaser.Math.Between(50, 250) : Phaser.Math.Between(this.W - 250, this.W - 50);
+            y = this.H - Phaser.Math.Between(60, 150);
         }
 
-        const enemigo = this.add.sprite(x, y, tipo.key).setScale(0.01).setDepth(4);
-        enemigo.poseRequerida = tipo.pose;
-        enemigo.baseScale = tipo.scale;
-        enemigo.speed = tipo.speed;
-        enemigo.originType = tipo.origin;
-        // Los voladores atacan la parte superior de la jaula, los terrestres la base
-        enemigo.targetY = (tipo.origin === 'sky') ? this.H - 280 : this.H - 120;
+        const enemigo = this.add.sprite(x, y, anim.key).setScale(0).setDepth(4);
+        
+        // ESCALA INDIVIDUAL: Ahora cada animal usa exactamente su valor de la pool
+        enemigo.baseScale = anim.scale;
+        
+        if (anim.tipo === 'ground') {
+            enemigo.setOrigin(0.5, 1);
+        }
+        
+        this.tweens.add({
+            targets: enemigo,
+            scale: enemigo.baseScale,
+            duration: 300,
+            ease: 'Back.easeOut'
+        });
+
+        enemigo.speed = 2.0;
+        enemigo.targetY = this.H - 120;
         enemigo.spawnY = y;
         enemigo.spawnX = x;
+        enemigo.estado = 'esperando';
+        enemigo.timer = 5000;
 
-        // Lógica de orientación individualizada
-        const haciaDerecha = x < this.W / 2;
-        const flip = tipo.reverse ? haciaDerecha : !haciaDerecha;
-        enemigo.setFlipX(flip);
+        const timerY = anim.tipo === 'ground' ? y - (180 * enemigo.baseScale) : y - (100 * enemigo.baseScale);
+        enemigo.timerText = this.add.text(x, timerY, '5', {
+            fontSize: '48px', fontFamily: 'Bangers', color: '#ff0000', stroke: '#000', strokeThickness: 4
+        }).setOrigin(0.5).setDepth(10);
 
-        // Icono de pose sobre el enemigo
-        const poseIcon = this.add.text(0, -100, CONFIG.poses[tipo.pose].emoji, { fontSize: '60px' }).setOrigin(0.5).setDepth(10);
-        enemigo.icon = poseIcon;
+        // ORIENTACIÓN INDIVIDUAL: Solo invertimos los que tengan 'reverseFlip'
+        const shouldReverse = anim.reverseFlip || false;
+        const shouldFlip = (x < this.W / 2); 
+        enemigo.setFlipX(shouldReverse ? !shouldFlip : shouldFlip);
 
         this.enemigos.add(enemigo);
     }
@@ -552,85 +626,66 @@ export class AnimalesScene extends Phaser.Scene {
 
         // Mover enemigos hacia la jaula
         this.enemigos.getChildren().forEach(enemigo => {
-            const dx = this.W / 2 - enemigo.x;
-            const dy = (enemigo.targetY || (this.H - 120)) - enemigo.y;
-            const angle = Math.atan2(dy, dx);
+            if (enemigo.estado === 'esperando') {
+                enemigo.timer -= delta;
+                const segundos = Math.ceil(enemigo.timer / 1000);
+                enemigo.timerText.setText(segundos > 0 ? segundos : '!');
+                
+                if (enemigo.timer <= 0) {
+                    enemigo.estado = 'atacando';
+                    enemigo.timerText.setVisible(false);
+                    // Efecto de aviso antes de atacar
+                    this.tweens.add({
+                        targets: enemigo,
+                        scale: enemigo.baseScale * 1.3,
+                        duration: 100,
+                        yoyo: true
+                    });
+                }
+            } else {
+                const dx = this.W / 2 - enemigo.x;
+                const dy = (enemigo.targetY || (this.H - 120)) - enemigo.y;
+                const angle = Math.atan2(dy, dx);
 
-            enemigo.x += Math.cos(angle) * enemigo.speed;
-            enemigo.y += Math.sin(angle) * enemigo.speed;
+                // Velocidad de ataque rápida
+                enemigo.x += Math.cos(angle) * enemigo.speed * 4;
+                enemigo.y += Math.sin(angle) * enemigo.speed * 4;
 
-            // Perspectiva: crecen a medida que se acercan (progresión hacia el centro)
-            const distActual = Phaser.Math.Distance.Between(enemigo.x, enemigo.y, this.W / 2, enemigo.targetY);
-            const distTotal = Phaser.Math.Distance.Between(enemigo.spawnX || 0, enemigo.spawnY || 0, this.W / 2, enemigo.targetY);
-            const progreso = Phaser.Math.Clamp(1 - (distActual / distTotal), 0, 1);
-
-            const currentScale = Phaser.Math.Linear(0.01, enemigo.baseScale || 0.1, progreso);
+                // Colisión con la jaula
+                const dist = Phaser.Math.Distance.Between(enemigo.x, enemigo.y, this.W / 2, this.H - 120);
+                if (dist < 100) {
+                    this._danoJaula();
+                    this._eliminarEnemigo(enemigo);
+                }
+            }
+            
+            // Escala basada en la profundidad (Y) para efecto 3D
+            const factorY = (enemigo.y / this.H);
+            const currentScale = enemigo.baseScale * (0.8 + factorY * 0.4);
             enemigo.setScale(currentScale);
 
-            // Efecto de caminata (bobbing) ajustado a la escala
-            if (enemigo.originType !== 'sky') {
-                const hop = Math.abs(Math.sin(this.time.now / 150)) * (8 * progreso);
-                enemigo.displayOriginY = enemigo.height / 2 + hop;
-            }
-
-            enemigo.icon.x = enemigo.x;
-            enemigo.icon.y = enemigo.y - (enemigo.displayHeight / 2 + 60 * currentScale);
-            enemigo.icon.setScale(currentScale + 0.5);
-
-            // Colisión con la jaula (ajustado al nuevo centro)
-            const dist = Phaser.Math.Distance.Between(enemigo.x, enemigo.y, this.W / 2, this.H - 120);
-            if (dist < 130) {
-                this._danoJaula();
-                this._eliminarEnemigo(enemigo);
-            }
-
-            // Detección de pose
-            if (this.esqueletoActual) {
-                if (this._checkPose(enemigo.poseRequerida)) {
-                    // Si el enemigo está "cerca" (en rango de visión/ataque) y hacemos la pose
-                    if (Math.abs(enemigo.x - this.W / 2) < 400) {
-                        this._eliminarEnemigo(enemigo, true);
-                    }
-                }
+            if (enemigo.timerText) {
+                enemigo.timerText.x = enemigo.x;
+                enemigo.timerText.y = enemigo.y - (enemigo.displayHeight / 2 + 30);
             }
         });
     }
 
-    _checkPose(poseId) {
-        if (!this.esqueletoActual) return false;
-        const sk = this.esqueletoActual;
-
-        if (poseId === 'manos-cielo') {
-            return sk.muneca_izquierda?.y < 0.3 && sk.muneca_derecha?.y < 0.3;
-        }
-        if (poseId === 'agachado') {
-            return sk.nariz?.y > 0.6;
-        }
-        if (poseId === 'estrella') {
-            return sk.muneca_izquierda?.x < 0.2 && sk.muneca_derecha?.x > 0.8;
-        }
-        return false;
-    }
-
-    _eliminarEnemigo(enemigo, porPose = false) {
-        if (porPose) {
+    _eliminarEnemigo(enemigo, porToque = false) {
+        if (porToque) {
             this.puntaje += 100;
             this.textoPuntaje.setText(`PUNTOS: ${this.puntaje}`);
             this.particles.setPosition(enemigo.x, enemigo.y);
             this.particles.explode(20);
             this.sound.play('pop');
         }
-        enemigo.icon.destroy();
+        if (enemigo.timerText) enemigo.timerText.destroy();
         enemigo.destroy();
     }
 
     _danoJaula() {
         this.energia -= 10;
-        const pct = this.energia / CONFIG.totalEnergia;
-        this.barraEnergia.width = pct * 210;
-        // Color dinámico: verde → amarillo → rojo
-        const color = pct > 0.6 ? 0x00ff88 : pct > 0.3 ? 0xffcc00 : 0xff3344;
-        this.barraEnergia.setFillStyle(color);
+        this._updateBarraEnergia();
 
         this.cameras.main.shake(200, 0.02);
         this.jaula.setTint(0xff0000);
@@ -647,22 +702,29 @@ export class AnimalesScene extends Phaser.Scene {
 
     _onWsMessage(event) {
         const data = event.detail;
-        if (data.port !== 8080) return;
-        if (data.jugador_detectado && data.poses?.esqueleto) {
-            this.esqueletoActual = data.poses.esqueleto;
-            this._updateInstruccion();
-        } else {
-            this.esqueletoActual = null;
+        
+        // Ahora escuchamos al puerto 8081 (LiDAR)
+        if (data.port !== 8081) return;
+        
+        if (data.touches && data.touches.length > 0) {
+            data.touches.forEach(touch => {
+                this._checkHit(touch.x, touch.y);
+            });
+        } else if (data.x !== undefined && data.y !== undefined) {
+            this._checkHit(data.x, data.y);
         }
     }
 
-    _updateInstruccion() {
-        let poseDetectada = "NINGUNA";
-        if (this._checkPose('manos-cielo')) poseDetectada = "¡MANOS ARRIBA! 🙌";
-        else if (this._checkPose('agachado')) poseDetectada = "¡AGACHADO! 🧘";
-        else if (this._checkPose('estrella')) poseDetectada = "¡ESTRELLA! ⭐";
+    _checkHit(x, y) {
+        if (!this.juegoActivo) return;
 
-        this.textoInstruccion.setText(poseDetectada);
+        this.enemigos.getChildren().forEach(enemigo => {
+            const dist = Phaser.Math.Distance.Between(x, y, enemigo.x, enemigo.y);
+            const hitRadius = Math.max(60, 120 * enemigo.scale);
+            if (dist < hitRadius) {
+                this._eliminarEnemigo(enemigo, true);
+            }
+        });
     }
 
     _volverAlMenu() {
@@ -671,7 +733,7 @@ export class AnimalesScene extends Phaser.Scene {
         this.tweens.killAll();
         this.time.removeAllEvents();
         this.enemigos.getChildren().forEach(e => {
-            if (e.icon) e.icon.destroy();
+            if (e.timerText) e.timerText.destroy();
             e.destroy();
         });
         this.scene.restart();
@@ -679,10 +741,8 @@ export class AnimalesScene extends Phaser.Scene {
 
     returnToMenu() {
         if (this.estado === 'seleccion') {
-            return false; // Ya estamos en el menú de escenarios, salir al menú principal de React
+            return false;
         }
-        
-        // Si estamos jugando o en game over, volver al menú de escenarios (biomas)
         this._volverAlMenu();
         return true;
     }
@@ -697,24 +757,18 @@ export class AnimalesScene extends Phaser.Scene {
         const btn = this.add.text(this.W / 2, this.H / 2 + 20, 'REINTENTAR', {
             fontSize: '32px', color: '#ffffff', backgroundColor: '#9c4eb3', padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setDepth(101).setInteractive({ cursor: 'pointer' });
-        btn.on('pointerdown', (ptr) => {
-            this.holdBtn = {
-                x: ptr.x, y: ptr.y, duration: 2000, time: 0,
-                callback: () => this.scene.restart()
-            };
+        btn.on('pointerdown', () => {
+            this.sound.play('pop');
+            this.scene.restart();
         });
-        btn.on('pointerup', () => this._cancelHold());
 
         const btnMenuGO = this.add.text(this.W / 2, this.H / 2 + 90, '☰ VOLVER AL MENÚ', {
             fontSize: '28px', color: '#ffffff', backgroundColor: '#2e1a4e', padding: { x: 20, y: 10 }
         }).setOrigin(0.5).setDepth(101).setInteractive({ cursor: 'pointer' });
-        btnMenuGO.on('pointerdown', (ptr) => {
-            this.holdBtn = {
-                x: ptr.x, y: ptr.y, duration: 2000, time: 0,
-                callback: () => this._volverAlMenu()
-            };
+        btnMenuGO.on('pointerdown', () => {
+            this.sound.play('pop');
+            this._volverAlMenu();
         });
-        btnMenuGO.on('pointerup', () => this._cancelHold());
 
         this.sound.play('end');
     }
