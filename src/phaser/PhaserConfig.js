@@ -13,7 +13,7 @@ import { AnimalesScene } from './scenes/AnimalesScene';
 
 
 
-export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene', personajeSeleccionado = null) => ({
+export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene') => ({
   type: Phaser.AUTO,
   parent: parent,
   width: window.innerWidth,
@@ -35,9 +35,6 @@ export const createPhaserConfig = (parent, escenaInicial = 'SoccerScene', person
   callbacks: {
     preBoot: (game) => {
       game.registry.set('escenaInicial', escenaInicial);
-      if (personajeSeleccionado) {
-        game.registry.set('personajeSeleccionado', personajeSeleccionado);
-      }
     },
   },
 

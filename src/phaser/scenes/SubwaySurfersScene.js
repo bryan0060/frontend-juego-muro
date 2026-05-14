@@ -144,15 +144,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.jumpContainer = this.add.container(0, 0);
     this.playerContainer.add(this.jumpContainer);
 
-    const personajeSeleccionado = this.registry.get('personajeSeleccionado');
-    if (personajeSeleccionado === 'nino_blanco') {
-      this.playerVideo = this.add.video(0, 0, 'nino_blanco_video').setScale(0.5).setOrigin(0.5, 1);
-      this.playerVideo.play(true); // loop
-      this.player = this.playerVideo;
-    } else {
-      this.player = this.add.sprite(0, 0, 'player').setScale(0.45).setOrigin(0.5, 1);
-    }
-    
+    this.player = this.add.sprite(0, 0, 'player').setScale(0.45).setOrigin(0.5, 1);
     this.jumpContainer.add(this.player);
     this.playerContainer.setDepth(50);
 
