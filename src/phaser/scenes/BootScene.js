@@ -56,6 +56,10 @@ export class BootScene extends Phaser.Scene {
     this.load.image('keeper_kids_high', 'assets/images/futbol/atajada2-2.png');
     this.load.image('keeper_kids_low', 'assets/images/futbol/atajada5-2.png');
     this.load.image('ball', 'assets/images/futbol/Balon.png');
+    
+    // Video personaje Subway Surfers
+    this.load.video('nino_blanco_video', 'assets/images/subway/personajes/NiñoBlanco.mp4');
+
     this.load.image('fans_bg', 'assets/images/futbol/hinchas.png');
     this.load.image('soccer_kids_bg', 'assets/images/futbol/hinchas2.png');
     this.load.image('soccer_adults_bg', 'assets/images/futbol/hinchas.png');

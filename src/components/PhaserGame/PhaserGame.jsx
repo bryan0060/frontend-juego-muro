@@ -4,7 +4,7 @@ import { createPhaserConfig } from '../../phaser/PhaserConfig';
 import { connectWebSocket, disconnectWebSocket, getFirstTouch } from '../../services/websocket/WebSocketClient';
 import { initMockWebSocket } from '../../services/websocket/MockWebSocket';
 
-const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJuego = null, onBack }) => {
+const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJuego = null, personaje = null, onBack }) => {
   const gameContainerRef = useRef(null);
   const gameRef = useRef(null);
   const btnRef = useRef(null);
@@ -13,7 +13,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
     const container = gameContainerRef.current;
     if (!container || gameRef.current) return;
 
-    const config = createPhaserConfig(container, escenaInicial);
+    const config = createPhaserConfig(container, escenaInicial, personaje);
     gameRef.current = new Phaser.Game(config);
 
     const forceWS = import.meta.env.VITE_FORCE_WS === 'true';
