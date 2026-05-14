@@ -719,25 +719,17 @@ export class DuroMuroScene extends Phaser.Scene {
 
       // Capa glow — gruesa y transparente
       this._dibujarEsqueleto(
-        this.grafEsqueleto,
-        esqueletoNorm,
+        this.grafEsqueleto, esqueletoNorm,
         0, 0, width, height,
-        C.azul,
-        42,   // grueso
-        28,   // joints grandes
+        C.azul, 48, 36,
       );
-      this.grafEsqueleto.setAlpha(0.28);
 
       // Capa sólida — delgada y blanca encima
       this._dibujarEsqueleto(
-        this.grafEsqueleto,
-        esqueletoNorm,
+        this.grafEsqueleto, esqueletoNorm,
         0, 0, width, height,
-        0xffffff,
-        14,   // delgado
-        12,   // joints pequeños
+        0xffffff, 18, 18,
       );
-      this.grafEsqueleto.setAlpha(1);
 
       if (this.juegoActivo && this._poseActual) {
         this._dibujarFeedback(this._poseActual, esqueletoNorm);
