@@ -210,7 +210,9 @@ export class DuroMuroScene extends Phaser.Scene {
 
     this.rondaActual = 0;
     this.puntaje = 0;
-    this.esqueleto = null;
+    this.esqueleto = null; // legacy, se mantiene por compatibilidad
+    this.esq1 = null;
+    this.esq2 = null;
     this.juegoActivo = false;
     this.validando = false;
     this.posesRonda = Phaser.Utils.Array.Shuffle([...CONFIG.poses])
@@ -712,30 +714,38 @@ export class DuroMuroScene extends Phaser.Scene {
     this.grafEsqueleto.clear();
     this.grafFeedback.clear();
 
-    if (this.esqueleto) {
-      this.textoSinJugador.setVisible(false);
-
-      const esqueletoNorm = this._normalizarEsqueleto(this.esqueleto);
-
-      // Capa glow — gruesa y transparente
-      this._dibujarEsqueleto(
-        this.grafEsqueleto, esqueletoNorm,
-        0, 0, width, height,
-        C.azul, 48, 36,
-      );
-
-      // Capa sólida — delgada y blanca encima
-      this._dibujarEsqueleto(
-        this.grafEsqueleto, esqueletoNorm,
-        0, 0, width, height,
-        0xffffff, 18, 18,
-      );
-
-      if (this.juegoActivo && this._poseActual) {
-        this._dibujarFeedback(this._poseActual, esqueletoNorm);
+    if (this.modo === 'duo') {
+      const hayAlguien = this.esq1 || this.esq2;
+      if (hayAlguien) {
+        this.textoSinJugador.setVisible(false);
+        if (this.esq1) {
+          const n1 = this._normalizarEsqueleto(this.esq1);
+          this._dibujarEsqueleto(this.grafEsqueleto, n1, 0, 0, width, height, C.azul, 48, 36);
+          this._dibujarEsqueleto(this.grafEsqueleto, n1, 0, 0, width, height, 0xffffff, 18, 18);
+        }
+        if (this.esq2) {
+          const n2 = this._normalizarEsqueleto(this.esq2);
+          this._dibujarEsqueleto(this.grafEsqueleto, n2, 0, 0, width, height, C.naranja, 48, 36);
+          this._dibujarEsqueleto(this.grafEsqueleto, n2, 0, 0, width, height, 0xffffff, 18, 18);
+        }
+        if (this.juegoActivo && this._poseActual) {
+          this._dibujarFeedback(this._poseActual, this.esqueleto);
+        }
+      } else if (this.juegoActivo) {
+        this.textoSinJugador.setText('👥 Esperando jugadores...').setVisible(true);
       }
-    } else if (this.juegoActivo) {
-      this.textoSinJugador.setVisible(true);
+    } else {
+      if (this.esqueleto) {
+        this.textoSinJugador.setVisible(false);
+        const esqueletoNorm = this._normalizarEsqueleto(this.esqueleto);
+        this._dibujarEsqueleto(this.grafEsqueleto, esqueletoNorm, 0, 0, width, height, C.azul, 48, 36);
+        this._dibujarEsqueleto(this.grafEsqueleto, esqueletoNorm, 0, 0, width, height, 0xffffff, 18, 18);
+        if (this.juegoActivo && this._poseActual) {
+          this._dibujarFeedback(this._poseActual, esqueletoNorm);
+        }
+      } else if (this.juegoActivo) {
+        this.textoSinJugador.setText('👤 Buscando jugador...').setVisible(true);
+      }
     }
   }
 
@@ -1231,12 +1241,26 @@ export class DuroMuroScene extends Phaser.Scene {
     if (data.port !== 8080) return;
     if (data.juego_activo !== 'poses') return;
 
-    const hayJugador = (data.jugadores_detectados ?? (data.jugador_detectado ? 1 : 0)) > 0;
-    if (!hayJugador) { this.esqueleto = null; return; }
+    const numJugadores = data.jugadores_detectados
+      ?? (data.jugador_detectado ? 1 : 0);
 
-    this.esqueleto = data.poses?.esqueleto
-      ?? data.poses?.jugador_1?.esqueleto
-      ?? null;
+    if (this.modo === 'duo') {
+      this.esq1 = data.poses?.jugador_1?.esqueleto ?? null;
+      this.esq2 = data.poses?.jugador_2?.esqueleto ?? null;
+      // Fallback si backend aún manda formato solo
+      if (!this.esq1 && !this.esq2 && data.poses?.esqueleto) {
+        this.esq1 = data.poses.esqueleto;
+      }
+      if (numJugadores === 0) { this.esq1 = null; this.esq2 = null; }
+      // Compatibilidad con this.esqueleto
+      this.esqueleto = this.esq1 ?? this.esq2;
+    } else {
+      if (numJugadores === 0) { this.esqueleto = null; return; }
+      this.esqueleto = data.poses?.esqueleto
+        ?? data.poses?.jugador_1?.esqueleto
+        ?? null;
+      this.esq1 = this.esqueleto;
+    }
   }
 
   _sonido(key, cfg = {}) {
