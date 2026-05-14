@@ -5,7 +5,6 @@ import './styles/global.css';
 import StartScreen from './components/StartScreen/StartScreen';
 import GameMenu from './components/GameMenu/GameMenu';
 import PhaserGame from './components/PhaserGame/PhaserGame';
-import CharacterSelection from './components/CharacterSelection/CharacterSelection';
 import { connectWebSocket } from './services/websocket/WebSocketClient';
 
 function App() {
@@ -22,11 +21,7 @@ function App() {
   const handleSelectGame = (juego) => {
     if (!juego.disponible) return; // ← guarda extra
     setJuegoActivo(juego);
-    if (juego.id === 'subway-surfers') {
-      setPantalla('seleccion-personaje');
-    } else {
-      setPantalla('juego');
-    }
+    setPantalla('juego');
   };
 
   const handleBack = () => {
@@ -45,22 +40,12 @@ function App() {
           onBack={() => setPantalla('inicio')}
         />
       )}
-      {pantalla === 'seleccion-personaje' && (
-        <CharacterSelection
-          onSelect={(char) => {
-            setJuegoActivo(prev => ({ ...prev, personaje: char.id }));
-            setPantalla('juego');
-          }}
-          onBack={handleBack}
-        />
-      )}
       {pantalla === 'juego' && juegoActivo && (
         <PhaserGame
           escenaInicial={juegoActivo.escena}
           wsPort={juegoActivo.wsPort}
           wsPath={juegoActivo.wsPath}
           wsJuego={juegoActivo.wsJuego}
-          personaje={juegoActivo.personaje}
           onBack={handleBack}
         />
       )}
