@@ -106,7 +106,8 @@ git pull origin develop
 # Cuando algo funciona
 git add .
 git commit -m "feat(escena): descripción de lo que hiciste"
-git push origin develop
+git push origin feature/camara
+
 ```
 
 ---
