@@ -53,7 +53,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.load.video('loop_piso1', 'assets/images/subway/ESCENARIO PRIMER PISO CC.mp4');
 
     // Assets de marca
-    this.load.video('player', 'assets/images/subway/NB1.webm');
+    const selectedChar = this.registry.get('personajeId') || 'NB1';
+    this.load.video('player', `assets/images/subway/Personaje/${selectedChar}.webm`);
+    
     this.load.image('logo_game', 'assets/images/subway/image26.png');
     this.load.image('obs_castle', 'assets/images/subway/image74.png');
     this.load.image('obs_rainbow', 'assets/images/subway/image27.png');
@@ -150,7 +152,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.jumpContainer = this.add.container(0, 0);
     this.playerContainer.add(this.jumpContainer);
 
-    this.player = this.add.video(0, 0, 'player').setScale(0.45).setOrigin(0.5, 1);
+    this.player = this.add.video(0, 0, 'player').setScale(0.38).setOrigin(0.5, 1);
+    this.player.setMute(true); // Quitar sonido del video de correr
     this.player.addMarker('run', 1, 5); // Marcador 'run': de 1s a 5s
     this.player.playMarker('run', true); // Reproducir marcador en loop
     this.jumpContainer.add(this.player);
@@ -428,8 +431,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
       const targetX = this.scale.width / 2 + this.lanes[obj.lane];
       obj.x = Phaser.Math.Linear(startX, targetX, progress);
 
-      // Aumentamos el tamaño máximo para que se vean bien
-      const targetSize = 250 * progress;
+      // Aumentamos el tamaño máximo para que se vean bien (ajustado de 250 a 200)
+      const targetSize = 200 * progress;
       obj.setDisplaySize(targetSize, targetSize);
 
       obj.setAlpha(Phaser.Math.Clamp(progress * 4, 0, 1));
@@ -509,7 +512,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       duration: 150,
       yoyo: true,
       hold: 600,
-      onComplete: () => { this.isSliding = false; this.player.scaleY = 0.45; }
+      onComplete: () => { this.isSliding = false; this.player.scaleY = 0.38; }
     });
   }
 
