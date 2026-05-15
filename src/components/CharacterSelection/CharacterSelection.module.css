@@ -1,0 +1,127 @@
+.container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #2d1b4d 0%, #1a1a2e 100%);
+  color: white;
+  z-index: 1000;
+  overflow: hidden;
+  font-family: 'Fredoka', sans-serif;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.title {
+  font-size: 4rem;
+  margin-bottom: 3rem;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  text-shadow: 0 0 20px rgba(156, 78, 179, 0.8);
+  animation: titleGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+  from { text-shadow: 0 0 10px rgba(156, 78, 179, 0.5); }
+  to { text-shadow: 0 0 30px rgba(156, 78, 179, 1), 0 0 50px rgba(156, 78, 179, 0.4); }
+}
+
+.grid {
+  display: flex;
+  gap: 2rem;
+  perspective: 1000px;
+}
+
+.card {
+  width: 250px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-20px) scale(1.05) rotateY(10deg);
+  border-color: #fa804f;
+  background: rgba(250, 128, 79, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(250, 128, 79, 0.3);
+}
+
+.imageWrapper {
+  width: 100%;
+  aspect-ratio: 1 / 1.2;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.card:hover .image {
+  transform: scale(1.1);
+}
+
+.nameTag {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+}
+
+.backButton {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50px;
+  padding: 15px 30px;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.backButton:hover {
+  background: #fa804f;
+  border-color: #fff;
+  transform: scale(1.1);
+}
+
+.hint {
+  margin-top: 3rem;
+  font-size: 1.2rem;
+  opacity: 0.6;
+  font-style: italic;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.3; }
+}
