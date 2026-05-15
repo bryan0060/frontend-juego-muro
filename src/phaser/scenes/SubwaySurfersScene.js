@@ -53,7 +53,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.load.video('loop_piso1', 'assets/images/subway/ESCENARIO PRIMER PISO CC.mp4');
 
     // Assets de marca
-    this.load.image('player', 'assets/images/subway/ada.jpeg');
+    const selectedChar = this.registry.get('personajeId') || 'NB1';
+    this.load.video('player', `assets/images/subway/Personaje/${selectedChar}.webm`);
+    
     this.load.image('logo_game', 'assets/images/subway/image26.png');
     this.load.image('obs_castle', 'assets/images/subway/image74.png');
     this.load.image('obs_rainbow', 'assets/images/subway/image27.png');
@@ -115,6 +117,12 @@ export class SubwaySurfersScene extends Phaser.Scene {
       fontSize: '180px', color: '#ffffff', stroke: '#fa804f', strokeThickness: 18, fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(200);
 
+    // Mensaje de Nivel Superado
+    this.levelCompleteText = this.add.text(width / 2, height / 2 - 200, '¡NIVEL SUPERADO!\n¡Pasemos al siguiente nivel!', {
+      fontSize: '60px', color: '#ffffff', stroke: '#3dc9a1', strokeThickness: 10, fontStyle: 'bold', align: 'center'
+    }).setOrigin(0.5).setDepth(200);
+    this.levelCompleteText.setVisible(false);
+
     this.countdownTimer = this.time.addEvent({
       delay: 1000,
       callback: () => {
@@ -144,7 +152,10 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.jumpContainer = this.add.container(0, 0);
     this.playerContainer.add(this.jumpContainer);
 
-    this.player = this.add.sprite(0, 0, 'player').setScale(0.45).setOrigin(0.5, 1);
+    this.player = this.add.video(0, 0, 'player').setScale(0.38).setOrigin(0.5, 1);
+    this.player.setMute(true); // Quitar sonido del video de correr
+    this.player.addMarker('run', 1, 5); // Marcador 'run': de 1s a 5s
+    this.player.playMarker('run', true); // Reproducir marcador en loop
     this.jumpContainer.add(this.player);
     this.playerContainer.setDepth(50);
 
@@ -241,6 +252,11 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
     }
     this.isIntroPlaying = false;
+
+    if (this.levelCompleteText) {
+      this.levelCompleteText.setVisible(false);
+    }
+
     if (this.countdownText) {
       this.countdownText.setText('¡GO!');
       this.time.delayedCall(1000, () => {
@@ -258,6 +274,18 @@ export class SubwaySurfersScene extends Phaser.Scene {
     // Mostrar y resetear el texto del contador
     this.countdownText.setText(this.introCountdown);
     this.countdownText.setVisible(true);
+
+    // Mostrar el mensaje de Nivel Superado
+    if (this.levelCompleteText) {
+      this.levelCompleteText.setVisible(true);
+      this.levelCompleteText.setScale(0);
+      this.tweens.add({
+        targets: this.levelCompleteText,
+        scale: 1,
+        duration: 500,
+        ease: 'Back.easeOut'
+      });
+    }
 
     // Cambiar video a la nueva intro
     if (currentScenario.intro) {
@@ -403,8 +431,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
       const targetX = this.scale.width / 2 + this.lanes[obj.lane];
       obj.x = Phaser.Math.Linear(startX, targetX, progress);
 
-      // Aumentamos el tamaño máximo para que se vean bien
-      const targetSize = 250 * progress;
+      // Aumentamos el tamaño máximo para que se vean bien (ajustado de 250 a 200)
+      const targetSize = 200 * progress;
       obj.setDisplaySize(targetSize, targetSize);
 
       obj.setAlpha(Phaser.Math.Clamp(progress * 4, 0, 1));
@@ -484,7 +512,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       duration: 150,
       yoyo: true,
       hold: 600,
-      onComplete: () => { this.isSliding = false; this.player.scaleY = 0.45; }
+      onComplete: () => { this.isSliding = false; this.player.scaleY = 0.38; }
     });
   }
 
@@ -528,85 +556,25 @@ export class SubwaySurfersScene extends Phaser.Scene {
   }
 
   _drawDynamicTrack() {
-    const { width, height } = this.scale;
-    const horizonY = height * 0.45;
+    // La pista y los carriles ahora están en los videos de fondo
+    // por lo que ya no es necesario dibujarlos con código.
     const g = this.trackGraphics;
-    g.clear();
-
-    // 1. Piso principal (Trapezoide de perspectiva)
-    // El color purpura del brandbook para la pista (más sólido)
-    g.fillStyle(0x9c4eb3, 0.6);
-    g.beginPath();
-    g.moveTo(width / 2 - 20, horizonY);
-    g.lineTo(width / 2 + 20, horizonY);
-    g.lineTo(width + 400, height);
-    g.lineTo(-400, height);
-    g.closePath();
-    g.fillPath();
-
-    // Brillo en los bordes de la pista
-    g.lineStyle(4, 0xfa804f, 0.5); // Naranja brandbook
-
-    // 2. Líneas de los carriles (Efecto de movimiento)
-    const speedFactor = this.time.now * 0.001 * this.gameSpeed;
-    g.lineStyle(4, 0xffffff, 0.4);
-
-    // Carriles calculados por perspectiva
-    [-1, 1].forEach(dir => {
-      g.beginPath();
-      g.moveTo(width / 2 + dir * 15, horizonY);
-      g.lineTo(width / 2 + dir * 300, height);
-      g.strokePath();
-    });
-
-    // 3. Líneas discontinuas de movimiento (Sense of speed)
-    g.lineStyle(6, 0xffffff, 0.8);
-    for (let i = 0; i < 5; i++) {
-      const p = ((i + speedFactor) % 5) / 5;
-      const y = horizonY + p * (height - horizonY);
-      const w = 20 + p * 100;
-      const xStart = width / 2 - w / 2;
-      g.lineBetween(xStart, y, xStart + w, y);
-    }
-
-    // 4. Bordes laterales (Veredas/Sidewalks) con movimiento
-    g.lineStyle(12, 0x3dc9a1, 0.9); // Color verde del brandbook
-    [-1, 1].forEach(dir => {
-      g.beginPath();
-      g.moveTo(width / 2 + dir * 50, horizonY);
-      g.lineTo(width / 2 + dir * 800, height);
-      g.strokePath();
-    });
+    if (g) g.clear();
   }
 
   _spawnFloorStrip() {
-    if (this.isGameOver) return;
-    const lane = Phaser.Math.Between(0, 2);
-    const horizonY = this.scale.height * 0.45;
-
-    const strip = this.add.rectangle(this.scale.width / 2, horizonY, 100, 10, 0xffffff, 0.3);
-    strip.lane = lane;
-    this.floorStrips.add(strip);
+    // Desactivado para no tapar el video de fondo
+    return;
   }
 
   _spawnSideDecoration() {
-    if (this.isGameOver) return;
-    const side = Phaser.Math.RND.pick(['left', 'right']);
-    const horizonY = this.scale.height * 0.45;
-
-    // Usamos líneas o luces abstractas como decoración para no confundir con obstáculos
-    const dec = this.add.rectangle(this.scale.width / 2, horizonY, 20, 100, 0x40c0dd, 0.4);
-    dec.side = side;
-    dec.setDepth(10);
-    this.sideDecorations.add(dec);
+    // Desactivado para no tapar el video de fondo
+    return;
   }
 
   _spawnSpeedLine() {
-    if (this.isGameOver) return;
-    const x = Phaser.Math.Between(0, this.scale.width);
-    const y = Phaser.Math.Between(0, this.scale.height);
-    const line = this.add.rectangle(x, y, 2, 50, 0xffffff, 0.2);
-    this.speedLines.add(line);
+    // Desactivado para no tapar el video de fondo
+    return;
   }
 
   _gameOver() {
