@@ -274,6 +274,8 @@ export class DuroMuroScene extends Phaser.Scene {
 
     this.rondaActual = 0;
     this.puntaje = 0;
+    this.combo = 0;
+    this.multiplicador = 1;
     this.esqueleto = null; // legacy, se mantiene por compatibilidad
     this.esq1 = null;
     this.esq2 = null;
@@ -342,6 +344,79 @@ export class DuroMuroScene extends Phaser.Scene {
     this._mostrarSeleccion();
     this._playMusica();
 
+  }
+  _mostrarCombo() {
+    const { width, height } = this.scale;
+    const c = this.combo;
+    if (c < 2) return;
+
+    const configs = {
+      2: { texto: '🔥 x2  COMBO!', color: '#fa804f', escala: 1.0, colorHex: C.naranja },
+      3: { texto: '⚡ x3  RACHA!', color: '#fdbf2c', escala: 1.15, colorHex: C.amarillo },
+      4: { texto: '💥 x4  ¡BRUTAL!', color: '#9c4eb3', escala: 1.3, colorHex: C.purpura },
+    };
+    const cfg = configs[Math.min(c, 4)] ?? {
+      texto: `🌟 x${c} LEGENDARIO!`, color: '#40c0dd', escala: 1.45, colorHex: C.azul,
+    };
+
+    // Texto principal — entra desde abajo, sube y desaparece
+    const t = this.add.text(width / 2, height / 2 + 80, cfg.texto, {
+      fontSize: '88px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: cfg.color,
+      stroke: '#000000',
+      strokeThickness: 14,
+    }).setOrigin(0.5).setDepth(50).setScale(0.2).setAlpha(0);
+
+    this.tweens.add({
+      targets: t,
+      scaleX: cfg.escala, scaleY: cfg.escala,
+      alpha: 1,
+      y: height / 2 - 20,
+      duration: 320,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        // Pulso
+        this.tweens.add({
+          targets: t,
+          scaleX: cfg.escala * 1.08, scaleY: cfg.escala * 1.08,
+          duration: 180, yoyo: true, repeat: 1,
+          onComplete: () => {
+            this.tweens.add({
+              targets: t,
+              alpha: 0, y: height / 2 - 120,
+              duration: 380, delay: 300,
+              onComplete: () => t.destroy(),
+            });
+          },
+        });
+      },
+    });
+
+    // Partículas en explosión radial
+    const coloresCombo = [C.naranja, C.amarillo, C.purpura, C.azul, C.verde];
+    coloresCombo.forEach((color) => {
+      const emitter = this.add.particles(width / 2, height / 2, '__DEFAULT', {
+        speed: { min: 300, max: 700 },
+        angle: { min: 0, max: 360 },
+        scale: { start: 0.9, end: 0 },
+        tint: color,
+        lifespan: 700,
+        quantity: c >= 4 ? 10 : 6,
+        gravityY: 200,
+        emitting: false,
+      }).setDepth(49);
+      emitter.explode(c >= 4 ? 10 : 6);
+      this.time.delayedCall(800, () => emitter.destroy());
+    });
+
+    // Flash de pantalla con el color del nivel
+    const flash = this.add.rectangle(0, 0, width, height, cfg.colorHex, 0.18)
+      .setOrigin(0).setDepth(48);
+    this.tweens.add({ targets: flash, alpha: 0, duration: 280, onComplete: () => flash.destroy() });
+
+    // Shake según intensidad
+    this.cameras.main.shake(200, 0.004 * Math.min(c, 5));
   }
 
   _mostrarSeleccion() {
@@ -1267,10 +1342,13 @@ export class DuroMuroScene extends Phaser.Scene {
         () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) < anchoHombros * 1.0,
       ],
       'egipcia': [
-        () => distY(get('muneca_izquierda'), get('hombro_izquierdo')) < 0.22,
-        () => distY(get('muneca_derecha'), get('hombro_derecho')) < 0.22,
+        // Brazos extendidos horizontalmente
         () => masAfuera(get('muneca_izquierda'), get('hombro_izquierdo'), 'izq'),
         () => masAfuera(get('muneca_derecha'), get('hombro_derecho'), 'der'),
+        // Cross-body — lo que hace única esta pose en perfil
+        () => masAbajo(get('muneca_derecha'), get('codo_izquierdo')),
+        () => masArriba(get('muneca_izquierda'), get('codo_derecho')),
+        // Piernas separadas
         () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) > anchoHombros * 0.8,
       ],
       'bicep2': [
@@ -1299,6 +1377,29 @@ export class DuroMuroScene extends Phaser.Scene {
     return { aciertos, total, porcentaje: total > 0 ? aciertos / total : 0 };
   }
 
+  _actualizarBadgeMulti() {
+    if (!this._badgeMulti) {
+      const { width } = this.scale;
+      this._badgeMulti = this.add.text(120, 108, '', {
+        fontSize: '24px',
+        fontFamily: 'Fredoka, sans-serif',
+        color: '#fdbf2c',
+        stroke: '#000000',
+        strokeThickness: 4,
+        backgroundColor: '#00000088',
+        padding: { x: 10, y: 4 },
+      }).setOrigin(0.5).setDepth(22);
+    }
+    const emojis = ['', '', '🔥', '⚡', '💥', '🌟'];
+    const e = emojis[Math.min(this.multiplicador, 5)] ?? '🌟';
+    this._badgeMulti.setText(`${e} x${this.multiplicador}`).setVisible(true);
+    this.tweens.add({ targets: this._badgeMulti, scaleX: 1.3, scaleY: 1.3, duration: 120, yoyo: true });
+  }
+
+  _ocultarBadgeMulti() {
+    this._badgeMulti?.setVisible(false);
+  }
+
   // ─── Validar pose ─────────────────────────────────────────────────────────
   _validarPose(pose) {
     if (this.validando) return;
@@ -1308,6 +1409,8 @@ export class DuroMuroScene extends Phaser.Scene {
     this._tweenMuro?.stop();
 
     if (!this.esqueleto) {
+      this.combo = 0;
+      this.multiplicador = 1;
       this._mostrarResultado(false, 0, 5, '¡No te detecté!');
       return;
     }
@@ -1317,13 +1420,22 @@ export class DuroMuroScene extends Phaser.Scene {
     const exito = porcentaje >= CONFIG.umbralExito;
 
     if (exito) {
-      this.puntaje += Math.round(porcentaje * 500);
+      this.combo++;
+      this.multiplicador = Math.min(this.combo, 5);   // cap en x5
+      const puntos = Math.round(porcentaje * 500 * this.multiplicador);
+      this.puntaje += puntos;
       this.textoPuntaje.setText(`${this.puntaje}`);
-      this.tweens.add({
-        targets: this.textoPuntaje,
-        scaleX: 1.4, scaleY: 1.4,
-        duration: 150, yoyo: true,
-      });
+      this.tweens.add({ targets: this.textoPuntaje, scaleX: 1.4, scaleY: 1.4, duration: 150, yoyo: true });
+
+      // Mostrar multiplicador en el panel de puntos si es > 1
+      if (this.multiplicador > 1) {
+        this._mostrarCombo();
+        this._actualizarBadgeMulti();
+      }
+    } else {
+      this.combo = 0;
+      this.multiplicador = 1;
+      this._ocultarBadgeMulti();
     }
 
     this._mostrarResultado(exito, aciertos, total);
@@ -1554,6 +1666,54 @@ export class DuroMuroScene extends Phaser.Scene {
     }
   }
 
+  _volverAlMenu() {
+    // Detener timers activos
+    this._timerRonda?.destroy();
+    this._tweenMuro?.stop();
+    this._musicaActual?.stop();
+
+    // Limpiar estado de juego
+    this.juegoActivo = false;
+    this.validando = false;
+    this.rondaActual = 0;
+    this.puntaje = 0;
+    this.combo = 0;
+    this.multiplicador = 1;
+    this.esqueleto = null;
+    this.esq1 = null;
+    this.esq2 = null;
+    this._poseActual = null;
+    this._escalaMuro = null;
+    this._ocultarBadgeMulti();
+
+    // Limpiar visuales
+    this._limpiarMuro();
+    this.grafEsqueleto.clear();
+    this.grafFeedback.clear();
+    this.rtMuro.clear();
+    this._textoQuieto?.destroy();
+    this._textoQuieto = null;
+    this.textoTimer.setText('');
+    this.textoInstruccion.setText('');
+    this.textoInstruccion.setVisible(true);
+    this.textoTimer.setVisible(true);
+    this.textoSinJugador.setVisible(false);
+
+    // Rebarajar poses para la nueva partida
+    this.posesRonda = Phaser.Utils.Array.Shuffle([...CONFIG.poses])
+      .slice(0, CONFIG.totalRondas);
+
+    // Destruir cualquier panel de fin de partida que haya
+    // (los GameObjects de _finDePartida están sueltos, no en container,
+    //  así que limpiamos toda la escena de depth >= 30 que no sea UI base)
+    this.children.list
+      .filter(go => go.depth >= 30 && go !== this.holdGraphics)
+      .forEach(go => go.destroy());
+
+    this._playMusica();
+    this._mostrarSeleccion();
+  }
+
   // ─── Fin de partida ───────────────────────────────────────────────────────
   _finDePartida() {
     this.juegoActivo = false;
@@ -1566,6 +1726,7 @@ export class DuroMuroScene extends Phaser.Scene {
     this.textoTimer.setVisible(false);
 
     this._confeti(width, height);
+    this._sonido('victoria');
 
     this.add.rectangle(0, 0, width, height, 0x000000, 0.80)
       .setOrigin(0).setDepth(30);
@@ -1598,35 +1759,42 @@ export class DuroMuroScene extends Phaser.Scene {
       strokeThickness: 10,
     }).setOrigin(0.5).setDepth(32);
 
-    const btn = this.add.rectangle(width / 2, height / 2 + 175, 340, 75, C.purpura)
+    // ── Botón Jugar de nuevo ─────────────────────────────────
+    const btn = this.add.rectangle(width / 2 - 185, height / 2 + 175, 320, 75, C.purpura)
       .setDepth(32).setInteractive({ cursor: 'pointer' });
 
-    this.add.text(width / 2, height / 2 + 175, '🔄 Jugar de nuevo', {
-      fontSize: '30px',
+    this.add.text(width / 2 - 185, height / 2 + 175, '🔄 Jugar de nuevo', {
+      fontSize: '28px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff',
     }).setOrigin(0.5).setDepth(33);
 
     const onReiniciar = () => this.scene.restart();
-
     btn.on('pointerdown', onReiniciar);
-    btn.on('pointerover', () => {
-      btn.setFillColor(0x7a3690);
-      this.tweens.add({ targets: btn, scaleX: 1.06, scaleY: 1.06, duration: 100 });
-    });
-    btn.on('pointerout', () => {
-      btn.setFillColor(C.purpura);
-      this.tweens.add({ targets: btn, scaleX: 1, scaleY: 1, duration: 100 });
-    });
+    btn.on('pointerover', () => { btn.setFillColor(0x7a3690); this.tweens.add({ targets: btn, scaleX: 1.06, scaleY: 1.06, duration: 100 }); });
+    btn.on('pointerout', () => { btn.setFillColor(C.purpura); this.tweens.add({ targets: btn, scaleX: 1, scaleY: 1, duration: 100 }); });
 
-    // Registrar para LiDAR
-    this.sensorButtons.push({
-      absX: width / 2,
-      absY: height / 2 + 175,
-      w: 340,
-      h: 75,
-      callback: onReiniciar,
-    });
+    // ── Botón Cambiar modo ───────────────────────────────────
+    const btn2 = this.add.rectangle(width / 2 + 185, height / 2 + 175, 320, 75, C.azul)
+      .setDepth(32).setInteractive({ cursor: 'pointer' });
+
+    this.add.text(width / 2 + 185, height / 2 + 175, '🔀 Cambiar modo', {
+      fontSize: '28px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#ffffff',
+    }).setOrigin(0.5).setDepth(33);
+
+    const onCambiarModo = () => this._volverAlMenu();
+    btn2.on('pointerdown', onCambiarModo);
+    btn2.on('pointerover', () => { btn2.setFillColor(0x2a8fa0); this.tweens.add({ targets: btn2, scaleX: 1.06, scaleY: 1.06, duration: 100 }); });
+    btn2.on('pointerout', () => { btn2.setFillColor(C.azul); this.tweens.add({ targets: btn2, scaleX: 1, scaleY: 1, duration: 100 }); });
+
+    // LiDAR — ambos botones
+    this.sensorButtons.push(
+      { absX: width / 2 - 185, absY: height / 2 + 175, w: 320, h: 75, callback: onReiniciar },
+      { absX: width / 2 + 185, absY: height / 2 + 175, w: 320, h: 75, callback: onCambiarModo },
+    );
+
   }
 
   // ─── WebSocket ────────────────────────────────────────────────────────────
