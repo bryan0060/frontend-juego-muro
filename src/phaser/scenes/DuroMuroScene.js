@@ -23,10 +23,10 @@ const C = {
 };
 
 const CONFIG = {
-  totalRondas: 5,
-  duracionPorPose: 8,
-  toleranciaAngulo: 18,
-  umbralExito: 0.75,
+  totalRondas: 8,
+  duracionPorPose: 10,
+  toleranciaAngulo: 30,
+  umbralExito: 0.60,
   poses: [
     {
       id: 'estrella',
@@ -57,6 +57,74 @@ const CONFIG = {
       },
       imagenKey: 'pose_estrella',
 
+    },
+    {
+      id: 'egipcia',
+      nombre: '🧿 Egipcia',
+      descripcion: '¡Brazos al frente y atrás!',
+      angulos: {
+        codo_izquierdo: { a: 'hombro_izquierdo', m: 'codo_izquierdo', b: 'muneca_izquierda', objetivo: 170 },
+        codo_derecho: { a: 'hombro_derecho', m: 'codo_derecho', b: 'muneca_derecha', objetivo: 170 },
+        hombro_izquierdo: { a: 'cadera_izquierda', m: 'hombro_izquierdo', b: 'codo_izquierdo', objetivo: 90 },
+        hombro_derecho: { a: 'cadera_derecha', m: 'hombro_derecho', b: 'codo_derecho', objetivo: 90 },
+        rodilla_izquierda: { a: 'cadera_izquierda', m: 'rodilla_izquierda', b: 'tobillo_izquierdo', objetivo: 165 },
+        rodilla_derecha: { a: 'cadera_derecha', m: 'rodilla_derecha', b: 'tobillo_derecho', objetivo: 165 },
+      },
+      silueta: {
+        nariz: { x: 0.55, y: 0.08 },
+        hombro_izquierdo: { x: 0.38, y: 0.28 }, hombro_derecho: { x: 0.60, y: 0.28 },
+        codo_izquierdo: { x: 0.18, y: 0.28 }, codo_derecho: { x: 0.80, y: 0.28 },
+        muneca_izquierda: { x: 0.02, y: 0.28 }, muneca_derecha: { x: 0.96, y: 0.28 },
+        cadera_izquierda: { x: 0.42, y: 0.53 }, cadera_derecha: { x: 0.58, y: 0.53 },
+        rodilla_izquierda: { x: 0.38, y: 0.71 }, rodilla_derecha: { x: 0.60, y: 0.71 },
+        tobillo_izquierdo: { x: 0.34, y: 0.91 }, tobillo_derecho: { x: 0.64, y: 0.91 },
+      },
+      imagenKey: 'pose_egipcia',
+    },
+    {
+      id: 'bicep2',
+      nombre: '💪 Súper Bíceps',
+      descripcion: '¡Un brazo arriba, mano en la cadera!',
+      angulos: {
+        codo_izquierdo: { a: 'hombro_izquierdo', m: 'codo_izquierdo', b: 'muneca_izquierda', objetivo: 50 },
+        codo_derecho: { a: 'hombro_derecho', m: 'codo_derecho', b: 'muneca_derecha', objetivo: 90 },
+        hombro_izquierdo: { a: 'cadera_izquierda', m: 'hombro_izquierdo', b: 'codo_izquierdo', objetivo: 150 },
+        rodilla_izquierda: { a: 'cadera_izquierda', m: 'rodilla_izquierda', b: 'tobillo_izquierdo', objetivo: 175 },
+        rodilla_derecha: { a: 'cadera_derecha', m: 'rodilla_derecha', b: 'tobillo_derecho', objetivo: 175 },
+      },
+      silueta: {
+        nariz: { x: 0.52, y: 0.08 },
+        hombro_izquierdo: { x: 0.38, y: 0.28 }, hombro_derecho: { x: 0.60, y: 0.28 },
+        codo_izquierdo: { x: 0.28, y: 0.12 }, codo_derecho: { x: 0.75, y: 0.38 },
+        muneca_izquierda: { x: 0.32, y: 0.03 }, muneca_derecha: { x: 0.68, y: 0.48 },
+        cadera_izquierda: { x: 0.42, y: 0.53 }, cadera_derecha: { x: 0.58, y: 0.53 },
+        rodilla_izquierda: { x: 0.42, y: 0.71 }, rodilla_derecha: { x: 0.58, y: 0.71 },
+        tobillo_izquierdo: { x: 0.42, y: 0.91 }, tobillo_derecho: { x: 0.58, y: 0.91 },
+      },
+      imagenKey: 'pose_bicep2',
+    },
+    {
+      id: 'equilibrio',
+      nombre: '🦅 Equilibrio',
+      descripcion: '¡Brazos abiertos y una pierna arriba!',
+      angulos: {
+        codo_izquierdo: { a: 'hombro_izquierdo', m: 'codo_izquierdo', b: 'muneca_izquierda', objetivo: 170 },
+        codo_derecho: { a: 'hombro_derecho', m: 'codo_derecho', b: 'muneca_derecha', objetivo: 170 },
+        hombro_izquierdo: { a: 'cadera_izquierda', m: 'hombro_izquierdo', b: 'codo_izquierdo', objetivo: 90 },
+        hombro_derecho: { a: 'cadera_derecha', m: 'hombro_derecho', b: 'codo_derecho', objetivo: 90 },
+        rodilla_izquierda: { a: 'cadera_izquierda', m: 'rodilla_izquierda', b: 'tobillo_izquierdo', objetivo: 90 },
+        rodilla_derecha: { a: 'cadera_derecha', m: 'rodilla_derecha', b: 'tobillo_derecho', objetivo: 175 },
+      },
+      silueta: {
+        nariz: { x: 0.50, y: 0.05 },
+        hombro_izquierdo: { x: 0.35, y: 0.25 }, hombro_derecho: { x: 0.65, y: 0.25 },
+        codo_izquierdo: { x: 0.16, y: 0.25 }, codo_derecho: { x: 0.84, y: 0.25 },
+        muneca_izquierda: { x: 0.02, y: 0.25 }, muneca_derecha: { x: 0.98, y: 0.25 },
+        cadera_izquierda: { x: 0.42, y: 0.50 }, cadera_derecha: { x: 0.58, y: 0.50 },
+        rodilla_izquierda: { x: 0.35, y: 0.62 }, rodilla_derecha: { x: 0.58, y: 0.68 },
+        tobillo_izquierdo: { x: 0.48, y: 0.72 }, tobillo_derecho: { x: 0.58, y: 0.91 },
+      },
+      imagenKey: 'pose_equilibrio',
     },
     {
       id: 'manos-cielo',
@@ -93,8 +161,6 @@ const CONFIG = {
       nombre: '🦀 Cangrejo',
       descripcion: '¡Brazos extendidos a los lados!',
       angulos: {
-        codo_izquierdo: { a: 'hombro_izquierdo', m: 'codo_izquierdo', b: 'muneca_izquierda', objetivo: 170 },
-        codo_derecho: { a: 'hombro_derecho', m: 'codo_derecho', b: 'muneca_derecha', objetivo: 170 },
         hombro_izquierdo: { a: 'cadera_izquierda', m: 'hombro_izquierdo', b: 'codo_izquierdo', objetivo: 90 },
         hombro_derecho: { a: 'cadera_derecha', m: 'hombro_derecho', b: 'codo_derecho', objetivo: 90 },
         rodilla_izquierda: { a: 'cadera_izquierda', m: 'rodilla_izquierda', b: 'tobillo_izquierdo', objetivo: 175 },
@@ -153,10 +219,8 @@ const CONFIG = {
       nombre: '💪 Bíceps',
       descripcion: '¡Muestra tus músculos!',
       angulos: {
-        codo_izquierdo: { a: 'hombro_izquierdo', m: 'codo_izquierdo', b: 'muneca_izquierda', objetivo: 90 },
-        codo_derecho: { a: 'hombro_derecho', m: 'codo_derecho', b: 'muneca_derecha', objetivo: 90 },
-        hombro_izquierdo: { a: 'cadera_izquierda', m: 'hombro_izquierdo', b: 'codo_izquierdo', objetivo: 90 },
-        hombro_derecho: { a: 'cadera_derecha', m: 'hombro_derecho', b: 'codo_derecho', objetivo: 90 },
+        codo_izquierdo: { a: 'hombro_izquierdo', m: 'codo_izquierdo', b: 'muneca_izquierda', objetivo: 100 },
+        codo_derecho: { a: 'hombro_derecho', m: 'codo_derecho', b: 'muneca_derecha', objetivo: 100 },
         rodilla_izquierda: { a: 'cadera_izquierda', m: 'rodilla_izquierda', b: 'tobillo_izquierdo', objetivo: 175 },
         rodilla_derecha: { a: 'cadera_derecha', m: 'rodilla_derecha', b: 'tobillo_derecho', objetivo: 175 },
       },
@@ -219,6 +283,7 @@ export class DuroMuroScene extends Phaser.Scene {
       .slice(0, CONFIG.totalRondas);
     this._escalaMuro = null;
     this._poseActual = null;
+    this._musicaActual = null;
 
     // Sistema de hold
     this.holdBtn = null;
@@ -271,8 +336,11 @@ export class DuroMuroScene extends Phaser.Scene {
     this.events.once('shutdown', () => this.shutdown());
 
     this.sensorButtons = [];
+    this._ultimaVoz = 0;
+    this._ultimoNivelVoz = null;
     connectWebSocket(8081);
     this._mostrarSeleccion();
+    this._playMusica();
 
   }
 
@@ -442,6 +510,7 @@ export class DuroMuroScene extends Phaser.Scene {
     this.time.delayedCall(500, enviar);
     this.time.delayedCall(1500, enviar);
 
+    this._playMusica();
     // Arrancar el juego
     this._cuentaRegresiva();
   }
@@ -614,82 +683,99 @@ export class DuroMuroScene extends Phaser.Scene {
     }
 
     this.validando = false;
-    this.juegoActivo = true;
     this.tiempoRestante = CONFIG.duracionPorPose;
     this._escalaMuro = { v: 0.12 };
 
     const pose = this.posesRonda[this.rondaActual];
     this.rondaActual++;
     this._poseActual = pose;
-    this._crearMuro(pose);
 
     this.textoRonda.setText(`${this.rondaActual}/${CONFIG.totalRondas}`);
-    this.textoTimer.setText(`${this.tiempoRestante}`).setColor('#ffffff');
     this.textoInstruccion.setText(pose.descripcion);
 
-    // Muro se acerca
-    this._tweenMuro = this.tweens.add({
-      targets: this._escalaMuro,
-      v: 1.0,
-      duration: CONFIG.duracionPorPose * 1000,
-      ease: 'Linear',
-      onComplete: () => {
-        if (!this.validando) this._validarPose(this._poseActual);
-      },
-    });
+    // Primero el preview, luego arrancar
+    this._previewPose(pose, () => {
+      if (!this.scene.isActive('DuroMuroScene')) return;
 
-    // Timer
-    this._timerRonda = this.time.addEvent({
-      delay: 1000,
-      loop: true,
-      callback: () => {
+      this.juegoActivo = true;
+      this._crearMuro(pose);
+      this.textoTimer.setText(`${this.tiempoRestante}`).setColor('#ffffff');
+
+      this._tweenMuro = this.tweens.add({
+        targets: this._escalaMuro,
+        v: 1.0,
+        duration: CONFIG.duracionPorPose * 1000,
+        ease: 'Linear',
+        onComplete: () => {
+          if (!this.validando) this._validarPose(this._poseActual);
+        },
+      });
+
+      this._timerRonda = this.time.addEvent({
+        delay: 1000,
+        loop: true,
+        callback: () => {
+          if (!this.juegoActivo) return;
+          this.tiempoRestante--;
+          this.textoTimer.setText(`${this.tiempoRestante}`);
+          if (this.tiempoRestante <= 3 && this.tiempoRestante > 0) {
+            this.textoTimer.setColor('#fa804f');
+            this.cameras.main.shake(80, 0.003);
+          }
+        },
+      });
+
+      this._timerQuieto = this.time.delayedCall((CONFIG.duracionPorPose - 3) * 1000, () => {
         if (!this.juegoActivo) return;
-        this.tiempoRestante--;
-        this.textoTimer.setText(`${this.tiempoRestante}`);
-        if (this.tiempoRestante <= 3 && this.tiempoRestante > 0) {
-          this.textoTimer.setColor('#fa804f');
-          this.cameras.main.shake(80, 0.003);
-        }
-      },
+
+        this.tweens.add({
+          targets: [this.grafEsqueleto, this.grafFeedback],
+          alpha: 0,
+          duration: 400,
+        });
+
+        const { width, height } = this.scale;
+        this._textoQuieto = this.add.text(width / 2, height / 2 - 40, '¡QUIETO!\n¡No te muevas!', {
+          fontSize: '72px',
+          fontFamily: 'Fredoka, sans-serif',
+          color: '#ffffff',
+          stroke: '#000000',
+          strokeThickness: 10,
+          align: 'center',
+        }).setOrigin(0.5).setDepth(25).setAlpha(0);
+
+        this.tweens.add({ targets: this._textoQuieto, alpha: 1, duration: 200 });
+        this.tweens.add({
+          targets: this._textoQuieto,
+          alpha: 0.3,
+          duration: 300,
+          yoyo: true,
+          repeat: -1,
+          delay: 200,
+        });
+
+        this.cameras.main.shake(200, 0.006);
+        this._sonido('dm_quieto');
+      });
+    });
+  }
+
+  _playMusica() {
+    if (this._musicaActual) {
+      this._musicaActual.stop();
+      this._musicaActual.removeAllListeners();
+    }
+
+    const indice = Phaser.Math.Between(1, 8);
+    this._musicaActual = this.sound.add(`duro_muro_music_${indice}`, { volume: 0.5, loop: false });
+
+    this._musicaActual.on('complete', () => {
+      if (this.scene.isActive('DuroMuroScene')) {
+        this._playMusica();
+      }
     });
 
-    // A los 5 segundos — fade esqueleto + texto quieto
-    this._timerQuieto = this.time.delayedCall((CONFIG.duracionPorPose - 3) * 1000, () => {
-      if (!this.juegoActivo) return;
-
-      this.tweens.add({
-        targets: [this.grafEsqueleto, this.grafFeedback],
-        alpha: 0,
-        duration: 400,
-      });
-
-      const { width, height } = this.scale;
-      this._textoQuieto = this.add.text(width / 2, height / 2 - 40, '¡QUIETO!\n¡No te muevas!', {
-        fontSize: '72px',
-        fontFamily: 'Fredoka, sans-serif',
-        color: '#ffffff',
-        stroke: '#000000',
-        strokeThickness: 10,
-        align: 'center',
-      }).setOrigin(0.5).setDepth(25).setAlpha(0);
-
-      this.tweens.add({
-        targets: this._textoQuieto,
-        alpha: 1,
-        duration: 200,
-      });
-
-      this.tweens.add({
-        targets: this._textoQuieto,
-        alpha: 0.3,
-        duration: 300,
-        yoyo: true,
-        repeat: -1,
-        delay: 200,
-      });
-
-      this.cameras.main.shake(200, 0.006);
-    });
+    this._musicaActual.play();
   }
 
   // ─── Update ───────────────────────────────────────────────────────────────
@@ -711,21 +797,27 @@ export class DuroMuroScene extends Phaser.Scene {
     const centerY = (minY + maxY) / 2;
     const centerX = (minX + maxX) / 2;
 
-    // Siempre ocupa 78% de la altura, centrado en pantalla
-    const escala = 0.78 / spanY;
+    const escala = 0.70 / spanY;
 
     const result = {};
     Object.entries(esq).forEach(([key, p]) => {
       if (!p) { result[key] = p; return; }
       result[key] = {
         x: 0.50 + (p.x - centerX) * escala,
-        y: 0.50 + (p.y - centerY) * escala,
+        y: 0.48 + (p.y - centerY) * escala, // ← 0.48 en vez de 0.50 baja el esqueleto
       };
     });
     return result;
   }
 
   update(time, delta) {
+
+    if (!this.juegoActivo && !this.validando) {
+      this.grafEsqueleto.clear();
+      this.grafFeedback.clear();
+      return;
+    }
+
     // Sistema de hold
     if (this.holdBtn) {
       this.holdBtn.time += delta;
@@ -812,8 +904,8 @@ export class DuroMuroScene extends Phaser.Scene {
       { ox: 0, oy: 0, w: width / 2, h: height / 2, dir: { x: 1, y: 1 } }, // bottom-right
     ];
 
-    const siluetaH = height * 0.82;
-    const siluetaW = siluetaH * 0.55;
+    const siluetaH = height * 0.92;
+    const siluetaW = siluetaH * 0.65;
 
     cuadrantes.forEach((q) => {
       const container = this.add.container(cx, cy).setDepth(10);
@@ -932,13 +1024,11 @@ export class DuroMuroScene extends Phaser.Scene {
     const cDer = esqueleto['cadera_derecha'];
     const nariz = esqueleto['nariz'];
 
-    // Puntos calculados del centro del cuerpo
     const cxHombros = hIzq && hDer ? (hIzq.x + hDer.x) / 2 : null;
     const cyHombros = hIzq && hDer ? (hIzq.y + hDer.y) / 2 : null;
     const cxCaderas = cIzq && cDer ? (cIzq.x + cDer.x) / 2 : null;
     const cyCaderas = cIzq && cDer ? (cIzq.y + cDer.y) / 2 : null;
 
-    // Cabeza calculada
     let cabeza = null;
     if (cxHombros !== null && nariz) {
       const distNH = Math.sqrt(
@@ -961,40 +1051,43 @@ export class DuroMuroScene extends Phaser.Scene {
       graphics.strokePath();
     }
 
-    // ── Brazos desde centro de hombros ───────────────────────
-    if (cxHombros !== null) {
-      const ox = offsetX + cxHombros * areaW;
-      const oy = offsetY + cyHombros * areaH;
+    // ── Barra de hombros ──────────────────────────────────────
+    if (hIzq && hDer) {
+      graphics.beginPath();
+      graphics.moveTo(offsetX + hIzq.x * areaW, offsetY + hIzq.y * areaH);
+      graphics.lineTo(offsetX + hDer.x * areaW, offsetY + hDer.y * areaH);
+      graphics.strokePath();
+    }
 
-      const codoIzq = esqueleto['codo_izquierdo'];
-      const munecaIzq = esqueleto['muneca_izquierda'];
-      const codoDer = esqueleto['codo_derecho'];
-      const munecaDer = esqueleto['muneca_derecha'];
+    // ── Brazos desde hombros reales ───────────────────────────
+    const codoIzq = esqueleto['codo_izquierdo'];
+    const munecaIzq = esqueleto['muneca_izquierda'];
+    const codoDer = esqueleto['codo_derecho'];
+    const munecaDer = esqueleto['muneca_derecha'];
 
-      if (codoIzq) {
-        graphics.beginPath();
-        graphics.moveTo(ox, oy);
-        graphics.lineTo(offsetX + codoIzq.x * areaW, offsetY + codoIzq.y * areaH);
-        graphics.strokePath();
-      }
-      if (codoIzq && munecaIzq) {
-        graphics.beginPath();
-        graphics.moveTo(offsetX + codoIzq.x * areaW, offsetY + codoIzq.y * areaH);
-        graphics.lineTo(offsetX + munecaIzq.x * areaW, offsetY + munecaIzq.y * areaH);
-        graphics.strokePath();
-      }
-      if (codoDer) {
-        graphics.beginPath();
-        graphics.moveTo(ox, oy);
-        graphics.lineTo(offsetX + codoDer.x * areaW, offsetY + codoDer.y * areaH);
-        graphics.strokePath();
-      }
-      if (codoDer && munecaDer) {
-        graphics.beginPath();
-        graphics.moveTo(offsetX + codoDer.x * areaW, offsetY + codoDer.y * areaH);
-        graphics.lineTo(offsetX + munecaDer.x * areaW, offsetY + munecaDer.y * areaH);
-        graphics.strokePath();
-      }
+    if (hIzq && codoIzq) {
+      graphics.beginPath();
+      graphics.moveTo(offsetX + hIzq.x * areaW, offsetY + hIzq.y * areaH);
+      graphics.lineTo(offsetX + codoIzq.x * areaW, offsetY + codoIzq.y * areaH);
+      graphics.strokePath();
+    }
+    if (codoIzq && munecaIzq) {
+      graphics.beginPath();
+      graphics.moveTo(offsetX + codoIzq.x * areaW, offsetY + codoIzq.y * areaH);
+      graphics.lineTo(offsetX + munecaIzq.x * areaW, offsetY + munecaIzq.y * areaH);
+      graphics.strokePath();
+    }
+    if (hDer && codoDer) {
+      graphics.beginPath();
+      graphics.moveTo(offsetX + hDer.x * areaW, offsetY + hDer.y * areaH);
+      graphics.lineTo(offsetX + codoDer.x * areaW, offsetY + codoDer.y * areaH);
+      graphics.strokePath();
+    }
+    if (codoDer && munecaDer) {
+      graphics.beginPath();
+      graphics.moveTo(offsetX + codoDer.x * areaW, offsetY + codoDer.y * areaH);
+      graphics.lineTo(offsetX + munecaDer.x * areaW, offsetY + munecaDer.y * areaH);
+      graphics.strokePath();
     }
 
     // ── Piernas desde centro de caderas ──────────────────────
@@ -1033,10 +1126,13 @@ export class DuroMuroScene extends Phaser.Scene {
       }
     }
 
-    // ── Joints ────────────────────────────────────────────────
+    // ── Joints — ahora incluye hombros para que no floten ────
     graphics.fillStyle(color, 1);
-    ['codo_izquierdo', 'codo_derecho', 'muneca_izquierda', 'muneca_derecha',
-      'rodilla_izquierda', 'rodilla_derecha', 'tobillo_izquierdo', 'tobillo_derecho'
+    [
+      'codo_izquierdo', 'codo_derecho',
+      'muneca_izquierda', 'muneca_derecha',
+      'rodilla_izquierda', 'rodilla_derecha',
+      'tobillo_izquierdo', 'tobillo_derecho',
     ].forEach((nombre) => {
       const p = esqueleto[nombre];
       if (!p) return;
@@ -1050,15 +1146,10 @@ export class DuroMuroScene extends Phaser.Scene {
       const cx = offsetX + cabeza.x * areaW;
       const cy = offsetY + cabeza.y * areaH;
 
-      // Glow
       graphics.fillStyle(color, 0.2);
       graphics.fillCircle(cx, cy, radioCabeza * 1.4);
-
-      // Cabeza sólida
       graphics.fillStyle(color, 1);
       graphics.fillCircle(cx, cy, radioCabeza);
-
-      // Borde blanco
       graphics.lineStyle(3, 0xffffff, 0.6);
       graphics.strokeCircle(cx, cy, radioCabeza);
     }
@@ -1067,41 +1158,145 @@ export class DuroMuroScene extends Phaser.Scene {
 
   // ─── Feedback en tiempo real ──────────────────────────────────────────────
   _dibujarFeedback(pose, esqueletoNorm, esqueletoEval = esqueletoNorm) {
-    if (!esqueletoNorm) return;
+    if (!esqueletoNorm || !pose) return;
     const { width, height } = this.scale;
 
-    Object.entries(pose.angulos).forEach(([nombreJoint, def]) => {
-      const encaja = this._evaluarAngulo(def, esqueletoEval); // ← evalúa sin espejo
-      const punto = esqueletoNorm[nombreJoint];               // ← dibuja con espejo
-      if (!punto) return;
+    const { aciertos, total } = this._evaluarPoseCompleta(pose.id, esqueletoEval);
+    const pct = total > 0 ? aciertos / total : 0;
 
-      const px = punto.x * width;
-      const py = punto.y * height;
+    // ── Barra de progreso ─────────────────────────────────────
+    const bw = width * 0.5;
+    const bx = width / 2 - bw / 2;
+    const by = height - 130;
+    const color = pct >= CONFIG.umbralExito ? C.verde : (pct >= 0.4 ? C.amarillo : C.naranja);
 
-      this.grafFeedback.fillStyle(encaja ? C.verde : C.naranja, 0.85);
-      this.grafFeedback.fillCircle(px, py, 16);
-      this.grafFeedback.lineStyle(3, C.blanco, 0.8);
-      this.grafFeedback.strokeCircle(px, py, 16);
-    });
+    this.grafFeedback.fillStyle(0x000000, 0.5);
+    this.grafFeedback.fillRoundedRect(bx - 2, by - 2, bw + 4, 20, 9);
+    this.grafFeedback.fillStyle(color, 1);
+    this.grafFeedback.fillRoundedRect(bx, by, Math.max(0, bw * pct), 16, 8);
+    this.grafFeedback.lineStyle(2, C.blanco, 0.4);
+    this.grafFeedback.strokeRoundedRect(bx, by, bw, 16, 8);
+
+    // Marca del umbral
+    const xUmbral = bx + bw * CONFIG.umbralExito;
+    this.grafFeedback.lineStyle(2, C.blanco, 0.7);
+    this.grafFeedback.beginPath();
+    this.grafFeedback.moveTo(xUmbral, by - 4);
+    this.grafFeedback.lineTo(xUmbral, by + 20);
+    this.grafFeedback.strokePath();
+
+    // ── Voces según nivel — máximo una vez cada 3 segundos ────
+    const ahora = this.time.now;
+    const nivelActual = pct >= CONFIG.umbralExito ? 'bien' : (pct >= 0.4 ? 'medio' : 'mal');
+
+    if (ahora - this._ultimaVoz > 3000 && nivelActual !== this._ultimoNivelVoz) {
+      this._ultimaVoz = ahora;
+      this._ultimoNivelVoz = nivelActual;
+
+      if (nivelActual === 'bien') {
+        const frases = ['dm_quieto', 'dm_eres_mejor', 'dm_vas_excelente'];
+        this._sonido(frases[Math.floor(Math.random() * frases.length)], { volume: 1.5 });
+      } else if (nivelActual === 'medio') {
+        const frases = ['dm_casi', 'dm_poquitin'];
+        this._sonido(frases[Math.floor(Math.random() * frases.length)], { volume: 1.5 });
+      } else {
+        const frases = ['dm_muevete', 'dm_no_perder'];
+        this._sonido(frases[Math.floor(Math.random() * frases.length)], { volume: 1.5 });
+      }
+    }
   }
 
-  // ─── Ángulos ──────────────────────────────────────────────────────────────
-  _calcularAngulo(pA, pM, pB) {
-    const ax = pA.x - pM.x, ay = pA.y - pM.y;
-    const bx = pB.x - pM.x, by = pB.y - pM.y;
-    const dot = ax * bx + ay * by;
-    const magA = Math.sqrt(ax * ax + ay * ay);
-    const magB = Math.sqrt(bx * bx + by * by);
-    if (magA === 0 || magB === 0) return 0;
-    return (Math.acos(Math.max(-1, Math.min(1, dot / (magA * magB)))) * 180) / Math.PI;
-  }
 
-  _evaluarAngulo(def, esqueleto) {
-    const pA = esqueleto[def.a];
-    const pM = esqueleto[def.m];
-    const pB = esqueleto[def.b];
-    if (!pA || !pM || !pB) return false;
-    return Math.abs(this._calcularAngulo(pA, pM, pB) - def.objetivo) <= CONFIG.toleranciaAngulo;
+  _evaluarPoseCompleta(poseId, esq) {
+    const get = (joint) => esq[joint];
+
+    const masArriba = (a, b) => a && b && a.y < b.y;           // menor Y = más arriba
+    const masAbajo = (a, b) => a && b && a.y > b.y;
+    const masAfuera = (a, b, lado) => {                         // más afuera en X
+      if (!a || !b) return false;
+      return lado === 'izq' ? a.x < b.x : a.x > b.x;
+    };
+    const distX = (a, b) => a && b ? Math.abs(a.x - b.x) : 0;
+    const distY = (a, b) => a && b ? Math.abs(a.y - b.y) : 0;
+    const anchoHombros = distX(get('hombro_izquierdo'), get('hombro_derecho')) || 0.3;
+
+    const checks = {
+      'estrella': [
+        // Brazos
+        () => masArriba(get('muneca_izquierda'), get('hombro_izquierdo')),
+        () => masArriba(get('muneca_derecha'), get('hombro_derecho')),
+        () => masAfuera(get('muneca_izquierda'), get('codo_izquierdo'), 'izq'),
+        () => masAfuera(get('muneca_derecha'), get('codo_derecho'), 'der'),
+        // Piernas abiertas
+        () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) > anchoHombros * 1.2,
+      ],
+      'manos-cielo': [
+        () => masArriba(get('muneca_izquierda'), get('nariz')),
+        () => masArriba(get('muneca_derecha'), get('nariz')),
+        () => masArriba(get('codo_izquierdo'), get('hombro_izquierdo')),
+        () => masArriba(get('codo_derecho'), get('hombro_derecho')),
+        // Piernas juntas
+        () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) < anchoHombros * 1.0,
+      ],
+      'cangrejo': [
+        () => distY(get('muneca_izquierda'), get('hombro_izquierdo')) < 0.22,
+        () => distY(get('muneca_derecha'), get('hombro_derecho')) < 0.22,
+        () => masAfuera(get('muneca_izquierda'), get('hombro_izquierdo'), 'izq'),
+        () => masAfuera(get('muneca_derecha'), get('hombro_derecho'), 'der'),
+        () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) < anchoHombros * 1.2,
+      ],
+      'rayo': [
+        // Una muñeca arriba de la cabeza
+        () => masArriba(get('muneca_derecha'), get('nariz')),
+        // La otra muñeca abajo de la cadera
+        () => masAbajo(get('muneca_izquierda'), get('cadera_izquierda')),
+        // Brazos extendidos
+        () => masAfuera(get('muneca_derecha'), get('codo_derecho'), 'der'),
+        () => masAfuera(get('muneca_izquierda'), get('codo_izquierdo'), 'izq'),
+        // Piernas juntas
+        () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) < anchoHombros * 1.0,
+      ],
+      'biceps': [
+        // Codos doblados — muñecas por encima de los codos
+        () => masArriba(get('muneca_izquierda'), get('codo_izquierdo')),
+        () => masArriba(get('muneca_derecha'), get('codo_derecho')),
+        // Codos al nivel de los hombros
+        () => distY(get('codo_izquierdo'), get('hombro_izquierdo')) < 0.12,
+        () => distY(get('codo_derecho'), get('hombro_derecho')) < 0.12,
+        // Piernas juntas
+        () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) < anchoHombros * 1.0,
+      ],
+      'egipcia': [
+        () => distY(get('muneca_izquierda'), get('hombro_izquierdo')) < 0.22,
+        () => distY(get('muneca_derecha'), get('hombro_derecho')) < 0.22,
+        () => masAfuera(get('muneca_izquierda'), get('hombro_izquierdo'), 'izq'),
+        () => masAfuera(get('muneca_derecha'), get('hombro_derecho'), 'der'),
+        () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) > anchoHombros * 0.8,
+      ],
+      'bicep2': [
+        // Una muñeca arriba de la cabeza
+        () => masArriba(get('muneca_izquierda'), get('nariz')),
+        // La otra a la altura de la cadera
+        () => distY(get('muneca_derecha'), get('cadera_derecha')) < 0.15,
+        // Codo izquierdo doblado
+        () => masArriba(get('muneca_izquierda'), get('codo_izquierdo')),
+        // Piernas juntas
+        () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) < anchoHombros * 1.0,
+      ],
+      'equilibrio': [
+        () => distY(get('muneca_izquierda'), get('hombro_izquierdo')) < 0.22,
+        () => distY(get('muneca_derecha'), get('hombro_derecho')) < 0.22,
+        () => masAfuera(get('muneca_izquierda'), get('hombro_izquierdo'), 'izq'),
+        () => masAfuera(get('muneca_derecha'), get('hombro_derecho'), 'der'),
+        () => distY(get('rodilla_izquierda'), get('rodilla_derecha')) > 0.08 ||
+          distY(get('rodilla_derecha'), get('rodilla_izquierda')) > 0.08,
+      ],
+    };
+
+    const poseChecks = checks[poseId] ?? [];
+    const total = poseChecks.length;
+    const aciertos = poseChecks.filter(fn => fn()).length;
+    return { aciertos, total, porcentaje: total > 0 ? aciertos / total : 0 };
   }
 
   // ─── Validar pose ─────────────────────────────────────────────────────────
@@ -1113,33 +1308,104 @@ export class DuroMuroScene extends Phaser.Scene {
     this._tweenMuro?.stop();
 
     if (!this.esqueleto) {
-      this._mostrarResultado(false, 0, Object.keys(pose.angulos).length, '¡No te detecté!');
+      this._mostrarResultado(false, 0, 5, '¡No te detecté!');
       return;
     }
 
-    const angulos = Object.values(pose.angulos);
-    const totalAngulos = angulos.length;
-    let aciertos = 0;
     const esqNorm = this._normalizarEsqueleto(this.esqueleto);
-    angulos.forEach((def) => { if (this._evaluarAngulo(def, esqNorm)) aciertos++; });
-
-    const porcentaje = aciertos / totalAngulos;
+    const { aciertos, total, porcentaje } = this._evaluarPoseCompleta(pose.id, esqNorm);
     const exito = porcentaje >= CONFIG.umbralExito;
 
     if (exito) {
       this.puntaje += Math.round(porcentaje * 500);
       this.textoPuntaje.setText(`${this.puntaje}`);
-
-      // Animación de puntaje
       this.tweens.add({
         targets: this.textoPuntaje,
         scaleX: 1.4, scaleY: 1.4,
-        duration: 150,
-        yoyo: true,
+        duration: 150, yoyo: true,
       });
     }
 
-    this._mostrarResultado(exito, aciertos, totalAngulos);
+    this._mostrarResultado(exito, aciertos, total);
+  }
+
+  _previewPose(pose, onDone) {
+    const { width, height } = this.scale;
+
+    const panel = this.add.container(0, 0).setDepth(50);
+
+    // Fondo oscuro
+    const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.85);
+    panel.add(bg);
+
+    // Nombre de la pose
+    const nombre = this.add.text(width / 2, height * 0.12, pose.nombre, {
+      fontSize: '72px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#fdbf2c',
+      stroke: '#000000',
+      strokeThickness: 8,
+    }).setOrigin(0.5);
+    panel.add(nombre);
+
+    // Imagen de la pose
+    const img = this.add.image(width / 2, height * 0.45, pose.imagenKey)
+      .setDisplaySize(height * 0.55, height * 0.55);
+    panel.add(img);
+
+    // Descripción
+    const desc = this.add.text(width / 2, height * 0.78, pose.descripcion, {
+      fontSize: '38px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 5,
+    }).setOrigin(0.5);
+    panel.add(desc);
+
+    // Cuenta regresiva 3, 2, 1
+    let cuenta = 3;
+    const txtCuenta = this.add.text(width / 2, height * 0.90, `${cuenta}`, {
+      fontSize: '58px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#3dc9a1',
+      stroke: '#000000',
+      strokeThickness: 6,
+    }).setOrigin(0.5);
+    panel.add(txtCuenta);
+
+    // Fade in del panel
+    panel.setAlpha(0);
+    this.tweens.add({ targets: panel, alpha: 1, duration: 250 });
+
+    const tick = this.time.addEvent({
+      delay: 1000,
+      repeat: 2,
+      callback: () => {
+        cuenta--;
+        if (cuenta > 0) {
+          txtCuenta.setText(`${cuenta}`);
+          this.tweens.add({
+            targets: txtCuenta,
+            scaleX: 1.3, scaleY: 1.3,
+            duration: 100,
+            yoyo: true,
+          });
+          this._sonido('tick');
+        } else {
+          // Fade out y arrancar
+          this.tweens.add({
+            targets: panel,
+            alpha: 0,
+            duration: 250,
+            onComplete: () => {
+              panel.destroy();
+              onDone();
+            },
+          });
+        }
+      },
+    });
   }
 
   // ─── Mostrar resultado ────────────────────────────────────────────────────
@@ -1438,5 +1704,6 @@ export class DuroMuroScene extends Phaser.Scene {
     this._limpiarMuro();
     this._grafAux?.destroy();
     this.rtMuro?.destroy();
+    this._musicaActual?.stop();
   }
 }
