@@ -4,7 +4,7 @@ import { createPhaserConfig } from '../../phaser/PhaserConfig';
 import { connectWebSocket, disconnectWebSocket, getFirstTouch } from '../../services/websocket/WebSocketClient';
 import { initMockWebSocket } from '../../services/websocket/MockWebSocket';
 
-const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJuego = null, onBack }) => {
+const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJuego = null, personajeId = null, onBack }) => {
   const gameContainerRef = useRef(null);
   const gameRef = useRef(null);
   const btnRef = useRef(null);
@@ -14,6 +14,17 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
     if (!container || gameRef.current) return;
 
     const config = createPhaserConfig(container, escenaInicial);
+    
+    // Guardar el personaje seleccionado en el registro global
+    const originalPreBoot = config.callbacks?.preBoot;
+    config.callbacks = {
+      ...config.callbacks,
+      preBoot: (game) => {
+        if (originalPreBoot) originalPreBoot(game);
+        game.registry.set('personajeId', personajeId);
+      }
+    };
+
     gameRef.current = new Phaser.Game(config);
 
     const forceWS = import.meta.env.VITE_FORCE_WS === 'true';
