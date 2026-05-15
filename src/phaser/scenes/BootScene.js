@@ -21,6 +21,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image('pose_cangrejo', 'assets/images/duro-muro/pose_cangrejo.png');
     this.load.image('pose_rayo', 'assets/images/duro-muro/pose_rayo.png');
     this.load.image('pose_biceps', 'assets/images/duro-muro/pose_biceps.png');
+    this.load.image('pose_egipcia', 'assets/images/duro-muro/pose_egipcia.png');
+    this.load.image('pose_bicep2', 'assets/images/duro-muro/pose_bicep2.png');
+    this.load.image('pose_equilibrio', 'assets/images/duro-muro/pose_equilibrio.png');
 
     // Pantalla de carga
     const loadingText = this.add.text(width / 2, height / 2, 'Cargando...', {
@@ -29,6 +32,18 @@ export class BootScene extends Phaser.Scene {
       color: '#ffffff',
     }).setOrigin(0.5);
 
+
+    //Sonidos duro muro
+    this.load.audio('dm_quieto', 'assets/audio/sonidos-duro-muro/Quieto.mp3');
+    this.load.audio('dm_eres_mejor', 'assets/audio/sonidos-duro-muro/Eres_el_mejor.mp3');
+    this.load.audio('dm_vas_excelente', 'assets/audio/sonidos-duro-muro/Vas_excelente.mp3');
+    this.load.audio('dm_casi', 'assets/audio/sonidos-duro-muro/Casi_perfecto.mp3');
+    this.load.audio('dm_poquitin', 'assets/audio/sonidos-duro-muro/Poquititin_mas.mp3');
+    this.load.audio('dm_muevete', 'assets/audio/sonidos-duro-muro/Muevete_poco.mp3');
+    this.load.audio('dm_no_perder', 'assets/audio/sonidos-duro-muro/No_perder.mp3');
+    for (let i = 1; i <= 8; i++) {
+      this.load.audio(`duro_muro_music_${i}`, `assets/audio/sonidos-duro-muro/duro_muro_music_${i}.mp3`);
+    }
 
     // Sonidos
     this.load.audio('pop', 'assets/audio/pop.mp3');
