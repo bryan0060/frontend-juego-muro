@@ -391,10 +391,139 @@ export class DuroMuroScene extends Phaser.Scene {
     this._ultimaVoz = 0;
     this._ultimoNivelVoz = null;
     connectWebSocket(8081);
+    this._crearParticulasAmbiente();
+    this._crearMarcoDecorativo();
     this._mostrarSeleccion();
     this._playMusica();
 
   }
+
+  _crearParticulasAmbiente() {
+    const { width, height } = this.scale;
+
+    // ── Chispas flotantes lentas ──────────────────────────────
+    const colores = [C.purpura, C.azul, C.verde, C.amarillo, C.naranja];
+
+    colores.forEach((color, i) => {
+      this.add.particles(
+        Phaser.Math.Between(0, width),
+        height + 10,
+        '__DEFAULT',
+        {
+          speedY: { min: -55, max: -20 },
+          speedX: { min: -18, max: 18 },
+          scale: { start: 0.28, end: 0 },
+          alpha: { start: 0.55, end: 0 },
+          tint: color,
+          lifespan: { min: 3800, max: 6200 },
+          frequency: 320 + i * 90,
+          quantity: 1,
+          emitZone: {
+            type: 'random',
+            source: new Phaser.Geom.Rectangle(0, 0, width, 1),
+          },
+        },
+      ).setDepth(3);
+    });
+
+    // ── Destellos puntales — aparecen y desaparecen en sitio ──
+    const destello = this.add.particles(0, 0, '__DEFAULT', {
+      x: { min: width * 0.05, max: width * 0.95 },
+      y: { min: height * 0.10, max: height * 0.85 },
+      speedX: 0, speedY: 0,
+      scale: { start: 0.55, end: 0 },
+      alpha: { start: 0.7, end: 0 },
+      tint: [C.blanco, C.amarillo, C.azul],
+      lifespan: { min: 500, max: 900 },
+      frequency: 180,
+      quantity: 1,
+    }).setDepth(3);
+  }
+
+  _crearMarcoDecorativo() {
+    const { width, height } = this.scale;
+    const g = this.add.graphics().setDepth(90);
+    const GROSOR = 3;
+    const ESQUINA = 72;   // largo del trazo de esquina
+    const PAD = 10;       // separación del borde de pantalla
+
+    const coloresMarco = [C.purpura, C.azul, C.verde, C.naranja];
+
+    // ── Líneas de borde completas muy sutiles ─────────────────
+    g.lineStyle(1, C.purpura, 0.18);
+    g.strokeRect(PAD, PAD, width - PAD * 2, height - PAD * 2);
+
+    // ── Esquinas en L con triple capa (glow efecto) ───────────
+    const esquinas = [
+      { x: PAD, y: PAD, sx: 1, sy: 1 },   // top-left
+      { x: width - PAD, y: PAD, sx: -1, sy: 1 },   // top-right
+      { x: PAD, y: height - PAD, sx: 1, sy: -1 },   // bottom-left
+      { x: width - PAD, y: height - PAD, sx: -1, sy: -1 },   // bottom-right
+    ];
+
+    const capas = [
+      { grosor: 9, alpha: 0.12 },
+      { grosor: 5, alpha: 0.30 },
+      { grosor: 2, alpha: 1.00 },
+    ];
+
+    esquinas.forEach(({ x, y, sx, sy }, ei) => {
+      const color = coloresMarco[ei];
+      capas.forEach(({ grosor, alpha }) => {
+        g.lineStyle(grosor, color, alpha);
+        // Trazo horizontal
+        g.beginPath();
+        g.moveTo(x, y);
+        g.lineTo(x + sx * ESQUINA, y);
+        g.strokePath();
+        // Trazo vertical
+        g.beginPath();
+        g.moveTo(x, y);
+        g.lineTo(x, y + sy * ESQUINA);
+        g.strokePath();
+      });
+
+      // Rombo en la punta de cada esquina
+      const RD = 5;
+      g.fillStyle(color, 0.9);
+      g.fillTriangle(
+        x, y - RD * sy,
+        x - RD * sx, y,
+        x + RD * sx, y,
+      );
+    });
+
+    // ── Marcas de centro en los 4 bordes ─────────────────────
+    const centros = [
+      { x: width / 2, y: PAD, ax: 1, ay: 0 },   // top
+      { x: width / 2, y: height - PAD, ax: 1, ay: 0 },   // bottom
+      { x: PAD, y: height / 2, ax: 0, ay: 1 },   // left
+      { x: width - PAD, y: height / 2, ax: 0, ay: 1 },   // right
+    ];
+
+    centros.forEach(({ x, y, ax, ay }) => {
+      g.lineStyle(2, C.amarillo, 0.6);
+      g.beginPath();
+      g.moveTo(x - ax * 22, y - ay * 22);
+      g.lineTo(x + ax * 22, y + ay * 22);
+      g.strokePath();
+      // Punto central
+      g.fillStyle(C.amarillo, 0.8);
+      g.fillCircle(x, y, 3);
+    });
+
+    // ── Animación: el marco respira sutilmente ────────────────
+    this.tweens.add({
+      targets: g,
+      alpha: { from: 0.65, to: 1 },
+      duration: 2800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+
   _mostrarCombo() {
     const { width, height } = this.scale;
     const c = this.combo;
@@ -688,63 +817,119 @@ export class DuroMuroScene extends Phaser.Scene {
 
   // ─── UI ───────────────────────────────────────────────────────────────────
   _crearUI(width, height) {
-    // Panel puntaje
-    this.add.rectangle(30, 30, 180, 80, 0x000000, 0.55)
-      .setOrigin(0).setDepth(20)
-      .setStrokeStyle(2, C.amarillo);
 
-    this.add.text(120, 38, 'PUNTOS', {
-      fontSize: '18px',
+    // ══════════════════════════════════════════════
+    //  PANEL DE PUNTAJE — abajo-izquierda, estilo candy
+    // ══════════════════════════════════════════════
+    const PW = 240, PH = 108;
+    const PX = 20, PY = height - PH - 20;
+
+    // Aura suave multicolor
+    this._glowPuntaje = this.add.graphics().setDepth(19);
+    this._glowPuntaje.fillStyle(0xe8a0f8, 0.18);   // lavanda
+    this._glowPuntaje.fillRoundedRect(PX - 12, PY - 12, PW + 24, PH + 24, 28);
+    this._glowPuntaje.fillStyle(0xffc8f0, 0.10);   // rosa
+    this._glowPuntaje.fillRoundedRect(PX - 20, PY - 20, PW + 40, PH + 40, 34);
+    this.tweens.add({
+      targets: this._glowPuntaje,
+      alpha: { from: 0.55, to: 1 },
+      duration: 2000,
+      yoyo: true, repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Capa base — lavanda suave
+    const bgP = this.add.graphics().setDepth(20);
+    bgP.fillStyle(0x3b1560, 0.92);
+    bgP.fillRoundedRect(PX, PY, PW, PH, 18);
+
+    // Capa de brillo superior — rosa-lila
+    bgP.fillStyle(0xc084f5, 0.18);
+    bgP.fillRoundedRect(PX, PY, PW, PH / 2, 18);
+
+    // Borde candy: 3 colores superpuestos
+    bgP.lineStyle(4, 0xe879f9, 1.0);    // fuchsia
+    bgP.strokeRoundedRect(PX, PY, PW, PH, 18);
+    bgP.lineStyle(2, 0xfbbf24, 0.7);    // amarillo pastel
+    bgP.strokeRoundedRect(PX + 3, PY + 3, PW - 6, PH - 6, 15);
+    bgP.lineStyle(1, 0xffffff, 0.20);   // blanco suave interior
+    bgP.strokeRoundedRect(PX + 5, PY + 5, PW - 10, PH - 10, 13);
+
+    // Línea de acento arcoíris en el tope
+    const gradColors = [0xa78bfa, 0xf472b6, 0xfbbf24, 0x34d399];
+    gradColors.forEach((col, i) => {
+      const segW = (PW - 40) / gradColors.length;
+      bgP.lineStyle(3, col, 1);
+      bgP.beginPath();
+      bgP.moveTo(PX + 20 + i * segW, PY + 1.5);
+      bgP.lineTo(PX + 20 + (i + 1) * segW, PY + 1.5);
+      bgP.strokePath();
+    });
+
+    // Separador suave
+    bgP.lineStyle(1, 0xe879f9, 0.4);
+    bgP.beginPath();
+    bgP.moveTo(PX + 54, PY + 16);
+    bgP.lineTo(PX + 54, PY + PH - 16);
+    bgP.strokePath();
+
+    // Icono con sombra de color
+    const iconShadow = this.add.text(PX + 29, PY + PH / 2 + 2, '⭐', {
+      fontSize: '32px',
+      alpha: 0.4,
+    }).setOrigin(0.5).setDepth(20);
+
+    this.add.text(PX + 27, PY + PH / 2, '⭐', {
+      fontSize: '32px',
+    }).setOrigin(0.5).setDepth(21);
+
+    // Etiqueta con color pastel
+    this.add.text(PX + 54 + (PW - 54) / 2, PY + 16, 'P U N T O S', {
+      fontSize: '13px',
       fontFamily: 'Fredoka, sans-serif',
-      color: '#ffffff88',
+      color: '#e879f9',
+      letterSpacing: 2,
     }).setOrigin(0.5, 0).setDepth(21);
 
-    this.textoPuntaje = this.add.text(120, 68, '0', {
-      fontSize: '46px',
+    // Número — amarillo pastel cálido
+    this.textoPuntaje = this.add.text(PX + 54 + (PW - 54) / 2, PY + PH - 12, '0', {
+      fontSize: '58px',
       fontFamily: 'Fredoka, sans-serif',
-      color: '#fdbf2c',
-      stroke: '#000000',
+      color: '#fde68a',
+      stroke: '#5b21b6',
       strokeThickness: 5,
-    }).setOrigin(0.5, 0.5).setDepth(21);
+    }).setOrigin(0.5, 1).setDepth(21);
 
-    // Panel ronda
-    this.add.rectangle(width - 30, 30, 180, 80, 0x000000, 0.55)
-      .setOrigin(1, 0).setDepth(20)
-      .setStrokeStyle(2, C.verde);
+    // ══════════════════════════════════════════════
+    //  INDICADOR DE RONDAS — dots top-center
+    // ══════════════════════════════════════════════
+    this._crearIndicadorRondas(width, height);
 
-    this.add.text(width - 120, 38, 'RONDA', {
-      fontSize: '18px',
-      fontFamily: 'Fredoka, sans-serif',
-      color: '#ffffff88',
-    }).setOrigin(0.5, 0).setDepth(21);
+    // ══════════════════════════════════════════════
+    //  TIMER con arco de progreso
+    // ══════════════════════════════════════════════
+    this._timerArc = this.add.graphics().setDepth(21);
+    this._timerArc.setPosition(width / 2, 125);
 
-    this.textoRonda = this.add.text(width - 120, 68,
-      `1/${CONFIG.totalRondas}`, {
-      fontSize: '46px',
-      fontFamily: 'Fredoka, sans-serif',
-      color: '#3dc9a1',
-      stroke: '#000000',
-      strokeThickness: 5,
-    }).setOrigin(0.5, 0.5).setDepth(21);
-
-    // Timer central
-    this.textoTimer = this.add.text(width / 2, 40, '', {
-      fontSize: '72px',
+    this.textoTimer = this.add.text(width / 2, 125, '', {
+      fontSize: '82px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff',
       stroke: '#000000',
-      strokeThickness: 8,
-    }).setOrigin(0.5, 0).setDepth(21);
+      strokeThickness: 9,
+    }).setOrigin(0.5).setDepth(22);
 
-    // Instrucción abajo
-    this.textoInstruccion = this.add.text(width / 2, height - 30, '', {
-      fontSize: '40px',
+    // ══════════════════════════════════════════════
+    //  INSTRUCCIÓN inferior
+    // ══════════════════════════════════════════════
+    this.textoInstruccion = this.add.text(width / 2, height - 22, '', {
+      fontSize: '38px',
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 6,
       backgroundColor: '#00000099',
-      padding: { x: 28, y: 14 },
+      padding: { x: 30, y: 12 },
     }).setOrigin(0.5, 1).setDepth(21);
 
     // Sin jugador
@@ -754,6 +939,92 @@ export class DuroMuroScene extends Phaser.Scene {
       fontFamily: 'Fredoka, sans-serif',
       color: '#ffffff66',
     }).setOrigin(0.5).setDepth(21).setVisible(false);
+  }
+
+  _crearIndicadorRondas(width) {
+    const N = CONFIG.totalRondas;
+    const R = 11;    // radio dot
+    const GAP = 14;    // espacio entre dots
+    const totalW = N * R * 2 + (N - 1) * GAP;
+    const startX = width / 2 - totalW / 2 + R;
+    const Y = 28;
+
+    this._dotsRonda = [];
+    this._dotR = R;
+    this._dotStartX = startX;
+    this._dotY = Y;
+
+    // Fondo pill
+    const pillBg = this.add.graphics().setDepth(20);
+    pillBg.fillStyle(0x000000, 0.55);
+    pillBg.fillRoundedRect(startX - R - 18, Y - R - 8, totalW + 36, R * 2 + 16, 20);
+    pillBg.lineStyle(1, 0xffffff, 0.1);
+    pillBg.strokeRoundedRect(startX - R - 18, Y - R - 8, totalW + 36, R * 2 + 16, 20);
+
+    for (let i = 0; i < N; i++) {
+      const x = startX + i * (R * 2 + GAP);
+      const dot = this.add.graphics().setDepth(21);
+      dot._ix = x;
+      dot._iy = Y;
+      this._dotsRonda.push(dot);
+      this._pintarDot(dot, x, Y, R, 'pendiente');
+    }
+  }
+
+  _pintarDot(dot, x, y, r, estado) {
+    dot.clear();
+    if (estado === 'completado') {
+      // Verde sólido con check-like glow
+      dot.fillStyle(C.verde, 0.30);
+      dot.fillCircle(x, y, r + 4);
+      dot.fillStyle(C.verde, 1);
+      dot.fillCircle(x, y, r);
+      dot.lineStyle(1.5, 0xffffff, 0.7);
+      dot.strokeCircle(x, y, r);
+    } else if (estado === 'actual') {
+      // Amarillo con halo
+      dot.fillStyle(C.amarillo, 0.15);
+      dot.fillCircle(x, y, r + 8);
+      dot.fillStyle(C.amarillo, 0.35);
+      dot.fillCircle(x, y, r + 4);
+      dot.fillStyle(C.amarillo, 1);
+      dot.fillCircle(x, y, r);
+      dot.lineStyle(2, 0xffffff, 1);
+      dot.strokeCircle(x, y, r);
+    } else {
+      // Pendiente — translúcido
+      dot.fillStyle(0xffffff, 0.10);
+      dot.fillCircle(x, y, r);
+      dot.lineStyle(1.5, 0xffffff, 0.22);
+      dot.strokeCircle(x, y, r);
+    }
+  }
+
+  _actualizarIndicadorRondas() {
+    if (!this._dotsRonda) return;
+    const R = this._dotR;
+
+    this._dotsRonda.forEach((dot, i) => {
+      this.tweens.killTweensOf(dot);
+      dot.setAlpha(1);
+
+      let estado;
+      if (i < this.rondaActual - 1) estado = 'completado';
+      else if (i === this.rondaActual - 1) estado = 'actual';
+      else estado = 'pendiente';
+
+      this._pintarDot(dot, dot._ix, dot._iy, R, estado);
+
+      if (estado === 'actual') {
+        this.tweens.add({
+          targets: dot,
+          alpha: { from: 0.65, to: 1 },
+          duration: 550,
+          yoyo: true, repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+      }
+    });
   }
 
   // ─── Cuenta regresiva ─────────────────────────────────────────────────────
@@ -817,7 +1088,7 @@ export class DuroMuroScene extends Phaser.Scene {
     this.rondaActual++;
     this._poseActual = pose;
 
-    this.textoRonda.setText(`${this.rondaActual}/${CONFIG.totalRondas}`);
+    this._actualizarIndicadorRondas();
     this.textoInstruccion.setText(pose.descripcion);
 
     // Primero el preview, luego arrancar
@@ -845,9 +1116,58 @@ export class DuroMuroScene extends Phaser.Scene {
           if (!this.juegoActivo) return;
           this.tiempoRestante--;
           this.textoTimer.setText(`${this.tiempoRestante}`);
+
+          // ── Arco de progreso ──────────────────────────────────
+          const { width } = this.scale;
+          const pct = this.tiempoRestante / CONFIG.duracionPorPose;
+          const arc = this._timerArc;
+          arc.clear();
+
+          const R_OUT = 58, R_IN = 46;
+          const cx = 0, cy = 0;   // el graphics ya está posicionado en width/2, 90
+
+          const colorArc = pct > 0.5 ? C.verde
+            : pct > 0.25 ? C.amarillo
+              : C.naranja;
+
+          // Track de fondo
+          arc.lineStyle(12, 0xffffff, 0.08);
+          arc.beginPath();
+          arc.arc(cx, cy, R_OUT, 0, Math.PI * 2);
+          arc.strokePath();
+
+          // Arco activo — de -90° en sentido horario
+          if (pct > 0) {
+            arc.lineStyle(12, colorArc, 0.9);
+            arc.beginPath();
+            arc.arc(cx, cy, R_OUT,
+              -Math.PI / 2,
+              -Math.PI / 2 + Math.PI * 2 * pct,
+              false);
+            arc.strokePath();
+
+            // Punto brillante en el extremo
+            const angle = -Math.PI / 2 + Math.PI * 2 * pct;
+            arc.fillStyle(0xffffff, 1);
+            arc.fillCircle(
+              cx + Math.cos(angle) * R_OUT,
+              cy + Math.sin(angle) * R_OUT,
+              5,
+            );
+          }
+
+          // Color del número según urgencia
           if (this.tiempoRestante <= 3 && this.tiempoRestante > 0) {
             this.textoTimer.setColor('#fa804f');
             this.cameras.main.shake(80, 0.003);
+            // Pulso rápido en el número
+            this.tweens.add({
+              targets: this.textoTimer,
+              scaleX: 1.18, scaleY: 1.18,
+              duration: 90, yoyo: true,
+            });
+          } else {
+            this.textoTimer.setColor('#ffffff');
           }
         },
       });
