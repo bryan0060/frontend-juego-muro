@@ -53,7 +53,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.load.video('loop_piso1', 'assets/images/subway/ESCENARIO PRIMER PISO CC.mp4');
 
     // Assets de marca
-    this.load.image('player', 'assets/images/subway/ada.jpeg');
+    this.load.video('player', 'assets/images/subway/NB1.webm');
     this.load.image('logo_game', 'assets/images/subway/image26.png');
     this.load.image('obs_castle', 'assets/images/subway/image74.png');
     this.load.image('obs_rainbow', 'assets/images/subway/image27.png');
@@ -150,7 +150,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.jumpContainer = this.add.container(0, 0);
     this.playerContainer.add(this.jumpContainer);
 
-    this.player = this.add.sprite(0, 0, 'player').setScale(0.45).setOrigin(0.5, 1);
+    this.player = this.add.video(0, 0, 'player').setScale(0.45).setOrigin(0.5, 1);
+    this.player.addMarker('run', 1, 5); // Marcador 'run': de 1s a 5s
+    this.player.playMarker('run', true); // Reproducir marcador en loop
     this.jumpContainer.add(this.player);
     this.playerContainer.setDepth(50);
 
