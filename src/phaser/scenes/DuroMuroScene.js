@@ -242,6 +242,57 @@ const CONFIG = {
       imagenKey: 'pose_biceps',
     },
   ],
+
+  posesDuo: [
+    {
+      id: 'duo_fusion',
+      nombre: '🐉 ¡FUSIÓN!',
+      descripcion: '¡Junten los dedos y abran las piernas!',
+      imagenKey: 'pose_duo_fusion',
+    },
+    {
+      id: 'duo_brazo',
+      nombre: '👉 ¡Apúntense!',
+      descripcion: '¡Cada uno extiende el brazo hacia el otro!',
+      imagenKey: 'pose_duo_brazo',
+    },
+    {
+      id: 'duo_superheroes1',
+      nombre: '🦸 ¡Superhéroes!',
+      descripcion: '¡Pónganse en pose de superhéroe!',
+      imagenKey: 'pose_duo_superheroes1',
+    },
+    {
+      id: 'duo_superheroes2',
+      nombre: '🦸 ¡Al rescate!',
+      descripcion: '¡Vuelen como superhéroes!',
+      imagenKey: 'pose_duo_superheroes2',
+    },
+    {
+      id: 'duo_disco',
+      nombre: '🕺 ¡A bailar!',
+      descripcion: '¡Saquen sus mejores pasos de baile!',
+      imagenKey: 'pose_duo_disco',
+    },
+    {
+      id: 'duo_dinos',
+      nombre: '🦕 ¡Dinosaurios!',
+      descripcion: '¡Rugean como dinosaurios!',
+      imagenKey: 'pose_duo_dinos',
+    },
+    {
+      id: 'duo_corazon',
+      nombre: '❤️ ¡Corazón!',
+      descripcion: '¡Formen un corazón juntos!',
+      imagenKey: 'pose_duo_corazon',
+    },
+    {
+      id: 'duo_cubiertos',
+      nombre: '🍴 ¡A comer!',
+      descripcion: '¡Uno es la cuchara y el otro el tenedor!',
+      imagenKey: 'pose_duo_cubiertos',
+    },
+  ],
 };
 
 const CONEXIONES = [
@@ -281,8 +332,7 @@ export class DuroMuroScene extends Phaser.Scene {
     this.esq2 = null;
     this.juegoActivo = false;
     this.validando = false;
-    this.posesRonda = Phaser.Utils.Array.Shuffle([...CONFIG.poses])
-      .slice(0, CONFIG.totalRondas);
+    this.posesRonda = [];
     this._escalaMuro = null;
     this._poseActual = null;
     this._musicaActual = null;
@@ -574,19 +624,21 @@ export class DuroMuroScene extends Phaser.Scene {
     this.modo = modo;
     this.sensorButtons = [];
 
+    this.posesRonda = modo === 'duo'
+      ? Phaser.Utils.Array.Shuffle([...CONFIG.posesDuo]).slice(0, CONFIG.totalRondas)
+      : Phaser.Utils.Array.Shuffle([...CONFIG.poses]).slice(0, CONFIG.totalRondas);
+
     if (this.menuContainer) {
       this.menuContainer.destroy();
       this.menuContainer = null;
     }
 
-    // Notificar al backend
     const enviar = () => sendMessage({ juego: 'poses', modo }, 8080);
     enviar();
     this.time.delayedCall(500, enviar);
     this.time.delayedCall(1500, enviar);
 
     this._playMusica();
-    // Arrancar el juego
     this._cuentaRegresiva();
   }
 
@@ -886,14 +938,12 @@ export class DuroMuroScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-
     if (!this.juegoActivo && !this.validando) {
       this.grafEsqueleto.clear();
       this.grafFeedback.clear();
       return;
     }
 
-    // Sistema de hold
     if (this.holdBtn) {
       this.holdBtn.time += delta;
       const progress = Math.min(this.holdBtn.time / this.holdBtn.duration, 1);
@@ -908,14 +958,13 @@ export class DuroMuroScene extends Phaser.Scene {
         cb();
       }
     }
+
     const { width, height } = this.scale;
 
-    // Redibujar muro
     if (this._muroContainer && this._escalaMuro) {
       this._muroContainer.setScale(this._escalaMuro.v);
     }
 
-    // Redibujar esqueleto
     this.grafEsqueleto.clear();
     this.grafFeedback.clear();
 
@@ -924,14 +973,14 @@ export class DuroMuroScene extends Phaser.Scene {
       if (hayAlguien) {
         this.textoSinJugador.setVisible(false);
         if (this.esq1) {
-          const n1 = this._normalizarEsqueleto(this.esq1);
-          this._dibujarEsqueleto(this.grafEsqueleto, n1, 0, 0, width, height, C.azul, 48, 36);
-          this._dibujarEsqueleto(this.grafEsqueleto, n1, 0, 0, width, height, 0xffffff, 18, 18);
+          const e1 = this._espejearEsqueleto(this._normalizarEsqueleto(this.esq1));
+          this._dibujarEsqueleto(this.grafEsqueleto, e1, 0, 0, width / 2, height, C.azul, 48, 36);
+          this._dibujarEsqueleto(this.grafEsqueleto, e1, 0, 0, width / 2, height, 0xffffff, 18, 18);
         }
         if (this.esq2) {
-          const n2 = this._normalizarEsqueleto(this.esq2);
-          this._dibujarEsqueleto(this.grafEsqueleto, n2, 0, 0, width, height, C.naranja, 48, 36);
-          this._dibujarEsqueleto(this.grafEsqueleto, n2, 0, 0, width, height, 0xffffff, 18, 18);
+          const e2 = this._espejearEsqueleto(this._normalizarEsqueleto(this.esq2));
+          this._dibujarEsqueleto(this.grafEsqueleto, e2, width / 2, 0, width / 2, height, C.naranja, 48, 36);
+          this._dibujarEsqueleto(this.grafEsqueleto, e2, width / 2, 0, width / 2, height, 0xffffff, 18, 18);
         }
         if (this.juegoActivo && this._poseActual) {
           this._dibujarFeedback(this._poseActual, this.esqueleto);
@@ -971,43 +1020,37 @@ export class DuroMuroScene extends Phaser.Scene {
 
     this._muroCuadrantes = [];
 
-    // Crear 4 cuadrantes — cada uno es la mitad del muro en su dirección
     const cuadrantes = [
-      { ox: -width / 2, oy: -height / 2, w: width / 2, h: height / 2, dir: { x: -1, y: -1 } }, // top-left
-      { ox: 0, oy: -height / 2, w: width / 2, h: height / 2, dir: { x: 1, y: -1 } }, // top-right
-      { ox: -width / 2, oy: 0, w: width / 2, h: height / 2, dir: { x: -1, y: 1 } }, // bottom-left
-      { ox: 0, oy: 0, w: width / 2, h: height / 2, dir: { x: 1, y: 1 } }, // bottom-right
+      { ox: -width / 2, oy: -height / 2, w: width / 2, h: height / 2, dir: { x: -1, y: -1 } },
+      { ox: 0, oy: -height / 2, w: width / 2, h: height / 2, dir: { x: 1, y: -1 } },
+      { ox: -width / 2, oy: 0, w: width / 2, h: height / 2, dir: { x: -1, y: 1 } },
+      { ox: 0, oy: 0, w: width / 2, h: height / 2, dir: { x: 1, y: 1 } },
     ];
 
-    const siluetaH = height * 0.92;
-    const siluetaW = siluetaH * 0.65;
+    const isDuo = this.modo === 'duo';
+    const siluetaH = isDuo ? height * 0.72 : height * 0.92;
+    const siluetaW = isDuo ? width * 0.82 : siluetaH * 0.65;
 
     cuadrantes.forEach((q) => {
       const container = this.add.container(cx, cy).setDepth(10);
 
-      // Fondo del cuadrante
       const bg = this.add.graphics();
-      bg.fillStyle(0x000000, 0); // transparente — la imagen cubre todo
+      bg.fillStyle(0x000000, 0);
       bg.fillRect(q.ox, q.oy, q.w, q.h);
       container.add(bg);
 
-      // Imagen del muro — cada cuadrante muestra la misma imagen completa
-      // La máscara recorta solo su cuadrante
       const img = this.add.image(0, 0, 'duro_muro_textura').setDisplaySize(width, height);
       container.add(img);
 
-      // Máscara para recortar el cuadrante
       const maskShape = this.make.graphics({ x: cx, y: cy, add: false });
       maskShape.fillStyle(0xffffff);
       maskShape.fillRect(cx + q.ox, cy + q.oy, q.w, q.h);
       const mask = maskShape.createGeometryMask();
       container.setMask(mask);
-      container._mask = maskShape; // guardar referencia para destruir
 
       this._muroCuadrantes.push({ container, dir: q.dir, maskShape });
     });
 
-    // Silueta y glow — en un container separado encima de todo
     this._muroSilueta = this.add.container(cx, cy).setDepth(11);
 
     const capasGlow = [
@@ -1031,11 +1074,9 @@ export class DuroMuroScene extends Phaser.Scene {
       .setTint(0xffffff).setAlpha(1);
     this._muroSilueta.add(silueta);
 
-    // Escalar todo al inicio
     this._muroCuadrantes.forEach(({ container }) => container.setScale(0.12));
     this._muroSilueta.setScale(0.12);
 
-    // Referencia unificada para el setScale en update
     this._muroContainer = {
       setScale: (v) => {
         this._muroCuadrantes.forEach(({ container }) => container.setScale(v));
@@ -1236,10 +1277,12 @@ export class DuroMuroScene extends Phaser.Scene {
     if (!esqueletoNorm || !pose) return;
     const { width, height } = this.scale;
 
-    const { aciertos, total } = this._evaluarPoseCompleta(pose.id, esqueletoEval);
+    const esq2Norm = this.esq2
+      ? this._espejearEsqueleto(this._normalizarEsqueleto(this.esq2))
+      : null;
+    const { aciertos, total } = this._evaluarPoseCompleta(pose.id, esqueletoEval, esq2Norm);
     const pct = total > 0 ? aciertos / total : 0;
 
-    // ── Barra de progreso ─────────────────────────────────────
     const bw = width * 0.5;
     const bx = width / 2 - bw / 2;
     const by = height - 130;
@@ -1252,7 +1295,6 @@ export class DuroMuroScene extends Phaser.Scene {
     this.grafFeedback.lineStyle(2, C.blanco, 0.4);
     this.grafFeedback.strokeRoundedRect(bx, by, bw, 16, 8);
 
-    // Marca del umbral
     const xUmbral = bx + bw * CONFIG.umbralExito;
     this.grafFeedback.lineStyle(2, C.blanco, 0.7);
     this.grafFeedback.beginPath();
@@ -1260,14 +1302,12 @@ export class DuroMuroScene extends Phaser.Scene {
     this.grafFeedback.lineTo(xUmbral, by + 20);
     this.grafFeedback.strokePath();
 
-    // ── Voces según nivel — máximo una vez cada 3 segundos ────
     const ahora = this.time.now;
     const nivelActual = pct >= CONFIG.umbralExito ? 'bien' : (pct >= 0.4 ? 'medio' : 'mal');
 
     if (ahora - this._ultimaVoz > 3000 && nivelActual !== this._ultimoNivelVoz) {
       this._ultimaVoz = ahora;
       this._ultimoNivelVoz = nivelActual;
-
       if (nivelActual === 'bien') {
         const frases = ['dm_quieto', 'dm_eres_mejor', 'dm_vas_excelente'];
         this._sonido(frases[Math.floor(Math.random() * frases.length)], { volume: 1.5 });
@@ -1282,12 +1322,169 @@ export class DuroMuroScene extends Phaser.Scene {
   }
 
 
-  _evaluarPoseCompleta(poseId, esq) {
-    const get = (joint) => esq[joint];
+  _evaluarPoseCompleta(poseId, esq, esq2 = null) {
 
-    const masArriba = (a, b) => a && b && a.y < b.y;           // menor Y = más arriba
+    // ── Poses dúo ────────────────────────────────────────────
+    if (poseId === 'duo_fusion') {
+      if (!esq || !esq2) return { aciertos: 0, total: 4, porcentaje: 0 };
+      const get1 = j => esq[j];
+      const get2 = j => esq2[j];
+      const distX = (a, b) => a && b ? Math.abs(a.x - b.x) : 0;
+      const masArriba = (a, b) => a && b && a.y < b.y;
+      const anchoH1 = distX(get1('hombro_izquierdo'), get1('hombro_derecho')) || 0.3;
+      const anchoH2 = distX(get2('hombro_izquierdo'), get2('hombro_derecho')) || 0.3;
+      const checks = [
+        () => distX(get1('tobillo_izquierdo'), get1('tobillo_derecho')) > anchoH1 * 1.2,
+        () => distX(get2('tobillo_izquierdo'), get2('tobillo_derecho')) > anchoH2 * 1.2,
+        () => masArriba(get1('muneca_derecha'), get1('hombro_derecho')),
+        () => masArriba(get2('muneca_izquierda'), get2('hombro_izquierdo')),
+      ];
+      const total = checks.length;
+      const aciertos = checks.filter(fn => fn()).length;
+      return { aciertos, total, porcentaje: total > 0 ? aciertos / total : 0 };
+    }
+
+    if (poseId === 'duo_brazo') {
+      if (!esq || !esq2) return { aciertos: 0, total: 4, porcentaje: 0 };
+      const get1 = j => esq[j];
+      const get2 = j => esq2[j];
+      const masAfuera = (a, b, lado) => {
+        if (!a || !b) return false;
+        return lado === 'izq' ? a.x < b.x : a.x > b.x;
+      };
+      const distY = (a, b) => a && b ? Math.abs(a.y - b.y) : 0;
+      const checks = [
+        () => masAfuera(get1('muneca_derecha'), get1('hombro_derecho'), 'der'),
+        () => distY(get1('muneca_derecha'), get1('hombro_derecho')) < 0.25,
+        () => masAfuera(get2('muneca_izquierda'), get2('hombro_izquierdo'), 'izq'),
+        () => distY(get2('muneca_izquierda'), get2('hombro_izquierdo')) < 0.25,
+      ];
+      const total = checks.length;
+      const aciertos = checks.filter(fn => fn()).length;
+      return { aciertos, total, porcentaje: total > 0 ? aciertos / total : 0 };
+    }
+
+    if (poseId === 'duo_superheroes1') {
+      if (!esq || !esq2) return { aciertos: 0, total: 4, porcentaje: 0 };
+      const get1 = j => esq[j];
+      const get2 = j => esq2[j];
+      const masArriba = (a, b) => a && b && a.y < b.y;
+      const masAfuera = (a, b, lado) => {
+        if (!a || !b) return false;
+        return lado === 'izq' ? a.x < b.x : a.x > b.x;
+      };
+      const checks = [
+        () => masAfuera(get1('muneca_izquierda'), get1('hombro_izquierdo'), 'izq'),
+        () => !masArriba(get1('muneca_derecha'), get1('hombro_derecho')),
+        () => masArriba(get2('muneca_derecha'), get2('nariz')),
+        () => Math.abs((get2('tobillo_izquierdo')?.x ?? 0) - (get2('tobillo_derecho')?.x ?? 0)) >
+          Math.abs((get2('hombro_izquierdo')?.x ?? 0) - (get2('hombro_derecho')?.x ?? 0)) * 0.8,
+      ];
+      const total = checks.length;
+      const aciertos = checks.filter(fn => fn()).length;
+      return { aciertos, total, porcentaje: total > 0 ? aciertos / total : 0 };
+    }
+
+    if (poseId === 'duo_superheroes2') {
+      if (!esq || !esq2) return { aciertos: 0, total: 4, porcentaje: 0 };
+      const get1 = j => esq[j];
+      const get2 = j => esq2[j];
+      const masArriba = (a, b) => a && b && a.y < b.y;
+      const checks = [
+        () => masArriba(get1('muneca_derecha'), get1('nariz')),
+        () => masArriba(get2('muneca_izquierda'), get2('nariz')),
+        () => !masArriba(get1('muneca_izquierda'), get1('hombro_izquierdo')),
+        () => !masArriba(get2('muneca_derecha'), get2('hombro_derecho')),
+      ];
+      const total = checks.length;
+      const aciertos = checks.filter(fn => fn()).length;
+      return { aciertos, total, porcentaje: total > 0 ? aciertos / total : 0 };
+    }
+
+    if (poseId === 'duo_disco') {
+      if (!esq || !esq2) return { aciertos: 0, total: 4, porcentaje: 0 };
+      const get1 = j => esq[j];
+      const get2 = j => esq2[j];
+      const masArriba = (a, b) => a && b && a.y < b.y;
+      const checks = [
+        () => masArriba(get1('muneca_derecha'), get1('nariz')) ||
+          masArriba(get1('muneca_izquierda'), get1('nariz')),
+        () => masArriba(get2('muneca_derecha'), get2('nariz')) ||
+          masArriba(get2('muneca_izquierda'), get2('nariz')),
+        () => Math.abs((get1('tobillo_izquierdo')?.x ?? 0) - (get1('tobillo_derecho')?.x ?? 0)) >
+          Math.abs((get1('hombro_izquierdo')?.x ?? 0) - (get1('hombro_derecho')?.x ?? 0)) * 0.8,
+        () => Math.abs((get2('tobillo_izquierdo')?.x ?? 0) - (get2('tobillo_derecho')?.x ?? 0)) >
+          Math.abs((get2('hombro_izquierdo')?.x ?? 0) - (get2('hombro_derecho')?.x ?? 0)) * 0.8,
+      ];
+      const total = checks.length;
+      const aciertos = checks.filter(fn => fn()).length;
+      return { aciertos, total, porcentaje: total > 0 ? aciertos / total : 0 };
+    }
+
+    if (poseId === 'duo_dinos') {
+      if (!esq || !esq2) return { aciertos: 0, total: 4, porcentaje: 0 };
+      const get1 = j => esq[j];
+      const get2 = j => esq2[j];
+      const distX = (a, b) => a && b ? Math.abs(a.x - b.x) : 0;
+      const masAfuera = (a, b, lado) => {
+        if (!a || !b) return false;
+        return lado === 'izq' ? a.x < b.x : a.x > b.x;
+      };
+      const anchoH1 = distX(get1('hombro_izquierdo'), get1('hombro_derecho')) || 0.3;
+      const anchoH2 = distX(get2('hombro_izquierdo'), get2('hombro_derecho')) || 0.3;
+      const checks = [
+        () => distX(get1('tobillo_izquierdo'), get1('tobillo_derecho')) > anchoH1 * 1.2,
+        () => distX(get2('tobillo_izquierdo'), get2('tobillo_derecho')) > anchoH2 * 1.2,
+        () => masAfuera(get1('muneca_derecha'), get1('hombro_derecho'), 'der'),
+        () => masAfuera(get2('muneca_izquierda'), get2('hombro_izquierdo'), 'izq'),
+      ];
+      const total = checks.length;
+      const aciertos = checks.filter(fn => fn()).length;
+      return { aciertos, total, porcentaje: total > 0 ? aciertos / total : 0 };
+    }
+
+    if (poseId === 'duo_corazon') {
+      if (!esq || !esq2) return { aciertos: 0, total: 4, porcentaje: 0 };
+      const get1 = j => esq[j];
+      const get2 = j => esq2[j];
+      const masArriba = (a, b) => a && b && a.y < b.y;
+      const distX = (a, b) => a && b ? Math.abs(a.x - b.x) : 0;
+      const anchoH1 = distX(get1('hombro_izquierdo'), get1('hombro_derecho')) || 0.3;
+      const anchoH2 = distX(get2('hombro_izquierdo'), get2('hombro_derecho')) || 0.3;
+      const checks = [
+        () => masArriba(get1('muneca_derecha'), get1('nariz')),
+        () => masArriba(get2('muneca_izquierda'), get2('nariz')),
+        () => distX(get1('tobillo_izquierdo'), get1('tobillo_derecho')) > anchoH1 * 1.0,
+        () => distX(get2('tobillo_izquierdo'), get2('tobillo_derecho')) > anchoH2 * 1.0,
+      ];
+      const total = checks.length;
+      const aciertos = checks.filter(fn => fn()).length;
+      return { aciertos, total, porcentaje: total > 0 ? aciertos / total : 0 };
+    }
+
+    if (poseId === 'duo_cubiertos') {
+      if (!esq || !esq2) return { aciertos: 0, total: 4, porcentaje: 0 };
+      const get1 = j => esq[j];
+      const get2 = j => esq2[j];
+      const masArriba = (a, b) => a && b && a.y < b.y;
+      const distX = (a, b) => a && b ? Math.abs(a.x - b.x) : 0;
+      const anchoH2 = distX(get2('hombro_izquierdo'), get2('hombro_derecho')) || 0.3;
+      const checks = [
+        () => masArriba(get1('muneca_izquierda'), get1('nariz')),
+        () => masArriba(get1('muneca_derecha'), get1('nariz')),
+        () => masArriba(get2('muneca_izquierda'), get2('nariz')),
+        () => distX(get2('muneca_izquierda'), get2('muneca_derecha')) > anchoH2 * 1.5,
+      ];
+      const total = checks.length;
+      const aciertos = checks.filter(fn => fn()).length;
+      return { aciertos, total, porcentaje: total > 0 ? aciertos / total : 0 };
+    }
+
+    // ── Poses solo ────────────────────────────────────────────
+    const get = (joint) => esq[joint];
+    const masArriba = (a, b) => a && b && a.y < b.y;
     const masAbajo = (a, b) => a && b && a.y > b.y;
-    const masAfuera = (a, b, lado) => {                         // más afuera en X
+    const masAfuera = (a, b, lado) => {
       if (!a || !b) return false;
       return lado === 'izq' ? a.x < b.x : a.x > b.x;
     };
@@ -1297,12 +1494,10 @@ export class DuroMuroScene extends Phaser.Scene {
 
     const checks = {
       'estrella': [
-        // Brazos
         () => masArriba(get('muneca_izquierda'), get('hombro_izquierdo')),
         () => masArriba(get('muneca_derecha'), get('hombro_derecho')),
         () => masAfuera(get('muneca_izquierda'), get('codo_izquierdo'), 'izq'),
         () => masAfuera(get('muneca_derecha'), get('codo_derecho'), 'der'),
-        // Piernas abiertas
         () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) > anchoHombros * 1.2,
       ],
       'manos-cielo': [
@@ -1310,7 +1505,6 @@ export class DuroMuroScene extends Phaser.Scene {
         () => masArriba(get('muneca_derecha'), get('nariz')),
         () => masArriba(get('codo_izquierdo'), get('hombro_izquierdo')),
         () => masArriba(get('codo_derecho'), get('hombro_derecho')),
-        // Piernas juntas
         () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) < anchoHombros * 1.0,
       ],
       'cangrejo': [
@@ -1321,44 +1515,30 @@ export class DuroMuroScene extends Phaser.Scene {
         () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) < anchoHombros * 1.2,
       ],
       'rayo': [
-        // Una muñeca arriba de la cabeza
         () => masArriba(get('muneca_derecha'), get('nariz')),
-        // La otra muñeca abajo de la cadera
         () => masAbajo(get('muneca_izquierda'), get('cadera_izquierda')),
-        // Brazos extendidos
         () => masAfuera(get('muneca_derecha'), get('codo_derecho'), 'der'),
         () => masAfuera(get('muneca_izquierda'), get('codo_izquierdo'), 'izq'),
-        // Piernas juntas
         () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) < anchoHombros * 1.0,
       ],
       'biceps': [
-        // Codos doblados — muñecas por encima de los codos
         () => masArriba(get('muneca_izquierda'), get('codo_izquierdo')),
         () => masArriba(get('muneca_derecha'), get('codo_derecho')),
-        // Codos al nivel de los hombros
         () => distY(get('codo_izquierdo'), get('hombro_izquierdo')) < 0.12,
         () => distY(get('codo_derecho'), get('hombro_derecho')) < 0.12,
-        // Piernas juntas
         () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) < anchoHombros * 1.0,
       ],
       'egipcia': [
-        // Brazos extendidos horizontalmente
         () => masAfuera(get('muneca_izquierda'), get('hombro_izquierdo'), 'izq'),
         () => masAfuera(get('muneca_derecha'), get('hombro_derecho'), 'der'),
-        // Cross-body — lo que hace única esta pose en perfil
         () => masAbajo(get('muneca_derecha'), get('codo_izquierdo')),
         () => masArriba(get('muneca_izquierda'), get('codo_derecho')),
-        // Piernas separadas
         () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) > anchoHombros * 0.8,
       ],
       'bicep2': [
-        // Una muñeca arriba de la cabeza
         () => masArriba(get('muneca_izquierda'), get('nariz')),
-        // La otra a la altura de la cadera
         () => distY(get('muneca_derecha'), get('cadera_derecha')) < 0.15,
-        // Codo izquierdo doblado
         () => masArriba(get('muneca_izquierda'), get('codo_izquierdo')),
-        // Piernas juntas
         () => distX(get('tobillo_izquierdo'), get('tobillo_derecho')) < anchoHombros * 1.0,
       ],
       'equilibrio': [
@@ -1415,19 +1595,21 @@ export class DuroMuroScene extends Phaser.Scene {
       return;
     }
 
-    const esqNorm = this._normalizarEsqueleto(this.esqueleto);
-    const { aciertos, total, porcentaje } = this._evaluarPoseCompleta(pose.id, esqNorm);
+    const esqNorm = this._espejearEsqueleto(this._normalizarEsqueleto(this.esqueleto));
+
+    const esq2Norm = this.esq2
+      ? this._espejearEsqueleto(this._normalizarEsqueleto(this.esq2))
+      : null;
+    const { aciertos, total, porcentaje } = this._evaluarPoseCompleta(pose.id, esqNorm, esq2Norm);
     const exito = porcentaje >= CONFIG.umbralExito;
 
     if (exito) {
       this.combo++;
-      this.multiplicador = Math.min(this.combo, 5);   // cap en x5
+      this.multiplicador = Math.min(this.combo, 5);
       const puntos = Math.round(porcentaje * 500 * this.multiplicador);
       this.puntaje += puntos;
       this.textoPuntaje.setText(`${this.puntaje}`);
       this.tweens.add({ targets: this.textoPuntaje, scaleX: 1.4, scaleY: 1.4, duration: 150, yoyo: true });
-
-      // Mostrar multiplicador en el panel de puntos si es > 1
       if (this.multiplicador > 1) {
         this._mostrarCombo();
         this._actualizarBadgeMulti();
@@ -1700,8 +1882,7 @@ export class DuroMuroScene extends Phaser.Scene {
     this.textoSinJugador.setVisible(false);
 
     // Rebarajar poses para la nueva partida
-    this.posesRonda = Phaser.Utils.Array.Shuffle([...CONFIG.poses])
-      .slice(0, CONFIG.totalRondas);
+    this.posesRonda = [];
 
     // Destruir cualquier panel de fin de partida que haya
     // (los GameObjects de _finDePartida están sueltos, no en container,

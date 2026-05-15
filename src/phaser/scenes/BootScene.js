@@ -25,6 +25,18 @@ export class BootScene extends Phaser.Scene {
     this.load.image('pose_bicep2', 'assets/images/duro-muro/pose_bicep2.png');
     this.load.image('pose_equilibrio', 'assets/images/duro-muro/pose_equilibrio.png');
 
+    //POSES PARA DUO
+    this.load.image('pose_duo_fusion', 'assets/images/duro-muro/pose_duo_fusion.png');
+    this.load.image('pose_duo_brazo', 'assets/images/duro-muro/pose_duo_brazo.png');
+    this.load.image('pose_duo_fusion', 'assets/images/duro-muro/pose_duo_fusion.png');
+    this.load.image('pose_duo_brazo', 'assets/images/duro-muro/pose_duo_brazo.png');
+    this.load.image('pose_duo_superheroes1', 'assets/images/duro-muro/pose_duo_superheroes1.png');
+    this.load.image('pose_duo_superheroes2', 'assets/images/duro-muro/pose_duo_superheroes2.png');
+    this.load.image('pose_duo_disco', 'assets/images/duro-muro/pose_duo_disco.png');
+    this.load.image('pose_duo_dinos', 'assets/images/duro-muro/pose_duo_dinos.png');
+    this.load.image('pose_duo_corazon', 'assets/images/duro-muro/pose_duo_corazon.png');
+    this.load.image('pose_duo_cubiertos', 'assets/images/duro-muro/pose_duo_cubiertos.png');
+
     // Pantalla de carga
     const loadingText = this.add.text(width / 2, height / 2, 'Cargando...', {
       fontSize: '32px',
