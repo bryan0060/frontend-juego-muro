@@ -81,7 +81,15 @@ export class AnimalesScene extends Phaser.Scene {
         this.puntaje = 0;
         this.esqueletoActual = null;
         this.enemigos = this.add.group();
-        
+        // ── Redes de caza ──
+        this.redIzquierda = this.add.image(-200, this.H * 0.6, 'red').setScale(0.3).setDepth(20).setVisible(false);
+        this.redIzquierda.targetX = -200;
+        this.redIzquierda.targetY = this.H * 0.6;
+
+        this.redDerecha = this.add.image(-200, this.H * 0.6, 'red').setScale(0.3).setDepth(20).setVisible(false);
+        this.redDerecha.targetX = -200;
+        this.redDerecha.targetY = this.H * 0.6;
+
         // Sistema de hold
         this.holdBtn = null;
         this.holdGraphics = this.add.graphics().setDepth(10000);
@@ -96,10 +104,10 @@ export class AnimalesScene extends Phaser.Scene {
             }
         }
         this.jaula = this.add.image(W / 2, H - 120, jaulaKey).setScale(0.8).setDepth(5).setVisible(false);
-        
+
         // Hada dentro de la jaula
         this.hada = this.add.image(W / 2, H - 150, 'hada').setScale(0.45).setDepth(4).setVisible(false);
-        
+
         // Animación suave para el hada
         this.tweens.add({
             targets: this.hada,
@@ -135,6 +143,7 @@ export class AnimalesScene extends Phaser.Scene {
     }
 
     _mostrarMenuEscenarios() {
+        this.sensorButtons = [];
         const { width: W, height: H } = this.scale;
 
         this.menuContainer = this.add.container(0, 0).setDepth(200);
@@ -304,7 +313,7 @@ export class AnimalesScene extends Phaser.Scene {
             maskShape.fillRoundedRect(-200, -105, 400, 170, 12);
             maskShape.setVisible(false);
             cardContainer.add(maskShape);
-            
+
             const mask = maskShape.createGeometryMask();
             img.setMask(mask);
 
@@ -364,11 +373,29 @@ export class AnimalesScene extends Phaser.Scene {
                 });
             });
             hitArea.on('pointerup', () => this._cancelHold());
+            // Registrar para LiDAR
+            this.sensorButtons.push({
+                absX: x,
+                absY: y,
+                w: 420,
+                h: 220,
+                callback: () => {
+                    this.sound.play('pop');
+                    this.tweens.add({
+                        targets: cardContainer,
+                        scale: 0.95,
+                        duration: 100,
+                        yoyo: true,
+                        onComplete: () => this._iniciarJuego(esc.id)
+                    });
+                }
+            });
             cardContainer.add([glow, img, labelBg, txt]);
         });
     }
 
     _iniciarJuego(escenarioId) {
+        this.sensorButtons = [];
         this.menuContainer.destroy();
         this.escenarioActual = escenarioId;
         this.estado = 'jugando';
@@ -405,7 +432,7 @@ export class AnimalesScene extends Phaser.Scene {
     _buildHUD() {
         this.hudGroup = this.add.group();
         const hudY = 40;
-        
+
         // 1. Puntaje
         this.textoPuntaje = this.add.text(40, hudY, 'PUNTOS: 0', {
             fontSize: '32px', fontFamily: 'Luckiest Guy', color: '#ffffff'
@@ -472,18 +499,18 @@ export class AnimalesScene extends Phaser.Scene {
         const barWidth = 240;
         const barHeight = 24;
         const pct = this.energia / CONFIG.totalEnergia;
-        
+
         this.barraEnergia.clear();
-        
+
         if (pct <= 0) return;
 
         // Color dinámico (Verde -> Amarillo -> Rojo)
         const color = pct > 0.6 ? 0x00ffcc : pct > 0.3 ? 0xffcc00 : 0xff3344;
-        
+
         // Dibujar la barra con gradiente simulado
         this.barraEnergia.fillStyle(color, 1);
         this.barraEnergia.fillRoundedRect(energyX, hudY, barWidth * pct, barHeight, 8);
-        
+
         // Brillo superior (Efecto cristal)
         this.barraEnergia.fillStyle(0xffffff, 0.3);
         this.barraEnergia.fillRoundedRect(energyX, hudY, barWidth * pct, barHeight / 2, { tl: 8, tr: 8, bl: 0, br: 0 });
@@ -555,7 +582,7 @@ export class AnimalesScene extends Phaser.Scene {
 
         let x, y;
         const side = Math.random() > 0.5 ? 'left' : 'right';
-        
+
         if (anim.tipo === 'flying') {
             x = side === 'left' ? Phaser.Math.Between(100, 300) : Phaser.Math.Between(this.W - 300, this.W - 100);
             y = Phaser.Math.Between(80, 300);
@@ -565,14 +592,14 @@ export class AnimalesScene extends Phaser.Scene {
         }
 
         const enemigo = this.add.sprite(x, y, anim.key).setScale(0).setDepth(4);
-        
+
         // ESCALA INDIVIDUAL: Ahora cada animal usa exactamente su valor de la pool
         enemigo.baseScale = anim.scale;
-        
+
         if (anim.tipo === 'ground') {
             enemigo.setOrigin(0.5, 1);
         }
-        
+
         this.tweens.add({
             targets: enemigo,
             scale: enemigo.baseScale,
@@ -594,7 +621,7 @@ export class AnimalesScene extends Phaser.Scene {
 
         // ORIENTACIÓN INDIVIDUAL: Solo invertimos los que tengan 'reverseFlip'
         const shouldReverse = anim.reverseFlip || false;
-        const shouldFlip = (x < this.W / 2); 
+        const shouldFlip = (x < this.W / 2);
         enemigo.setFlipX(shouldReverse ? !shouldFlip : shouldFlip);
 
         this.enemigos.add(enemigo);
@@ -613,7 +640,7 @@ export class AnimalesScene extends Phaser.Scene {
             this.holdGraphics.clear();
             this.holdGraphics.lineStyle(8, 0x00ff00, 0.8);
             this.holdGraphics.beginPath();
-            this.holdGraphics.arc(this.holdBtn.x, this.holdBtn.y, 70, -Math.PI/2, -Math.PI/2 + (Math.PI*2*progress));
+            this.holdGraphics.arc(this.holdBtn.x, this.holdBtn.y, 70, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * progress));
             this.holdGraphics.strokePath();
             if (progress >= 1) {
                 const cb = this.holdBtn.callback;
@@ -624,13 +651,37 @@ export class AnimalesScene extends Phaser.Scene {
 
         if (!this.juegoActivo) return;
 
+        // ── Mover redes con lerp y rotación ──
+        [this.redIzquierda, this.redDerecha].forEach(red => {
+            if (!red.visible || red.targetX === undefined) return;
+
+            const prevX = red.x;
+            const prevY = red.y;
+
+            // Lerp — 0.35 = fluido pero responsivo
+            red.x = Phaser.Math.Linear(red.x, red.targetX, 0.35);
+            red.y = Phaser.Math.Linear(red.y, red.targetY, 0.35);
+
+            // Rotación según dirección del movimiento
+            const dx = red.x - prevX;
+            const dy = red.y - prevY;
+            const velocidad = Math.sqrt(dx * dx + dy * dy);
+
+            if (velocidad > 0.5) {
+                red.setRotation(Math.atan2(dy, dx) + Math.PI / 2);
+            }
+
+            // Detectar colisión desde la nueva posición
+            this._checkHit(red.x, red.y);
+        });
+
         // Mover enemigos hacia la jaula
         this.enemigos.getChildren().forEach(enemigo => {
             if (enemigo.estado === 'esperando') {
                 enemigo.timer -= delta;
                 const segundos = Math.ceil(enemigo.timer / 1000);
                 enemigo.timerText.setText(segundos > 0 ? segundos : '!');
-                
+
                 if (enemigo.timer <= 0) {
                     enemigo.estado = 'atacando';
                     enemigo.timerText.setVisible(false);
@@ -658,7 +709,7 @@ export class AnimalesScene extends Phaser.Scene {
                     this._eliminarEnemigo(enemigo);
                 }
             }
-            
+
             // Escala basada en la profundidad (Y) para efecto 3D
             const factorY = (enemigo.y / this.H);
             const currentScale = enemigo.baseScale * (0.8 + factorY * 0.4);
@@ -702,16 +753,72 @@ export class AnimalesScene extends Phaser.Scene {
 
     _onWsMessage(event) {
         const data = event.detail;
-        
-        // Ahora escuchamos al puerto 8081 (LiDAR)
-        if (data.port !== 8081) return;
-        
-        if (data.touches && data.touches.length > 0) {
-            data.touches.forEach(touch => {
-                this._checkHit(touch.x, touch.y);
-            });
-        } else if (data.x !== undefined && data.y !== undefined) {
-            this._checkHit(data.x, data.y);
+
+        // ── Puerto 8081 — LiDAR ──
+        if (data.port === 8081) {
+            let x, y;
+            if (data.touches?.length > 0) {
+                x = data.touches[0].x;
+                y = data.touches[0].y;
+            } else if (data.x !== undefined) {
+                x = data.x;
+                y = data.y;
+            } else return;
+
+            // Botones del menú de escenarios
+            if (this.sensorButtons?.length > 0) {
+                for (const btn of this.sensorButtons) {
+                    if (
+                        x >= btn.absX - btn.w / 2 &&
+                        x <= btn.absX + btn.w / 2 &&
+                        y >= btn.absY - btn.h / 2 &&
+                        y <= btn.absY + btn.h / 2
+                    ) {
+                        btn.callback();
+                        return;
+                    }
+                }
+            }
+
+            // Golpear enemigos con LiDAR si el juego está activo
+            if (this.juegoActivo) this._checkHit(x, y);
+            return;
+        }
+
+        // ── Puerto 8080 — Cámara ──
+        if (data.port !== 8080) return;
+        if (data.juego_activo !== 'impacto') return;
+        if (!data.impacto) return;
+        if (!this.juegoActivo) return;
+
+        const { mano_izquierda, mano_derecha } = data.impacto;
+
+        const remapX = (x) => {
+            const xMin = parseFloat(import.meta.env.VITE_REMAP_X_MIN ?? 0.1);
+            const xMax = parseFloat(import.meta.env.VITE_REMAP_X_MAX ?? 0.9);
+            return Math.max(0, Math.min(1, (x - xMin) / (xMax - xMin)));
+        };
+
+        const remapY = (y) => {
+            const yMin = parseFloat(import.meta.env.VITE_REMAP_Y_MIN ?? 0.1);
+            const yMax = parseFloat(import.meta.env.VITE_REMAP_Y_MAX ?? 0.8);
+            return Math.max(0, Math.min(1, (y - yMin) / (yMax - yMin)));
+        };
+
+        if (mano_izquierda?.visible) {
+            this.redIzquierda.targetX = (1 - remapX(mano_izquierda.x)) * this.W;
+            this.redIzquierda.targetY = remapY(mano_izquierda.y) * this.H;
+            this.redIzquierda.setVisible(true);
+        } else {
+            this.redIzquierda.setVisible(false);
+        }
+
+        if (mano_derecha?.visible) {
+            this.redDerecha.targetX = (1 - remapX(mano_derecha.x)) * this.W;
+            this.redDerecha.targetY = remapY(mano_derecha.y) * this.H;
+            this.redDerecha.setVisible(true);
+        } else {
+            this.redDerecha.setVisible(false);
         }
     }
 
@@ -720,7 +827,7 @@ export class AnimalesScene extends Phaser.Scene {
 
         this.enemigos.getChildren().forEach(enemigo => {
             const dist = Phaser.Math.Distance.Between(x, y, enemigo.x, enemigo.y);
-            const hitRadius = Math.max(60, 120 * enemigo.scale);
+            const hitRadius = Math.max(120, 200 * enemigo.scale);
             if (dist < hitRadius) {
                 this._eliminarEnemigo(enemigo, true);
             }
