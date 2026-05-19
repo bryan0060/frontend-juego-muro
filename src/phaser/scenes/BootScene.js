@@ -110,6 +110,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('scenery_pantano', 'assets/images/animales/pantano.png');
     this.load.image('jaula_hada', 'assets/images/animales/jaula_hada.png');
     this.load.image('hada', 'assets/images/animales/hada.png');
+    this.load.image('red', 'assets/images/animales/red.png');
 
     // Animales del Bosque
     this.load.image('bosque_lobo', 'assets/images/animales/animales%20para%20el%20bosque/lobo.png');
