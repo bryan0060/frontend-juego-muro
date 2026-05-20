@@ -37,6 +37,14 @@ export const getFirstTouch = (detail) => {
  */
 export const connectWebSocket = (port, path = '', juego = null) => {
   const targetPort = Number(port);
+
+  // Evitar conexiones reales en desarrollo si no se fuerza por variable de entorno
+  const forceWS = import.meta.env.VITE_FORCE_WS === 'true';
+  if (!forceWS && import.meta.env.DEV) {
+    console.info(`[WS] [MOCK] Saltando conexión real a puerto ${targetPort} en desarrollo (simulación activa).`);
+    return;
+  }
+
   const existing = _connections.get(targetPort);
 
   // Ya conectado al puerto correcto — no hacer nada
@@ -50,7 +58,7 @@ export const connectWebSocket = (port, path = '', juego = null) => {
     _closeConnection(targetPort);
   }
 
-  const conn = { path, juego, retryTimeout: null, isIntentionalClose: false, socket: null };
+  const conn = { path, juego, retryTimeout: null, isIntentionalClose: false, socket: null, retryCount: 0 };
   _connections.set(targetPort, conn);
   _openConnection(targetPort);
 };
@@ -86,6 +94,12 @@ export const disconnectWebSocket = (port = null) => {
  * Si no se especifica puerto, usa el primero disponible.
  */
 export const sendMessage = (payload, port = null) => {
+  const forceWS = import.meta.env.VITE_FORCE_WS === 'true';
+  if (!forceWS && import.meta.env.DEV) {
+    console.debug(`[WS] [MOCK] Ignorando envío de mensaje a puerto ${port || 'cualquiera'} (simulación activa):`, payload);
+    return;
+  }
+
   if (port !== null) {
     const conn = _connections.get(Number(port));
     if (conn?.socket?.readyState === WebSocket.OPEN) {
@@ -172,15 +186,27 @@ function _closeConnection(port) {
   }
 }
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 5000;
+
 function _scheduleRetry(port) {
   const conn = _connections.get(port);
   if (!conn) return;
-  console.info(`[WS] Reintentando en 3s (puerto ${port})...`);
+
+  conn.retryCount = (conn.retryCount || 0) + 1;
+
+  if (conn.retryCount > MAX_RETRIES) {
+    console.warn(`[WS] Puerto ${port} no disponible tras ${MAX_RETRIES} intentos. Modo sin sensor activo.`);
+    conn.isIntentionalClose = true; // Detener reintentos
+    return;
+  }
+
+  console.info(`[WS] Reintentando en ${RETRY_DELAY_MS / 1000}s (puerto ${port}, intento ${conn.retryCount}/${MAX_RETRIES})...`);
   conn.retryTimeout = setTimeout(() => {
     if (!conn.isIntentionalClose && _connections.has(port)) {
       _openConnection(port);
     }
-  }, 500);
+  }, RETRY_DELAY_MS);
 }
 
 function _dispatch(port, data) {

@@ -108,9 +108,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image('scenery_desierto', 'assets/images/animales/desierto.png');
     this.load.image('scenery_hielo', 'assets/images/animales/hielo.png');
     this.load.image('scenery_pantano', 'assets/images/animales/pantano.png');
-    this.load.image('jaula_hada', 'assets/images/animales/jaula_hada.png');
     this.load.image('hada', 'assets/images/animales/hada.png');
     this.load.image('red', 'assets/images/animales/red.png');
+    // Nota: jaula_hada.png no existe en assets — AnimalesScene genera un fallback programático
     this.load.video('presentacion', 'assets/images/animales/videos/presentacion.mp4');
     this.load.video('final', 'assets/images/animales/videos/final.mp4');
 
@@ -164,7 +164,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('hielo_pinguino', 'assets/images/animales/animales%20para%20el%20hielo/pinguino.png');
     this.load.image('hielo_reno', 'assets/images/animales/animales%20para%20el%20hielo/reno.png');
     this.load.image('hielo_zorro', 'assets/images/animales/animales%20para%20el%20hielo/zorro.png');
-    this.load.image('hielo_ardilla', 'assets/images/animales/animales%20para%20el%20hielo/ardilla.png');
+    this.load.image('hielo_ardilla', 'assets/images/animales/animales%20para%20el%20bosque/ardilla.png');
     this.load.image('hielo_frailecillo', 'assets/images/animales/animales%20para%20el%20hielo/frailecillo.png');
 
     // Animales del Pantano
@@ -177,7 +177,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('pantano_nutria', 'assets/images/animales/animales%20para%20el%20pantano/nutria.png');
     this.load.image('pantano_pato_volando', 'assets/images/animales/animales%20para%20el%20pantano/pato%20volando.png');
     this.load.image('pantano_pato', 'assets/images/animales/animales%20para%20el%20pantano/pato.png');
-    this.load.image('pantano_sapo', 'assets/images/animales/animales%20para%20el%20pantano/sapo.jpg');
+    this.load.image('pantano_sapo', 'assets/images/animales/animales%20para%20el%20pantano/sapo.png');
     this.load.image('pantano_sapo2', 'assets/images/animales/animales%20para%20el%20pantano/sapo2.png');
     this.load.image('pantano_sapo3', 'assets/images/animales/animales%20para%20el%20pantano/sapo3.png');
     this.load.image('pantano_sapo4', 'assets/images/animales/animales%20para%20el%20pantano/sapo4.png');
