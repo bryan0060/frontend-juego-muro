@@ -438,6 +438,8 @@ export class AnimalesScene extends Phaser.Scene {
         // Fondo de Video en Bucle Mudo con Transición Suave (Cross-fade)
         const bgVideo1 = this.add.video(W / 2, H / 2, 'animales_menu_video').setMute(true);
         const bgVideo2 = this.add.video(W / 2, H / 2, 'animales_menu_video').setMute(true);
+        this.bgVideo1 = bgVideo1;
+        this.bgVideo2 = bgVideo2;
 
         this.menuContainer.add(bgVideo1);
         this.menuContainer.add(bgVideo2);
@@ -678,10 +680,21 @@ export class AnimalesScene extends Phaser.Scene {
             this.menuVideoLoopTimer = null;
         }
 
+        // Detener los videos del menú explícitamente para liberar decodificadores de hardware
+        if (this.bgVideo1) {
+            this.bgVideo1.stop();
+        }
+        if (this.bgVideo2) {
+            this.bgVideo2.stop();
+        }
+
         if (this.menuContainer) {
             this.menuContainer.destroy();
             this.menuContainer = null;
         }
+
+        this.bgVideo1 = null;
+        this.bgVideo2 = null;
 
         // Crear la playlist circular con los 4 escenarios
         const todosEscenarios = ['scenery_bosque', 'scenery_desierto', 'scenery_hielo', 'scenery_pantano'];
@@ -1657,8 +1670,34 @@ export class AnimalesScene extends Phaser.Scene {
                 strokeThickness: 6
             }).setOrigin(0.5).setDepth(103);
 
+            // Botón para jugar de nuevo
+            const btnJugarDeNuevo = this.add.text(W / 2, H / 2 + 65, '🔄 JUGAR DE NUEVO', {
+                fontSize: '28px',
+                fontFamily: 'Luckiest Guy',
+                color: '#ffffff',
+                backgroundColor: '#2e1a4e',
+                padding: { x: 25, y: 12 }
+            }).setOrigin(0.5).setDepth(103).setInteractive({ cursor: 'pointer' });
+
+            btnJugarDeNuevo.on('pointerover', () => {
+                this.tweens.add({ targets: btnJugarDeNuevo, scale: 1.05, duration: 100 });
+                btnJugarDeNuevo.setBackgroundColor('#40c0dd');
+            });
+
+            btnJugarDeNuevo.on('pointerout', () => {
+                this.tweens.add({ targets: btnJugarDeNuevo, scale: 1, duration: 100 });
+                btnJugarDeNuevo.setBackgroundColor('#2e1a4e');
+            });
+
+            btnJugarDeNuevo.on('pointerdown', () => {
+                this.sound.play('pop');
+                winParticles.destroy();
+                this.sound.stopAll();
+                this.scene.restart({ reintentarEscenario: 'scenery_bosque' });
+            });
+
             // Botón para volver al menú principal
-            const btnMenu = this.add.text(W / 2, H / 2 + 90, '☰ VOLVER AL MENÚ', {
+            const btnMenu = this.add.text(W / 2, H / 2 + 135, '☰ VOLVER AL MENÚ', {
                 fontSize: '28px',
                 fontFamily: 'Luckiest Guy',
                 color: '#ffffff',
