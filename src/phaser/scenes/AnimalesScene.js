@@ -242,6 +242,10 @@ export class AnimalesScene extends Phaser.Scene {
         this.esqueletoActual = null;
         this.enemigos = this.add.group();
 
+        // Inicializar redes como null — se crean cuando el WS envía posición
+        this.redIzquierda = null;
+        this.redDerecha = null;
+
         // Sistema de hold
         this.holdBtn = null;
         this.holdGraphics = this.add.graphics().setDepth(10000);
@@ -518,16 +522,8 @@ export class AnimalesScene extends Phaser.Scene {
             glow.lineStyle(4, esc.color, 1);
             glow.strokeRoundedRect(-205, -105, 410, 210, 12);
 
-            // Imagen
+            // Imagen (sin máscara: createGeometryMask no es compatible con WebGL en Phaser 4)
             const img = this.add.image(0, -20, esc.id).setDisplaySize(400, 170);
-            const maskShape = this.add.graphics();
-            maskShape.fillStyle(0xffffff);
-            maskShape.fillRoundedRect(-200, -105, 400, 170, 12);
-            maskShape.setVisible(false);
-            cardContainer.add(maskShape);
-
-            const mask = maskShape.createGeometryMask();
-            img.setMask(mask);
 
             // Barra inferior para el nombre
             const labelBg = this.add.graphics();
@@ -828,7 +824,7 @@ export class AnimalesScene extends Phaser.Scene {
         const hudY = 40;
 
         // 1. Puntaje
-        this.textoPuntaje = this.add.text(40, hudY, 'PUNTOS: 0', {
+        this.textoPuntaje = this.add.text(40, this.H - 60, 'PUNTOS: 0', {
             fontSize: '32px', fontFamily: 'Luckiest Guy', color: '#ffffff'
         }).setShadow(2, 2, '#000000', 4, true, true);
         this.hudGroup.add(this.textoPuntaje);
@@ -1008,16 +1004,71 @@ export class AnimalesScene extends Phaser.Scene {
         // Ensure specificAnim is an animal object and not a TimerEvent or similar argument
         const anim = (specificAnim && specificAnim.key) ? specificAnim : Phaser.Utils.Array.GetRandom(pool);
 
-        let x, y;
-        const side = Math.random() > 0.5 ? 'left' : 'right';
+        const sides = ['left', 'right', 'back'];
+        const side = Phaser.Utils.Array.GetRandom(sides);
 
-        if (anim.tipo === 'flying') {
-            x = side === 'left' ? Phaser.Math.Between(100, 300) : Phaser.Math.Between(this.W - 300, this.W - 100);
-            y = Phaser.Math.Between(80, 300);
-        } else {
-            x = side === 'left' ? Phaser.Math.Between(50, 250) : Phaser.Math.Between(this.W - 250, this.W - 50);
-            y = this.H - Phaser.Math.Between(60, 150);
+        const config = SCENARIO_SPAWN_CONFIGS[this.escenarioActual] || SCENARIO_SPAWN_CONFIGS['scenery_bosque'];
+        const spawnConfig = config[side];
+        let zoneConfig = spawnConfig[anim.tipo];
+
+        if (Array.isArray(zoneConfig)) {
+            zoneConfig = Phaser.Utils.Array.GetRandom(zoneConfig);
         }
+
+        let x, y;
+        
+        // Helper inline to calculate the coordinates
+        const resolveCoordinate = (cfg) => {
+            let minX = 0, maxX = 0, minY = 0, maxY = 0;
+
+            // X calculation
+            if (cfg.minXPercent !== undefined) {
+                minX = cfg.minXPercent * this.W;
+                maxX = cfg.maxXPercent * this.W;
+            } else if (cfg.minXOffset !== undefined) {
+                minX = this.W - cfg.minXOffset;
+                maxX = this.W - (cfg.maxXOffset !== undefined ? cfg.maxXOffset : 0);
+            } else if (cfg.minX !== undefined) {
+                if (side === 'back') {
+                    minX = (cfg.minX / 800) * this.W;
+                    maxX = (cfg.maxX / 800) * this.W;
+                } else {
+                    minX = cfg.minX;
+                    maxX = cfg.maxX;
+                }
+            }
+
+            // Y calculation
+            if (cfg.minYPercent !== undefined) {
+                minY = cfg.minYPercent * this.H;
+                maxY = cfg.maxYPercent * this.H;
+            } else if (cfg.minYOffset !== undefined) {
+                minY = this.H - cfg.minYOffset;
+                maxY = this.H - (cfg.maxYOffset !== undefined ? cfg.maxYOffset : 0);
+            } else if (cfg.minY !== undefined) {
+                if (side === 'back') {
+                    minY = (cfg.minY / 600) * this.H;
+                    maxY = (cfg.maxY / 600) * this.H;
+                } else {
+                    minY = cfg.minY;
+                    maxY = cfg.maxY;
+                }
+            }
+
+            const finalMinX = Math.min(minX, maxX);
+            const finalMaxX = Math.max(minX, maxX);
+            const finalMinY = Math.min(minY, maxY);
+            const finalMaxY = Math.max(minY, maxY);
+
+            return {
+                x: Phaser.Math.Between(finalMinX, finalMaxX),
+                y: Phaser.Math.Between(finalMinY, finalMaxY)
+            };
+        };
+
+        const coord = resolveCoordinate(zoneConfig);
+        x = coord.x;
+        y = coord.y;
 
         const enemigo = this.add.sprite(x, y, anim.key).setScale(0).setDepth(4);
 
@@ -1027,6 +1078,8 @@ export class AnimalesScene extends Phaser.Scene {
         if (anim.tipo === 'ground') {
             enemigo.setOrigin(0.5, 1);
         }
+
+        enemigo.entryScaleMultiplier = 0;
 
         this.tweens.add({
             targets: enemigo,
@@ -1039,6 +1092,7 @@ export class AnimalesScene extends Phaser.Scene {
         enemigo.targetY = this.H - 120;
         enemigo.spawnY = y;
         enemigo.spawnX = x;
+        enemigo.spawnSide = side;
         enemigo.estado = 'esperando';
         enemigo.timer = 5000;
 
@@ -1081,7 +1135,7 @@ export class AnimalesScene extends Phaser.Scene {
 
         // ── Mover redes con lerp y rotación ──
         [this.redIzquierda, this.redDerecha].forEach(red => {
-            if (!red.visible || red.targetX === undefined) return;
+            if (!red || !red.visible || red.targetX === undefined) return;
 
             const prevX = red.x;
             const prevY = red.y;
