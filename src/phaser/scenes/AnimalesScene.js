@@ -128,12 +128,23 @@ const ANIMAL_POOLS = {
 const SCENARIO_SPAWN_CONFIGS = {
     'scenery_bosque': {
         back: {
-            flying: { minX: 300, maxX: 380, minY: 150, maxY: 250 },
+            flying: [
+                // Cielo Izquierdo
+                { minXPercent: 0.15, maxXPercent: 0.40, minYPercent: 0.10, maxYPercent: 0.28 },
+                // Cielo Derecho
+                { minXPercent: 0.60, maxXPercent: 0.85, minYPercent: 0.10, maxYPercent: 0.28 },
+                // Cielo Central
+                { minXPercent: 0.40, maxXPercent: 0.60, minYPercent: 0.08, maxYPercent: 0.22 }
+            ],
             ground: [
-                // Zona Izquierda (en el fondo, entre los árboles de la izquierda)
-                { minXPercent: 0.15, maxXPercent: 0.30, minYPercent: 0.65, maxYPercent: 0.82 },
-                // Zona Derecha (en el sendero/círculo amarillo)
-                { minXPercent: 0.58, maxXPercent: 0.82, minYPercent: 0.65, maxYPercent: 0.82 }
+                // Zona Izquierda lejana (entre los árboles de la izquierda)
+                { minXPercent: 0.15, maxXPercent: 0.28, minYPercent: 0.65, maxYPercent: 0.78 },
+                // Zona Izquierda profunda (más al borde)
+                { minXPercent: 0.08, maxXPercent: 0.18, minYPercent: 0.62, maxYPercent: 0.72 },
+                // Zona Derecha lejana (en el sendero/círculo amarillo)
+                { minXPercent: 0.58, maxXPercent: 0.75, minYPercent: 0.65, maxYPercent: 0.78 },
+                // Zona Derecha profunda (más al borde)
+                { minXPercent: 0.76, maxXPercent: 0.88, minYPercent: 0.62, maxYPercent: 0.72 }
             ]
         },
         left: {
@@ -144,12 +155,28 @@ const SCENARIO_SPAWN_CONFIGS = {
             flying: { minXOffset: 300, maxXOffset: 100, minY: 80, maxY: 300 },
             ground: { minXOffset: 250, maxXOffset: 50, minYOffset: 60, maxYOffset: 150 }
         },
-        minBackgroundScale: 0.5
+        minBackgroundScale: 0.65
     },
     'scenery_desierto': {
         back: {
-            flying: { minX: 300, maxX: 380, minY: 150, maxY: 250 },
-            ground: { minX: 320, maxX: 360, minY: 330, maxY: 350 }
+            flying: [
+                // Cielo Alto Izquierdo
+                { minXPercent: 0.10, maxXPercent: 0.35, minYPercent: 0.10, maxYPercent: 0.30 },
+                // Cielo Alto Derecho
+                { minXPercent: 0.65, maxXPercent: 0.90, minYPercent: 0.10, maxYPercent: 0.30 },
+                // Vuelo bajo planeando sobre dunas
+                { minXPercent: 0.35, maxXPercent: 0.65, minYPercent: 0.25, maxYPercent: 0.45 }
+            ],
+            ground: [
+                // Zona Dunas Izquierda
+                { minXPercent: 0.10, maxXPercent: 0.32, minYPercent: 0.52, maxYPercent: 0.65 },
+                // Zona Dunas Izquierda-Media (separada del centro)
+                { minXPercent: 0.20, maxXPercent: 0.38, minYPercent: 0.55, maxYPercent: 0.68 },
+                // Zona Dunas Derecha
+                { minXPercent: 0.68, maxXPercent: 0.88, minYPercent: 0.52, maxYPercent: 0.65 },
+                // Zona Dunas Derecha-Media (separada del centro)
+                { minXPercent: 0.60, maxXPercent: 0.78, minYPercent: 0.55, maxYPercent: 0.68 }
+            ]
         },
         left: {
             flying: { minX: 100, maxX: 300, minY: 80, maxY: 300 },
@@ -159,12 +186,28 @@ const SCENARIO_SPAWN_CONFIGS = {
             flying: { minXOffset: 300, maxXOffset: 100, minY: 80, maxY: 300 },
             ground: { minXOffset: 250, maxXOffset: 50, minYOffset: 60, maxYOffset: 150 }
         },
-        minBackgroundScale: 0.5
+        minBackgroundScale: 0.65
     },
     'scenery_hielo': {
         back: {
-            flying: { minX: 300, maxX: 380, minY: 150, maxY: 250 },
-            ground: { minX: 320, maxX: 360, minY: 330, maxY: 350 }
+            flying: [
+                // Cielo Ártico Izquierdo
+                { minXPercent: 0.10, maxXPercent: 0.40, minYPercent: 0.10, maxYPercent: 0.30 },
+                // Cielo Ártico Derecho
+                { minXPercent: 0.60, maxXPercent: 0.90, minYPercent: 0.10, maxYPercent: 0.30 },
+                // Horizonte del Cielo
+                { minXPercent: 0.35, maxXPercent: 0.65, minYPercent: 0.18, maxYPercent: 0.38 }
+            ],
+            ground: [
+                // Glaciar Izquierdo Lejano
+                { minXPercent: 0.10, maxXPercent: 0.25, minYPercent: 0.55, maxYPercent: 0.68 },
+                // Glaciar Izquierdo Cercano (separado del centro)
+                { minXPercent: 0.20, maxXPercent: 0.38, minYPercent: 0.60, maxYPercent: 0.72 },
+                // Glaciar Derecho Lejano
+                { minXPercent: 0.72, maxXPercent: 0.88, minYPercent: 0.55, maxYPercent: 0.68 },
+                // Glaciar Derecho Cercano (separado del centro)
+                { minXPercent: 0.60, maxXPercent: 0.78, minYPercent: 0.60, maxYPercent: 0.72 }
+            ]
         },
         left: {
             flying: { minX: 100, maxX: 300, minY: 80, maxY: 300 },
@@ -174,12 +217,28 @@ const SCENARIO_SPAWN_CONFIGS = {
             flying: { minXOffset: 300, maxXOffset: 100, minY: 80, maxY: 300 },
             ground: { minXOffset: 250, maxXOffset: 50, minYOffset: 60, maxYOffset: 150 }
         },
-        minBackgroundScale: 0.5
+        minBackgroundScale: 0.65
     },
     'scenery_pantano': {
         back: {
-            flying: { minX: 300, maxX: 380, minY: 150, maxY: 250 },
-            ground: { minX: 320, maxX: 360, minY: 330, maxY: 350 }
+            flying: [
+                // Sobre el agua (Bajo)
+                { minXPercent: 0.20, maxXPercent: 0.80, minYPercent: 0.28, maxYPercent: 0.48 },
+                // Copa de Árboles Izquierda
+                { minXPercent: 0.10, maxXPercent: 0.35, minYPercent: 0.10, maxYPercent: 0.26 },
+                // Copa de Árboles Derecha
+                { minXPercent: 0.65, maxXPercent: 0.90, minYPercent: 0.10, maxYPercent: 0.26 }
+            ],
+            ground: [
+                // Orilla Izquierda Lejana
+                { minXPercent: 0.08, maxXPercent: 0.22, minYPercent: 0.55, maxYPercent: 0.68 },
+                // Orilla Izquierda Cercana (separada del centro)
+                { minXPercent: 0.18, maxXPercent: 0.36, minYPercent: 0.60, maxYPercent: 0.74 },
+                // Manglar Derecho Lejano
+                { minXPercent: 0.74, maxXPercent: 0.88, minYPercent: 0.55, maxYPercent: 0.68 },
+                // Manglar Derecho Cercano (separado del centro)
+                { minXPercent: 0.62, maxXPercent: 0.78, minYPercent: 0.60, maxYPercent: 0.74 }
+            ]
         },
         left: {
             flying: { minX: 100, maxX: 300, minY: 80, maxY: 300 },
@@ -189,7 +248,7 @@ const SCENARIO_SPAWN_CONFIGS = {
             flying: { minXOffset: 300, maxXOffset: 100, minY: 80, maxY: 300 },
             ground: { minXOffset: 250, maxXOffset: 50, minYOffset: 60, maxYOffset: 150 }
         },
-        minBackgroundScale: 0.5
+        minBackgroundScale: 0.65
     }
 };
 
@@ -324,6 +383,7 @@ export class AnimalesScene extends Phaser.Scene {
 
         if (this.menuMusic) {
             this.menuMusic.stop();
+            this.menuMusic.removeAllListeners();
         } else {
             // Limpiar cualquier otra cancion de menu que pudiera estar sonando
             menuSongs.forEach(song => this.sound.stopByKey(song));
@@ -331,11 +391,15 @@ export class AnimalesScene extends Phaser.Scene {
 
         let nextSong = songKey;
         if (!nextSong) {
-            nextSong = Phaser.Utils.Array.GetRandom(menuSongs);
+            let songsPool = menuSongs;
+            if (this.currentMenuSongKey) {
+                songsPool = menuSongs.filter(s => s !== this.currentMenuSongKey);
+            }
+            nextSong = Phaser.Utils.Array.GetRandom(songsPool);
         }
         this.currentMenuSongKey = nextSong;
 
-        const playConfig = { loop: true, volume: 0.5 };
+        const playConfig = { loop: false, volume: 0.5 };
         if (nextSong === 'menu_cancion1') {
             playConfig.seek = 24;
         } else if (nextSong === 'menu_cars' || nextSong === 'menu_cars2') {
@@ -351,10 +415,17 @@ export class AnimalesScene extends Phaser.Scene {
         this.menuMusic = this.sound.add(nextSong, playConfig);
         this.menuMusic.play();
 
+        // Al finalizar la canción, reproducir otra aleatoria si seguimos en el menú
+        this.menuMusic.once('complete', () => {
+            if (this.menuContainer && this.menuContainer.active !== false) {
+                this._playMenuMusic();
+            }
+        });
+
         // Actualizar el texto del botón si existe
         if (this.btnMusicText && this.btnMusicText.scene) {
             const friendlyName = SONG_NAMES[nextSong] || 'Canción 1';
-            this.btnMusicText.setText(friendlyName.toUpperCase());
+            this.btnMusicText.setText(`🎵 ${friendlyName.toUpperCase()}`);
         }
     }
 
@@ -364,89 +435,25 @@ export class AnimalesScene extends Phaser.Scene {
 
         this.menuContainer = this.add.container(0, 0).setDepth(200);
 
-        // 1. Fondo Estilo Pizarra Mágica Pro (Nebulosas y Profundidad)
-        const bgGraphics = this.add.graphics();
-        bgGraphics.fillGradientStyle(0x020208, 0x020208, 0x0a0515, 0x1a0a4a, 1);
-        bgGraphics.fillRect(0, 0, W, H);
-        this.menuContainer.add(bgGraphics);
+        // Fondo de Video en Bucle Mudo
+        const bgVideo = this.add.video(W / 2, H / 2, 'animales_menu_video');
+        bgVideo.setMute(true);
+        bgVideo.play(true); // Loop: true
+        this.menuContainer.add(bgVideo);
 
-        // Capa de Nebulosas (Círculos grandes con transparencia y blur)
-        for (let i = 0; i < 5; i++) {
-            const neb = this.add.circle(
-                Phaser.Math.Between(0, W),
-                Phaser.Math.Between(0, H),
-                Phaser.Math.Between(300, 600),
-                i % 2 === 0 ? 0x4a2a6e : 0x0a4a6e,
-                0.15
-            );
-            neb.setBlendMode('ADD');
-            this.menuContainer.add(neb);
-
-            // Animación de deriva lenta para las nebulosas
-            this.tweens.add({
-                targets: neb,
-                x: neb.x + Phaser.Math.Between(-100, 100),
-                y: neb.y + Phaser.Math.Between(-100, 100),
-                alpha: 0.05,
-                duration: Phaser.Math.Between(10000, 20000),
-                yoyo: true,
-                repeat: -1,
-                ease: 'Sine.easeInOut'
-            });
-        }
-
-        // Estrellas estáticas en capas (Paralaje)
-        const starLayers = [
-            { count: 200, size: 0.8, alpha: 0.3 },
-            { count: 100, size: 1.5, alpha: 0.6 },
-            { count: 50, size: 2.5, alpha: 0.8 }
-        ];
-
-        starLayers.forEach(layer => {
-            const g = this.add.graphics();
-            for (let i = 0; i < layer.count; i++) {
-                g.fillStyle(0xffffff, layer.alpha);
-                g.fillCircle(Phaser.Math.Between(0, W), Phaser.Math.Between(0, H), layer.size);
+        // Escalar video proporcionalmente para cubrir toda la pantalla sin distorsión
+        const scaleVideo = () => {
+            if (bgVideo.width > 0 && bgVideo.height > 0) {
+                const scaleX = W / bgVideo.width;
+                const scaleY = H / bgVideo.height;
+                const scale = Math.max(scaleX, scaleY);
+                bgVideo.setScale(scale);
             }
-            this.menuContainer.add(g);
+        };
+        bgVideo.on('play', scaleVideo);
+        scaleVideo();
 
-            // Movimiento muy lento para efecto de profundidad
-            this.tweens.add({
-                targets: g,
-                x: Phaser.Math.Between(-20, 20),
-                y: Phaser.Math.Between(-20, 20),
-                duration: Phaser.Math.Between(3000, 6000),
-                yoyo: true,
-                repeat: -1
-            });
-        });
-
-        // 2. Sistema de estrellas fugaces
-        this.time.addEvent({
-            delay: 4000,
-            callback: () => {
-                if (!this.menuContainer || !this.menuContainer.visible) return;
-                const sx = Phaser.Math.Between(0, W);
-                const sy = Phaser.Math.Between(0, H / 2);
-                const line = this.add.graphics();
-                line.lineStyle(2, 0xffffff, 1);
-                line.strokeLineShape(new Phaser.Geom.Line(0, 0, 50, -5));
-                line.setPosition(sx, sy);
-                this.menuContainer.add(line);
-
-                this.tweens.add({
-                    targets: line,
-                    x: sx + 800,
-                    y: sy + 150,
-                    alpha: 0,
-                    duration: 800,
-                    onComplete: () => line.destroy()
-                });
-            },
-            loop: true
-        });
-
-        // 3. Sistema de partículas para el clic (Configuración corregida)
+        // Sistema de partículas para el clic (Estrellas mágicas)
         this.clickParticles = this.add.particles(0, 0, 'estrella_magica', {
             scale: { start: 0.6, end: 0 },
             alpha: { start: 1, end: 0 },
@@ -456,233 +463,182 @@ export class AnimalesScene extends Phaser.Scene {
             emitting: false
         }).setDepth(500);
 
-        // Evento de clic global para las estrellas
-        const clickArea = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0).setInteractive().setDepth(-2);
-        this.menuContainer.add(clickArea);
-
+        // Evento de clic global para las estrellas y para INICIAR el juego al tocar cualquier parte de la pantalla
         this.input.on('pointerdown', (pointer) => {
             if (this.menuContainer && this.menuContainer.visible) {
+                // Evitar iniciar el juego si se hace clic en el botón de cambiar canción
+                if (this.btnMusicArea && this.btnMusicArea.getBounds().contains(pointer.x, pointer.y)) {
+                    return;
+                }
+
                 this.clickParticles.setPosition(pointer.x, pointer.y);
                 this.clickParticles.explode(40);
                 this.sound.play('pop', { volume: 0.5, detune: Phaser.Math.Between(-500, 500) });
+                
+                // Efecto de transición e inicio del juego inmediato
+                this.cameras.main.flash(400, 255, 255, 255);
+                this._iniciarJuego('scenery_bosque');
+            } else if (this.juegoActivo) {
+                this._checkHit(pointer.x, pointer.y);
+                // Feedback visual al hacer clic en el juego
+                this.particles.setPosition(pointer.x, pointer.y);
+                this.particles.explode(15);
             }
         });
 
-        // 3. Título Estilo Burbuja 3D (Capa de Sombra Profunda)
-        const tituloSombra = this.add.text(W / 2, 88, 'ELIJE TU ESCENARIO', {
-            fontSize: '84px',
-            fontFamily: 'Bubblegum Sans',
-            fill: '#2e1a4e',
-            stroke: '#2e1a4e',
-            strokeThickness: 20,
+        // Título Estilo Fantasía Mágico con Delineado de Madera Profundo
+        const tituloSombra = this.add.text(W / 2, 104, 'DESCUBRE EL SECRETO\nDE LA HADA', {
+            fontSize: '64px',
+            fontFamily: 'Cinzel Decorative',
+            fontWeight: 'bold',
+            align: 'center',
+            fill: '#15240c', // Sombra verde musgo oscura
+            stroke: '#0d1706',
+            strokeThickness: 16,
+        }).setOrigin(0.5);
+        tituloSombra.setShadow(0, 8, 'rgba(0, 0, 0, 0.8)', 10, true, true);
+
+        const titulo = this.add.text(W / 2, 100, 'DESCUBRE EL SECRETO\nDE LA HADA', {
+            fontSize: '64px',
+            fontFamily: 'Cinzel Decorative',
+            fontWeight: 'bold',
+            align: 'center',
+            stroke: '#1b1207', // Borde de corteza de madera oscura
+            strokeThickness: 8,
         }).setOrigin(0.5);
 
-        const titulo = this.add.text(W / 2, 80, 'ELIJE TU ESCENARIO', {
-            fontSize: '84px',
-            fontFamily: 'Bubblegum Sans',
-            fill: '#ffffff',
-            stroke: '#40c0dd',
-            strokeThickness: 14,
-        }).setOrigin(0.5);
-
-        // Crear degradado en el texto superior
-        const gradient = titulo.context.createLinearGradient(0, 0, 0, 70);
-        gradient.addColorStop(0, '#40c0dd');
-        gradient.addColorStop(1, '#9c4eb3');
+        // Crear un hermoso gradiente vertical metálico-mágico (Oro -> Bronce -> Musgo)
+        const gradient = titulo.context.createLinearGradient(0, 0, 0, 90);
+        gradient.addColorStop(0, '#fdf7cd'); // Oro resplandeciente
+        gradient.addColorStop(0.3, '#d4af37'); // Oro puro
+        gradient.addColorStop(0.65, '#8b7325'); // Bronce antiguo
+        gradient.addColorStop(1, '#3b5118'); // Verde bosque profundo
         titulo.setFill(gradient);
 
+        this.menuContainer.add([tituloSombra, titulo]);
+
+        // Botón Estático "COMIENZA TU AVENTURA MÁGICA AQUÍ" con estilo fantasía
+        const startTextSombra = this.add.text(W / 2, H - 110, 'COMIENZA TU AVENTURA MÁGICA AQUÍ', {
+            fontSize: '26px',
+            fontFamily: 'Cinzel Decorative',
+            fontWeight: 'bold',
+            color: '#15240c',
+            stroke: '#0d1706',
+            strokeThickness: 8
+        }).setOrigin(0.5);
+        startTextSombra.setShadow(0, 4, 'rgba(0, 0, 0, 0.8)', 6, true, true);
+
+        const startText = this.add.text(W / 2, H - 112, 'COMIENZA TU AVENTURA MÁGICA AQUÍ', {
+            fontSize: '26px',
+            fontFamily: 'Cinzel Decorative',
+            fontWeight: 'bold',
+            stroke: '#1b1207',
+            strokeThickness: 4
+        }).setOrigin(0.5);
+
+        const startGradient = startText.context.createLinearGradient(0, 0, 0, 30);
+        startGradient.addColorStop(0, '#ffefa8'); // Oro claro
+        startGradient.addColorStop(0.5, '#e0a32e'); // Oro cálido
+        startGradient.addColorStop(1, '#825310'); // Bronce/Madera
+        startText.setFill(startGradient);
+
+        // Animación suave de pulsación (respiración mágica)
         this.tweens.add({
-            targets: [titulo, tituloSombra],
+            targets: [startText, startTextSombra],
             scale: 1.04,
-            duration: 1000,
+            duration: 1200,
             yoyo: true,
             repeat: -1,
             ease: 'Sine.easeInOut'
         });
-        this.menuContainer.add([tituloSombra, titulo]);
 
-        const escenarios = [
-            { id: 'scenery_bosque', nombre: 'BOSQUE', color: 0xff00ff },
-            { id: 'scenery_desierto', nombre: 'DESIERTO', color: 0x00ffff },
-            { id: 'scenery_hielo', nombre: 'HIELO', color: 0x00ffff },
-            { id: 'scenery_pantano', nombre: 'PANTANO', color: 0xff00ff }
-        ];
+        this.menuContainer.add([startTextSombra, startText]);
 
-        escenarios.forEach((esc, i) => {
-            const x = W / 2 + (i % 2 === 0 ? -280 : 280);
-            const y = H / 2 + (i < 2 ? -80 : 180);
+        // Botón elegante "Cambiar Canción" (Glassmorphism en la parte inferior derecha)
+        const btnMusicX = W - 140;
+        const btnMusicY = H - 45;
 
-            const cardContainer = this.add.container(x, y);
-            this.menuContainer.add(cardContainer);
+        const btnBg = this.add.graphics();
+        btnBg.fillStyle(0x1a0f05, 0.75); // Fondo bark marrón translúcido
+        btnBg.fillRoundedRect(btnMusicX - 110, btnMusicY - 20, 220, 40, 12);
+        btnBg.lineStyle(2, 0xd4af37, 1); // Borde de oro brillante
+        btnBg.strokeRoundedRect(btnMusicX - 110, btnMusicY - 20, 220, 40, 12);
 
-            // Borde Neón
-            const glow = this.add.graphics();
-            glow.lineStyle(8, esc.color, 0.3);
-            glow.strokeRoundedRect(-210, -110, 420, 220, 15);
-            glow.lineStyle(4, esc.color, 1);
-            glow.strokeRoundedRect(-205, -105, 410, 210, 12);
-
-            // Imagen (sin máscara: createGeometryMask no es compatible con WebGL en Phaser 4)
-            const img = this.add.image(0, -20, esc.id).setDisplaySize(400, 170);
-
-            // Barra inferior para el nombre
-            const labelBg = this.add.graphics();
-            labelBg.fillStyle(0x000000, 0.8);
-            labelBg.fillRoundedRect(-200, 65, 400, 45, { bl: 12, br: 12 });
-            labelBg.lineStyle(2, esc.color, 0.5);
-            labelBg.strokeRoundedRect(-200, 65, 400, 45, { bl: 12, br: 12 });
-
-            const txt = this.add.text(0, 87, esc.nombre, {
-                fontSize: '28px',
-                fontFamily: 'Cinzel Decorative',
-                color: '#ffffff',
-                letterSpacing: 4
-            }).setOrigin(0.5);
-
-            // Área interactiva fija (fuera del cardContainer para que no se pegue al escalar)
-            const hitArea = this.add.rectangle(x, y, 420, 220, 0x000000, 0).setInteractive({ cursor: 'pointer' });
-            this.menuContainer.add(hitArea);
-
-            hitArea.on('pointerover', () => {
-                this.tweens.add({ targets: cardContainer, scale: 1.1, duration: 100, ease: 'Back.easeOut' });
-
-                glow.clear();
-                glow.lineStyle(10, 0xffffff, 1);
-                glow.strokeRoundedRect(-210, -110, 420, 220, 15);
-                glow.lineStyle(4, esc.color, 1);
-                glow.strokeRoundedRect(-205, -105, 410, 210, 12);
-
-                if (this.menuMusic && this.menuMusic.isPlaying) {
-                    this.menuMusic.pause();
-                }
-
-                const soundKey = esc.id.replace('scenery_', 'sonido_');
-                this.sound.play(soundKey, { volume: 1 });
-            });
-
-            hitArea.on('pointerout', () => {
-                this.tweens.add({ targets: cardContainer, scale: 1, duration: 100, ease: 'Linear' });
-
-                const soundKey = esc.id.replace('scenery_', 'sonido_');
-                this.sound.stopByKey(soundKey);
-
-                if (this.menuMusic && this.menuMusic.isPaused) {
-                    this.menuMusic.resume();
-                }
-
-                glow.clear();
-                glow.lineStyle(8, esc.color, 0.3);
-                glow.strokeRoundedRect(-210, -110, 420, 220, 15);
-                glow.lineStyle(4, esc.color, 1);
-                glow.strokeRoundedRect(-205, -105, 410, 210, 12);
-            });
-
-            hitArea.on('pointerdown', (ptr) => {
-                // Acción inmediata para selección de escenarios
-                this.sound.play('pop');
-                this.tweens.add({
-                    targets: cardContainer,
-                    scale: 0.95,
-                    duration: 100,
-                    yoyo: true,
-                    onComplete: () => this._iniciarJuego(esc.id)
-                });
-            });
-            hitArea.on('pointerup', () => this._cancelHold());
-            // Registrar para LiDAR
-            this.sensorButtons.push({
-                absX: x,
-                absY: y,
-                w: 420,
-                h: 220,
-                callback: () => {
-                    this.sound.play('pop');
-                    this.tweens.add({
-                        targets: cardContainer,
-                        scale: 0.95,
-                        duration: 100,
-                        yoyo: true,
-                        onComplete: () => this._iniciarJuego(esc.id)
-                    });
-                }
-            });
-            cardContainer.add([glow, img, labelBg, txt]);
-        });
-
-        // Botón Cambiar Canción (Glassmorphism Púrpura, en la esquina inferior derecha)
-        const songBtnContainer = this.add.container(W - 140, H - 45);
-        this.menuContainer.add(songBtnContainer);
-
-        const songBtnBg = this.add.graphics();
-        songBtnBg.fillStyle(0x9c4eb3, 0.9); // Color púrpura vibrante
-        songBtnBg.fillRoundedRect(-100, -20, 200, 40, 10);
-        songBtnBg.lineStyle(2, 0xffffff, 0.5);
-        songBtnBg.strokeRoundedRect(-100, -20, 200, 40, 10);
-        songBtnContainer.add(songBtnBg);
-
-        const friendlyName = SONG_NAMES[this.currentMenuSongKey] || 'Canción 1';
-        this.btnMusicText = this.add.text(0, 0, friendlyName.toUpperCase(), {
-            fontSize: '18px',
+        const currentSongName = SONG_NAMES[this.currentMenuSongKey] || 'Canción 1';
+        this.btnMusicText = this.add.text(btnMusicX, btnMusicY, `🎵 ${currentSongName.toUpperCase()}`, {
+            fontSize: '13px',
             fontFamily: 'Luckiest Guy',
-            color: '#ffffff'
-        }).setOrigin(0.5).setShadow(2, 2, '#000000', 4);
-        songBtnContainer.add(this.btnMusicText);
+            fill: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5);
 
-        const songBtnArea = this.add.rectangle(0, 0, 200, 40, 0x000000, 0)
+        this.btnMusicArea = this.add.rectangle(btnMusicX, btnMusicY, 220, 40, 0x000000, 0)
             .setInteractive({ cursor: 'pointer' });
-        songBtnContainer.add(songBtnArea);
 
-        songBtnArea.on('pointerover', () => {
-            this.tweens.add({ targets: songBtnContainer, scale: 1.08, duration: 100 });
-            songBtnBg.clear();
-            songBtnBg.fillStyle(0x40c0dd, 1); // Cambia a cian en hover
-            songBtnBg.fillRoundedRect(-100, -20, 200, 40, 10);
-            songBtnBg.lineStyle(2, 0xffffff, 1);
-            songBtnBg.strokeRoundedRect(-100, -20, 200, 40, 10);
+        this.btnMusicArea.on('pointerdown', () => {
+            this.sound.play('pop', { volume: 0.5 });
+            this._playMenuMusic();
         });
 
-        songBtnArea.on('pointerout', () => {
-            this.tweens.add({ targets: songBtnContainer, scale: 1.0, duration: 100 });
-            songBtnBg.clear();
-            songBtnBg.fillStyle(0x9c4eb3, 0.9);
-            songBtnBg.fillRoundedRect(-100, -20, 200, 40, 10);
-            songBtnBg.lineStyle(2, 0xffffff, 0.5);
-            songBtnBg.strokeRoundedRect(-100, -20, 200, 40, 10);
+        // Micro-animación en hover
+        this.btnMusicArea.on('pointerover', () => {
+            this.tweens.add({
+                targets: [this.btnMusicText],
+                scale: 1.08,
+                duration: 150
+            });
+        });
+        this.btnMusicArea.on('pointerout', () => {
+            this.tweens.add({
+                targets: [this.btnMusicText],
+                scale: 1.0,
+                duration: 150
+            });
         });
 
-        songBtnArea.on('pointerdown', () => {
-            this.sound.play('pop');
-            const menuSongs = [
-                'menu_reyleon',
-                'menu_monsters',
-                'menu_aladdin',
-                'menu_cancion1',
-                'menu_cars',
-                'menu_cars2',
-                'menu_libro',
-                'menu_rio',
-                'menu_sing',
-                'menu_sing2',
-                'menu_sheck',
-                'menu_shek',
-                'menu_zotopia'
-            ];
-            let currentIndex = menuSongs.indexOf(this.currentMenuSongKey);
-            let nextIndex = (currentIndex + 1) % menuSongs.length;
-            this._playMenuMusic(menuSongs[nextIndex]);
+        this.menuContainer.add([btnBg, this.btnMusicText, this.btnMusicArea]);
+
+        // Registrar un botón virtual gigante para compatibilidad con LiDAR
+        this.sensorButtons.push({
+            absX: W / 2,
+            absY: H / 2,
+            w: W,
+            h: H,
+            callback: () => {
+                this.sound.play('pop');
+                this.cameras.main.flash(400, 255, 255, 255);
+                this._iniciarJuego('scenery_bosque');
+            }
         });
     }
 
     _iniciarJuego(escenarioId) {
-        this.menuContainer.destroy();
-        this.escenarioActual = escenarioId;
+        if (this.menuContainer) {
+            this.menuContainer.destroy();
+            this.menuContainer = null;
+        }
+
+        // Crear la playlist circular con los 4 escenarios
+        const todosEscenarios = ['scenery_bosque', 'scenery_desierto', 'scenery_hielo', 'scenery_pantano'];
+        const idx = todosEscenarios.indexOf(escenarioId) !== -1 ? todosEscenarios.indexOf(escenarioId) : 0;
+        
+        this.playlistEscenarios = [];
+        for (let i = 0; i < 4; i++) {
+            this.playlistEscenarios.push(todosEscenarios[(idx + i) % 4]);
+        }
+        
+        this.playlistIndex = 0;
+        this.escenarioActual = this.playlistEscenarios[0];
+        this.enTransicion = false;
+        
         this.estado = 'jugando';
         this.juegoActivo = false;
 
         const { width: W, height: H } = this.scale;
 
-        // Fondo seleccionado
-        this.add.image(W / 2, H / 2, escenarioId).setDisplaySize(W, H).setDepth(-1);
+        // Fondo seleccionado guardando referencia
+        this.backgroundImg = this.add.image(W / 2, H / 2, this.escenarioActual).setDisplaySize(W, H).setDepth(-1);
 
         // Detener sonidos de menú
         this.sound.stopAll();
@@ -735,12 +691,12 @@ export class AnimalesScene extends Phaser.Scene {
             skipText.destroy();
 
             // Activar y mostrar los elementos del juego
-            this.jaula.setVisible(true);
+            this.jaula.setVisible(false);
             this.hada.setVisible(true);
             this.hudGroup.setVisible(true);
 
             // Empezar música ambiental en loop
-            const soundKey = escenarioId.replace('scenery_', 'sonido_');
+            const soundKey = this.escenarioActual.replace('scenery_', 'sonido_');
             this.bgMusic = this.sound.add(soundKey, { loop: true, volume: 0.6 });
             this.bgMusic.play();
 
@@ -807,15 +763,134 @@ export class AnimalesScene extends Phaser.Scene {
                     rect.destroy();
                     this.juegoActivo = true;
 
-                    // Spawn de enemigos
-                    this.time.addEvent({
-                        delay: CONFIG.spawnRate,
+                    // Spawn de enemigos con dificultad progresiva
+                    if (this.spawnTimerEvent) {
+                        this.spawnTimerEvent.destroy();
+                    }
+                    this.spawnTimerEvent = this.time.addEvent({
+                        delay: Math.max(1200, CONFIG.spawnRate - (this.playlistIndex * 600)),
                         callback: this._spawnEnemigo,
                         callbackScope: this,
                         loop: true
                     });
                 }
             }
+        });
+    }
+
+    _transicionSiguienteEscenario() {
+        if (this.enTransicion) return;
+        this.enTransicion = true;
+        this.juegoActivo = false;
+
+        // Limpiar el temporizador de spawneo actual
+        if (this.spawnTimerEvent) {
+            this.spawnTimerEvent.destroy();
+            this.spawnTimerEvent = null;
+        }
+
+        const { width: W, height: H } = this.scale;
+
+        // 1. Eliminar limpia y exhaustivamente todos los enemigos en pantalla
+        const arrayEnemigos = [...this.enemigos.getChildren()];
+        arrayEnemigos.forEach(e => {
+            if (e.timerText) e.timerText.destroy();
+            e.destroy();
+        });
+        this.enemigos.clear(true, true);
+
+        // 2. Incrementar índice y cambiar escenario
+        this.playlistIndex++;
+        this.escenarioActual = this.playlistEscenarios[this.playlistIndex];
+
+        // 3. Efectos visuales de transición (Destello blanco)
+        this.cameras.main.flash(500, 255, 255, 255);
+
+        // 4. Cambiar fondo
+        if (this.backgroundImg) {
+            this.backgroundImg.setTexture(this.escenarioActual);
+        }
+
+        // 5. Cambiar música ambiental
+        if (this.bgMusic) {
+            this.bgMusic.stop();
+            this.bgMusic.destroy();
+        }
+        const soundKey = this.escenarioActual.replace('scenery_', 'sonido_');
+        this.bgMusic = this.sound.add(soundKey, { loop: true, volume: 0.6 });
+        this.bgMusic.play();
+
+        // 6. Mostrar anuncio espectacular en pantalla
+        const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.45).setDepth(200);
+
+        const nombresMap = {
+            'scenery_bosque': 'BOSQUE',
+            'scenery_desierto': 'DESIERTO',
+            'scenery_hielo': 'HIELO',
+            'scenery_pantano': 'PANTANO'
+        };
+        const sgteNombre = nombresMap[this.escenarioActual] || 'SIGUIENTE';
+
+        // Título de completado con sombra
+        const textCompletadoSombra = this.add.text(W / 2, H / 2 - 47, '¡ESCENARIO COMPLETADO!', {
+            fontSize: '64px',
+            fontFamily: 'Luckiest Guy',
+            color: '#1a052e',
+            stroke: '#1a052e',
+            strokeThickness: 12
+        }).setOrigin(0.5).setDepth(201);
+
+        const textCompletado = this.add.text(W / 2, H / 2 - 50, '¡ESCENARIO COMPLETADO!', {
+            fontSize: '64px',
+            fontFamily: 'Luckiest Guy',
+            color: '#ffcc00',
+            stroke: '#000000',
+            strokeThickness: 10
+        }).setOrigin(0.5).setDepth(202);
+
+        // Título siguiente escenario
+        const textSiguienteSombra = this.add.text(W / 2, H / 2 + 32, `PREPÁRATE PARA EL ${sgteNombre}`, {
+            fontSize: '38px',
+            fontFamily: 'Bubblegum Sans',
+            color: '#1a052e',
+            stroke: '#1a052e',
+            strokeThickness: 8
+        }).setOrigin(0.5).setDepth(201);
+
+        const textSiguiente = this.add.text(W / 2, H / 2 + 30, `PREPÁRATE PARA EL ${sgteNombre}`, {
+            fontSize: '38px',
+            fontFamily: 'Bubblegum Sans',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 6
+        }).setOrigin(0.5).setDepth(202);
+
+        // Crear degradado en el texto de completado
+        const gradient = textCompletado.context.createLinearGradient(0, 0, 0, 50);
+        gradient.addColorStop(0, '#ffeb3b');
+        gradient.addColorStop(1, '#ff9800');
+        textCompletado.setFill(gradient);
+
+        this.sound.play('victoria', { volume: 0.7 });
+
+        this.tweens.add({
+            targets: [textCompletado, textCompletadoSombra, textSiguiente, textSiguienteSombra],
+            scale: { start: 0.8, end: 1 },
+            duration: 500,
+            ease: 'Back.easeOut'
+        });
+
+        // 7. Reanudar juego tras 2.5 segundos con cuenta regresiva automática
+        this.time.delayedCall(2500, () => {
+            textCompletado.destroy();
+            textCompletadoSombra.destroy();
+            textSiguiente.destroy();
+            textSiguienteSombra.destroy();
+            overlay.destroy();
+            this.enTransicion = false;
+
+            // Iniciar cuenta regresiva para el siguiente escenario
+            this._iniciarContador();
         });
     }
 
@@ -998,7 +1073,7 @@ export class AnimalesScene extends Phaser.Scene {
     }
 
     _spawnEnemigo(specificAnim = null) {
-        if (!this.juegoActivo) return;
+        if (!this.juegoActivo || this.enTransicion) return;
 
         const pool = ANIMAL_POOLS[this.escenarioActual] || ANIMAL_POOLS['scenery_bosque'];
         // Ensure specificAnim is an animal object and not a TimerEvent or similar argument
@@ -1088,7 +1163,7 @@ export class AnimalesScene extends Phaser.Scene {
             ease: 'Back.easeOut'
         });
 
-        enemigo.speed = 2.0;
+        enemigo.speed = 2.0 + (this.playlistIndex * 0.8);
         enemigo.targetY = this.H - 120;
         enemigo.spawnY = y;
         enemigo.spawnX = x;
@@ -1242,6 +1317,16 @@ export class AnimalesScene extends Phaser.Scene {
             this.particles.setPosition(enemigo.x, enemigo.y);
             this.particles.explode(20);
             this.sound.play('pop');
+
+            // Verificar si alcanzamos la meta del escenario actual
+            const scoreGoal = (this.playlistIndex + 1) * 1000;
+            if (this.puntaje >= scoreGoal) {
+                if (this.playlistIndex < 3) {
+                    this._transicionSiguienteEscenario();
+                } else {
+                    this._gameWin();
+                }
+            }
         }
         if (enemigo.timerText) enemigo.timerText.destroy();
         enemigo.destroy();
@@ -1250,6 +1335,11 @@ export class AnimalesScene extends Phaser.Scene {
     _danoJaula() {
         this.energia -= 10;
         this._updateBarraEnergia();
+
+        // Reproducir sonido de impacto aleatorio en la jaula
+        const golpeSounds = ['animal_golpe1', 'animal_golpe2', 'animal_golpe3', 'animal_golpe4'];
+        const randomGolpe = Phaser.Utils.Array.GetRandom(golpeSounds);
+        this.sound.play(randomGolpe, { volume: 0.8 });
 
         this.cameras.main.shake(200, 0.02);
         this.jaula.setTint(0xff0000);
@@ -1270,6 +1360,14 @@ export class AnimalesScene extends Phaser.Scene {
         // Ahora escuchamos al puerto 8081 (LiDAR)
         if (data.port !== 8081) return;
 
+        // Si estamos en el menú de selección, cualquier toque del LiDAR inicia el juego
+        if (this.estado === 'seleccion') {
+            this.sound.play('pop');
+            this.cameras.main.flash(400, 255, 255, 255);
+            this._iniciarJuego('scenery_bosque');
+            return;
+        }
+
         if (data.touches && data.touches.length > 0) {
             data.touches.forEach(touch => {
                 this._checkHit(touch.x, touch.y);
@@ -1284,7 +1382,13 @@ export class AnimalesScene extends Phaser.Scene {
 
         this.enemigos.getChildren().forEach(enemigo => {
             const dist = Phaser.Math.Distance.Between(x, y, enemigo.x, enemigo.y);
-            const hitRadius = Math.max(120, 200 * enemigo.scale);
+            // Usar la dimensión real visual en pantalla (displayWidth/displayHeight)
+            // de esta manera el radio de colisión escala perfectamente con el tamaño del animal
+            const halfWidth = (enemigo.displayWidth || 0) / 2;
+            const halfHeight = (enemigo.displayHeight || 0) / 2;
+            const sizeRadius = Math.max(halfWidth, halfHeight) * 1.35; // 35% de margen adicional para facilidad de toque
+            const hitRadius = Math.max(130, sizeRadius); // Mínimo 130 píxeles de tolerancia para animales pequeños
+
             if (dist < hitRadius) {
                 this._eliminarEnemigo(enemigo, true);
             }
@@ -1319,27 +1423,25 @@ export class AnimalesScene extends Phaser.Scene {
 
         const { width: W, height: H } = this.scale;
 
-        // 🎥 REPRODUCIR VIDEO FINAL (Cubre toda la pantalla)
-        const videoFinal = this.add.video(W / 2, H / 2, 'final');
-        videoFinal.setDepth(300);
-        videoFinal.play();
+        // 🎥 REPRODUCIR VIDEO DE DERROTA (Cubre toda la pantalla)
+        const videoDerrota = this.add.video(W / 2, H / 2, 'perdio');
+        videoDerrota.setDepth(300);
+        videoDerrota.play();
 
         // Escalar manteniendo la relación de aspecto original (sin estirar) y cubriendo la pantalla
-        videoFinal.on('play', () => {
-            if (videoFinal.width > 0 && videoFinal.height > 0) {
-                const scaleX = W / videoFinal.width;
-                const scaleY = H / videoFinal.height;
+        videoDerrota.on('play', () => {
+            if (videoDerrota.width > 0 && videoDerrota.height > 0) {
+                const scaleX = W / videoDerrota.width;
+                const scaleY = H / videoDerrota.height;
                 const scale = Math.max(scaleX, scaleY);
-                videoFinal.setScale(scale);
+                videoDerrota.setScale(scale);
 
                 // Ajuste milimétrico perfecto: ligeramente por debajo de la mitad.
-                // Esto desplaza el video exactamente para que el rostro y la capucha
-                // se encuadren con una armonía de pantalla insuperable.
-                videoFinal.y = H / 2 + 10;
+                videoDerrota.y = H / 2 + 10;
             }
         });
 
-        // Botón elegante para Saltar el video final (Glassmorphic look)
+        // Botón elegante para Saltar el video (Glassmorphic look)
         const skipText = this.add.text(W - 40, 40, 'SALTAR ⏭', {
             fontSize: '22px',
             fontFamily: 'Luckiest Guy',
@@ -1351,13 +1453,13 @@ export class AnimalesScene extends Phaser.Scene {
         skipText.setShadow(2, 2, '#000000', 4);
 
         let videoFinalizado = false;
-        const terminarVideoFinal = () => {
+        const terminarVideoDerrota = () => {
             if (videoFinalizado) return;
             videoFinalizado = true;
 
             // Limpieza del video e indicador
-            videoFinal.stop();
-            videoFinal.destroy();
+            videoDerrota.stop();
+            videoDerrota.destroy();
             skipText.destroy();
 
             // ─── MOSTRAR PANTALLA DE GAME OVER ORIGINAL ───
@@ -1372,7 +1474,7 @@ export class AnimalesScene extends Phaser.Scene {
             btn.on('pointerdown', () => {
                 this.sound.play('pop');
                 this.sound.stopAll();
-                this.scene.restart({ reintentarEscenario: this.escenarioActual });
+                this.scene.restart({ reintentarEscenario: this.playlistEscenarios[0] });
             });
 
             const btnMenuGO = this.add.text(W / 2, H / 2 + 90, '☰ VOLVER AL MENÚ', {
@@ -1387,12 +1489,155 @@ export class AnimalesScene extends Phaser.Scene {
         };
 
         // Si el video termina solo, mostrar Game Over
-        videoFinal.on('complete', terminarVideoFinal);
+        videoDerrota.on('complete', terminarVideoDerrota);
 
         // Si hacen clic en Saltar, mostrar Game Over
         skipText.on('pointerdown', () => {
             this.sound.play('pop');
-            terminarVideoFinal();
+            terminarVideoDerrota();
+        });
+    }
+
+    _gameWin() {
+        this.juegoActivo = false;
+        this.sound.stopAll();
+
+        const { width: W, height: H } = this.scale;
+
+        // 🎥 REPRODUCIR VIDEO DE VICTORIA (Cubre toda la pantalla)
+        const videoVictoria = this.add.video(W / 2, H / 2, 'final');
+        videoVictoria.setDepth(300);
+        videoVictoria.play();
+
+        // Escalar manteniendo la relación de aspecto original (sin estirar) y cubriendo la pantalla
+        videoVictoria.on('play', () => {
+            if (videoVictoria.width > 0 && videoVictoria.height > 0) {
+                const scaleX = W / videoVictoria.width;
+                const scaleY = H / videoVictoria.height;
+                const scale = Math.max(scaleX, scaleY);
+                videoVictoria.setScale(scale);
+
+                // Ajuste milimétrico perfecto
+                videoVictoria.y = H / 2 + 10;
+            }
+        });
+
+        // Botón elegante para Saltar el video (Glassmorphic look)
+        const skipText = this.add.text(W - 40, 40, 'SALTAR ⏭', {
+            fontSize: '22px',
+            fontFamily: 'Luckiest Guy',
+            color: '#ffffff',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            padding: { x: 20, y: 10 }
+        }).setOrigin(1, 0.5).setDepth(301).setInteractive({ cursor: 'pointer' });
+
+        skipText.setShadow(2, 2, '#000000', 4);
+
+        let videoFinalizado = false;
+        const terminarVideoVictoria = () => {
+            if (videoFinalizado) return;
+            videoFinalizado = true;
+
+            // Limpieza del video e indicador
+            videoVictoria.stop();
+            videoVictoria.destroy();
+            skipText.destroy();
+
+            // ─── MOSTRAR PANTALLA DE VICTORIA ESPECTACULAR ───
+            this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.8).setDepth(100);
+
+            // Generador de partículas doradas cayendo como confeti
+            const winParticles = this.add.particles(0, 0, 'estrella_magica', {
+                x: { min: 0, max: W },
+                y: -10,
+                quantity: 2,
+                frequency: 80,
+                lifespan: 3500,
+                speedY: { min: 80, max: 220 },
+                speedX: { min: -40, max: 40 },
+                scale: { start: 0.8, end: 0.1 },
+                alpha: { start: 1, end: 0 },
+                tint: [0xffd700, 0xffaa00, 0xffff00, 0x00ffff, 0xff00ff],
+                blendMode: 'ADD'
+            }).setDepth(101);
+
+            // Título de victoria con sombra profunda
+            const textWinSombra = this.add.text(W / 2, H / 2 - 103, '¡HAS SALVADO AL HADA!', {
+                fontSize: '64px',
+                fontFamily: 'Luckiest Guy',
+                color: '#1a052e',
+                stroke: '#1a052e',
+                strokeThickness: 15
+            }).setOrigin(0.5).setDepth(102);
+
+            const textWin = this.add.text(W / 2, H / 2 - 100, '¡HAS SALVADO AL HADA!', {
+                fontSize: '64px',
+                fontFamily: 'Luckiest Guy',
+                color: '#ffcc00',
+                stroke: '#000000',
+                strokeThickness: 12
+            }).setOrigin(0.5).setDepth(103);
+
+            // Crear degradado en el texto de victoria
+            const gradient = textWin.context.createLinearGradient(0, 0, 0, 50);
+            gradient.addColorStop(0, '#fff176');
+            gradient.addColorStop(1, '#ff9800');
+            textWin.setFill(gradient);
+
+            // Mostrar el puntaje final obtenido
+            const textScore = this.add.text(W / 2, H / 2 - 10, `PUNTOS TOTALES: ${this.puntaje}`, {
+                fontSize: '38px',
+                fontFamily: 'Bubblegum Sans',
+                color: '#ffffff',
+                stroke: '#000000',
+                strokeThickness: 6
+            }).setOrigin(0.5).setDepth(103);
+
+            // Botón para volver al menú principal
+            const btnMenu = this.add.text(W / 2, H / 2 + 90, '☰ VOLVER AL MENÚ', {
+                fontSize: '28px',
+                fontFamily: 'Luckiest Guy',
+                color: '#ffffff',
+                backgroundColor: '#9c4eb3',
+                padding: { x: 25, y: 12 }
+            }).setOrigin(0.5).setDepth(103).setInteractive({ cursor: 'pointer' });
+
+            btnMenu.on('pointerover', () => {
+                this.tweens.add({ targets: btnMenu, scale: 1.05, duration: 100 });
+                btnMenu.setBackgroundColor('#40c0dd');
+            });
+
+            btnMenu.on('pointerout', () => {
+                this.tweens.add({ targets: btnMenu, scale: 1, duration: 100 });
+                btnMenu.setBackgroundColor('#9c4eb3');
+            });
+
+            btnMenu.on('pointerdown', () => {
+                this.sound.play('pop');
+                winParticles.destroy();
+                this._volverAlMenu();
+            });
+
+            // Animación suave del texto de victoria
+            this.tweens.add({
+                targets: [textWin, textWinSombra],
+                scale: 1.05,
+                duration: 800,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+
+            this.sound.play('victoria', { volume: 0.8 });
+        };
+
+        // Si el video termina solo, mostrar Victoria
+        videoVictoria.on('complete', terminarVideoVictoria);
+
+        // Si hacen clic en Saltar, mostrar Victoria
+        skipText.on('pointerdown', () => {
+            this.sound.play('pop');
+            terminarVideoVictoria();
         });
     }
 
