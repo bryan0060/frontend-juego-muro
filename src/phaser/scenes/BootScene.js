@@ -110,7 +110,12 @@ export class BootScene extends Phaser.Scene {
     this.load.image('scenery_pantano', 'assets/images/animales/pantano.png');
     this.load.image('jaula_hada', 'assets/images/animales/jaula_hada.png');
     this.load.image('hada', 'assets/images/animales/hada.png');
+<<<<<<< Updated upstream
     this.load.image('red', 'assets/images/animales/red.png');
+=======
+    this.load.video('presentacion', 'assets/images/animales/videos/presentacion.mp4');
+    this.load.video('final', 'assets/images/animales/videos/final.mp4');
+>>>>>>> Stashed changes
 
     // Animales del Bosque
     this.load.image('bosque_lobo', 'assets/images/animales/animales%20para%20el%20bosque/lobo.png');
@@ -123,7 +128,15 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bosque_cuervo', 'assets/images/animales/animales%20para%20el%20bosque/cuervo.png');
     this.load.image('bosque_aguila', 'assets/images/animales/animales%20para%20el%20bosque/aguila.png');
     this.load.image('bosque_buho', 'assets/images/animales/animales%20para%20el%20bosque/buho.png');
-    this.load.image('bosque_cazador', 'assets/images/animales/animales%20para%20el%20bosque/cazador.webp');
+    this.load.image('bosque_abeja', 'assets/images/animales/animales%20para%20el%20bosque/abeja.png');
+    this.load.image('bosque_carpintero', 'assets/images/animales/animales%20para%20el%20bosque/carpintero.png');
+    this.load.image('bosque_conejo', 'assets/images/animales/animales%20para%20el%20bosque/conejo.png');
+    this.load.image('bosque_elefante', 'assets/images/animales/animales%20para%20el%20bosque/elefante.png');
+    this.load.image('bosque_gorilla', 'assets/images/animales/animales%20para%20el%20bosque/gorilla.png');
+    this.load.image('bosque_mariposa', 'assets/images/animales/animales%20para%20el%20bosque/mariposa.png');
+    this.load.image('bosque_zorrillo', 'assets/images/animales/animales%20para%20el%20bosque/zorrillo.png');
+    this.load.image('bosque_zorro', 'assets/images/animales/animales%20para%20el%20bosque/zorro.png');
+    this.load.image('bosque_mapache', 'assets/images/animales/animales%20para%20el%20bosque/mapache.png');
 
     // Animales del Desierto
     this.load.image('desierto_araña', 'assets/images/animales/animales%20para%20el%20desierto/ara%C3%B1a.png');
@@ -137,6 +150,11 @@ export class BootScene extends Phaser.Scene {
     this.load.image('desierto_cobra4', 'assets/images/animales/animales%20para%20el%20desierto/cobra4.png');
     this.load.image('desierto_coyote', 'assets/images/animales/animales%20para%20el%20desierto/coyote.png');
     this.load.image('desierto_escorpion', 'assets/images/animales/animales%20para%20el%20desierto/escorpion.png');
+    this.load.image('desierto_armadillo', 'assets/images/animales/animales%20para%20el%20desierto/armadillo.png');
+    this.load.image('desierto_buitre', 'assets/images/animales/animales%20para%20el%20desierto/buitre.png');
+    this.load.image('desierto_correcamino', 'assets/images/animales/animales%20para%20el%20desierto/correcamino.png');
+    this.load.image('desierto_dragondecomodo', 'assets/images/animales/animales%20para%20el%20desierto/dragondecomodo.png');
+    this.load.image('desierto_suricata', 'assets/images/animales/animales%20para%20el%20desierto/suricata.png');
 
     // Animales del Hielo
     this.load.image('hielo_buho', 'assets/images/animales/animales%20para%20el%20hielo/buho.png');
@@ -149,6 +167,8 @@ export class BootScene extends Phaser.Scene {
     this.load.image('hielo_pinguino', 'assets/images/animales/animales%20para%20el%20hielo/pinguino.png');
     this.load.image('hielo_reno', 'assets/images/animales/animales%20para%20el%20hielo/reno.png');
     this.load.image('hielo_zorro', 'assets/images/animales/animales%20para%20el%20hielo/zorro.png');
+    this.load.image('hielo_ardilla', 'assets/images/animales/animales%20para%20el%20hielo/ardilla.png');
+    this.load.image('hielo_frailecillo', 'assets/images/animales/animales%20para%20el%20hielo/frailecillo.png');
 
     // Animales del Pantano
     this.load.image('pantano_capibara', 'assets/images/animales/animales%20para%20el%20pantano/capibara.png');
@@ -166,11 +186,27 @@ export class BootScene extends Phaser.Scene {
     this.load.image('pantano_sapo4', 'assets/images/animales/animales%20para%20el%20pantano/sapo4.png');
     this.load.image('pantano_sapo5', 'assets/images/animales/animales%20para%20el%20pantano/sapo5.png');
     this.load.image('pantano_tortuga', 'assets/images/animales/animales%20para%20el%20pantano/tortuga.png');
+    this.load.image('pantano_castor', 'assets/images/animales/animales%20para%20el%20pantano/castor.png');
+    this.load.image('pantano_flamenco', 'assets/images/animales/animales%20para%20el%20pantano/flamenco.png');
+    this.load.image('pantano_libelula', 'assets/images/animales/animales%20para%20el%20pantano/libelula.png');
 
     this.load.audio('sonido_bosque', 'assets/audio/sonidos%20de%20animales/bosque.mp3');
     this.load.audio('sonido_desierto', 'assets/audio/sonidos%20de%20animales/desierto.mp3');
     this.load.audio('sonido_hielo', 'assets/audio/sonidos%20de%20animales/hielo.mp3');
     this.load.audio('sonido_pantano', 'assets/audio/sonidos%20de%20animales/pantano.mp3');
+    this.load.audio('menu_reyleon', 'assets/audio/sonidos%20de%20animales/esenarios/reyleon.mp3');
+    this.load.audio('menu_monsters', 'assets/audio/sonidos%20de%20animales/esenarios/Monsters,%20Inc..mp3');
+    this.load.audio('menu_aladdin', 'assets/audio/sonidos%20de%20animales/esenarios/Un%20Mundo%20Ideal%20%20Aladdín.mp3');
+    this.load.audio('menu_cancion1', 'assets/audio/sonidos%20de%20animales/esenarios/cancion1.mp3');
+    this.load.audio('menu_cars', 'assets/audio/sonidos%20de%20animales/esenarios/cars.mp3');
+    this.load.audio('menu_cars2', 'assets/audio/sonidos%20de%20animales/esenarios/cars2.mp3');
+    this.load.audio('menu_libro', 'assets/audio/sonidos%20de%20animales/esenarios/libro.mp3');
+    this.load.audio('menu_rio', 'assets/audio/sonidos%20de%20animales/esenarios/Rio.mp3');
+    this.load.audio('menu_sing', 'assets/audio/sonidos%20de%20animales/esenarios/Sing.mp3');
+    this.load.audio('menu_sing2', 'assets/audio/sonidos%20de%20animales/esenarios/Sing2.mp3');
+    this.load.audio('menu_sheck', 'assets/audio/sonidos%20de%20animales/esenarios/sheck.mp3');
+    this.load.audio('menu_shek', 'assets/audio/sonidos%20de%20animales/esenarios/shek.mp3');
+    this.load.audio('menu_zotopia', 'assets/audio/sonidos%20de%20animales/esenarios/zotopia.mp3');
   }
 
   create() {

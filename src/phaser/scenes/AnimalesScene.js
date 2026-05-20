@@ -35,12 +35,172 @@ const CONFIG = {
     }
 };
 
+const SONG_NAMES = {
+    'menu_reyleon': 'Canción 1',
+    'menu_monsters': 'Canción 2',
+    'menu_aladdin': 'Canción 3',
+    'menu_cancion1': 'Canción 4',
+    'menu_cars': 'Canción 5',
+    'menu_cars2': 'Canción 6',
+    'menu_libro': 'Canción 7',
+    'menu_rio': 'Canción 8',
+    'menu_sing': 'Canción 9',
+    'menu_sing2': 'Canción 10',
+    'menu_sheck': 'Canción 11',
+    'menu_shek': 'Canción 12',
+    'menu_zotopia': 'Canción 13'
+};
+
+const ANIMAL_POOLS = {
+    'scenery_bosque': [
+        { key: 'bosque_lobo', scale: 0.25, tipo: 'ground', reverseFlip: true },
+        { key: 'bosque_lobo2', scale: 0.25, tipo: 'ground', reverseFlip: true },
+        { key: 'bosque_lobo3', scale: 0.25, tipo: 'ground', reverseFlip: true },
+        { key: 'bosque_oso', scale: 0.35, tipo: 'ground' },
+        { key: 'bosque_oso2', scale: 0.35, tipo: 'ground' },
+        { key: 'bosque_oso3', scale: 0.35, tipo: 'ground' },
+        { key: 'bosque_serpiente', scale: 0.35, tipo: 'ground' },
+        { key: 'bosque_cuervo', scale: 0.08, tipo: 'flying', reverseFlip: true },
+        { key: 'bosque_aguila', scale: 0.25, tipo: 'flying' },
+        { key: 'bosque_buho', scale: 0.25, tipo: 'flying' },
+        { key: 'bosque_abeja', scale: 0.15, tipo: 'flying', reverseFlip: true },
+        { key: 'bosque_carpintero', scale: 0.2, tipo: 'flying' },
+        { key: 'bosque_conejo', scale: 0.2, tipo: 'ground', reverseFlip: true },
+        { key: 'bosque_elefante', scale: 0.45, tipo: 'ground' },
+        { key: 'bosque_gorilla', scale: 0.35, tipo: 'ground' },
+        { key: 'bosque_mariposa', scale: 0.15, tipo: 'flying' },
+        { key: 'bosque_zorrillo', scale: 0.2, tipo: 'ground', reverseFlip: true },
+        { key: 'bosque_zorro', scale: 0.25, tipo: 'ground' },
+        { key: 'bosque_mapache', scale: 0.2, tipo: 'ground' }
+    ],
+    'scenery_desierto': [
+        { key: 'desierto_araña', scale: 0.25, tipo: 'ground' },
+        { key: 'desierto_ave', scale: 0.25, tipo: 'flying' },
+        { key: 'desierto_buho', scale: 0.25, tipo: 'flying' },
+        { key: 'desierto_camello', scale: 0.45, tipo: 'ground' },
+        { key: 'desierto_canguro', scale: 0.35, tipo: 'ground' },
+        { key: 'desierto_cobra', scale: 0.3, tipo: 'ground' },
+        { key: 'desierto_cobra2', scale: 0.3, tipo: 'ground' },
+        { key: 'desierto_cobra3', scale: 0.3, tipo: 'ground' },
+        { key: 'desierto_cobra4', scale: 0.3, tipo: 'ground' },
+        { key: 'desierto_coyote', scale: 0.25, tipo: 'ground' },
+        { key: 'desierto_escorpion', scale: 0.22, tipo: 'ground' },
+        { key: 'desierto_armadillo', scale: 0.2, tipo: 'ground' },
+        { key: 'desierto_buitre', scale: 0.3, tipo: 'flying' },
+        { key: 'desierto_correcamino', scale: 0.25, tipo: 'ground' },
+        { key: 'desierto_dragondecomodo', scale: 0.3, tipo: 'ground', reverseFlip: true },
+        { key: 'desierto_suricata', scale: 0.2, tipo: 'ground' }
+    ],
+    'scenery_hielo': [
+        { key: 'hielo_buho', scale: 0.25, tipo: 'flying' },
+        { key: 'hielo_foca', scale: 0.35, tipo: 'ground' },
+        { key: 'hielo_leopardo', scale: 0.3, tipo: 'ground' },
+        { key: 'hielo_lobo', scale: 0.3, tipo: 'ground' },
+        { key: 'hielo_mamut', scale: 0.4, tipo: 'ground' },
+        { key: 'hielo_morsa', scale: 0.35, tipo: 'ground' },
+        { key: 'hielo_oso', scale: 0.2, tipo: 'ground' },
+        { key: 'hielo_pinguino', scale: 0.25, tipo: 'ground', reverseFlip: true },
+        { key: 'hielo_reno', scale: 0.35, tipo: 'ground', reverseFlip: true },
+        { key: 'hielo_zorro', scale: 0.25, tipo: 'ground' },
+        { key: 'hielo_frailecillo', scale: 0.2, tipo: 'flying' }
+    ],
+    'scenery_pantano': [
+        { key: 'pantano_capibara', scale: 0.25, tipo: 'ground', reverseFlip: true },
+        { key: 'pantano_cisne', scale: 0.35, tipo: 'ground' },
+        { key: 'pantano_cocodrilo', scale: 0.3, tipo: 'ground', reverseFlip: true },
+        { key: 'pantano_garza', scale: 0.3, tipo: 'flying' },
+        { key: 'pantano_hipopotamo', scale: 0.4, tipo: 'ground', reverseFlip: true },
+        { key: 'pantano_murcielago', scale: 0.25, tipo: 'flying' },
+        { key: 'pantano_nutria', scale: 0.25, tipo: 'ground' },
+        { key: 'pantano_pato_volando', scale: 0.25, tipo: 'flying' },
+        { key: 'pantano_pato', scale: 0.2, tipo: 'ground' },
+        { key: 'pantano_sapo2', scale: 0.15, tipo: 'ground' },
+        { key: 'pantano_sapo3', scale: 0.15, tipo: 'ground' },
+        { key: 'pantano_sapo4', scale: 0.15, tipo: 'ground' },
+        { key: 'pantano_sapo5', scale: 0.15, tipo: 'ground' },
+        { key: 'pantano_tortuga', scale: 0.25, tipo: 'ground' },
+        { key: 'pantano_castor', scale: 0.25, tipo: 'ground' },
+        { key: 'pantano_flamenco', scale: 0.35, tipo: 'ground' },
+        { key: 'pantano_libelula', scale: 0.15, tipo: 'flying' }
+    ]
+};
+
+const SCENARIO_SPAWN_CONFIGS = {
+    'scenery_bosque': {
+        back: {
+            flying: { minX: 300, maxX: 380, minY: 150, maxY: 250 },
+            ground: [
+                // Zona Izquierda (en el fondo, entre los árboles de la izquierda)
+                { minXPercent: 0.15, maxXPercent: 0.30, minYPercent: 0.65, maxYPercent: 0.82 },
+                // Zona Derecha (en el sendero/círculo amarillo)
+                { minXPercent: 0.58, maxXPercent: 0.82, minYPercent: 0.65, maxYPercent: 0.82 }
+            ]
+        },
+        left: {
+            flying: { minX: 100, maxX: 300, minY: 80, maxY: 300 },
+            ground: { minX: 50, maxX: 250, minYOffset: 60, maxYOffset: 150 }
+        },
+        right: {
+            flying: { minXOffset: 300, maxXOffset: 100, minY: 80, maxY: 300 },
+            ground: { minXOffset: 250, maxXOffset: 50, minYOffset: 60, maxYOffset: 150 }
+        },
+        minBackgroundScale: 0.5
+    },
+    'scenery_desierto': {
+        back: {
+            flying: { minX: 300, maxX: 380, minY: 150, maxY: 250 },
+            ground: { minX: 320, maxX: 360, minY: 330, maxY: 350 }
+        },
+        left: {
+            flying: { minX: 100, maxX: 300, minY: 80, maxY: 300 },
+            ground: { minX: 50, maxX: 250, minYOffset: 60, maxYOffset: 150 }
+        },
+        right: {
+            flying: { minXOffset: 300, maxXOffset: 100, minY: 80, maxY: 300 },
+            ground: { minXOffset: 250, maxXOffset: 50, minYOffset: 60, maxYOffset: 150 }
+        },
+        minBackgroundScale: 0.5
+    },
+    'scenery_hielo': {
+        back: {
+            flying: { minX: 300, maxX: 380, minY: 150, maxY: 250 },
+            ground: { minX: 320, maxX: 360, minY: 330, maxY: 350 }
+        },
+        left: {
+            flying: { minX: 100, maxX: 300, minY: 80, maxY: 300 },
+            ground: { minX: 50, maxX: 250, minYOffset: 60, maxYOffset: 150 }
+        },
+        right: {
+            flying: { minXOffset: 300, maxXOffset: 100, minY: 80, maxY: 300 },
+            ground: { minXOffset: 250, maxXOffset: 50, minYOffset: 60, maxYOffset: 150 }
+        },
+        minBackgroundScale: 0.5
+    },
+    'scenery_pantano': {
+        back: {
+            flying: { minX: 300, maxX: 380, minY: 150, maxY: 250 },
+            ground: { minX: 320, maxX: 360, minY: 330, maxY: 350 }
+        },
+        left: {
+            flying: { minX: 100, maxX: 300, minY: 80, maxY: 300 },
+            ground: { minX: 50, maxX: 250, minYOffset: 60, maxYOffset: 150 }
+        },
+        right: {
+            flying: { minXOffset: 300, maxXOffset: 100, minY: 80, maxY: 300 },
+            ground: { minXOffset: 250, maxXOffset: 50, minYOffset: 60, maxYOffset: 150 }
+        },
+        minBackgroundScale: 0.5
+    }
+};
+
 export class AnimalesScene extends Phaser.Scene {
     constructor() {
         super({ key: 'AnimalesScene' });
     }
 
-    init() {
+    init(data) {
+        this.reintentarEscenario = data && data.reintentarEscenario ? data.reintentarEscenario : null;
+
         // Cargar fuentes dinámicamente sin tocar archivos de configuración global
         if (!document.getElementById('animales-fonts-loader')) {
             const link = document.createElement('link');
@@ -81,14 +241,6 @@ export class AnimalesScene extends Phaser.Scene {
         this.puntaje = 0;
         this.esqueletoActual = null;
         this.enemigos = this.add.group();
-        // ── Redes de caza ──
-        this.redIzquierda = this.add.image(-200, this.H * 0.6, 'red').setScale(0.3).setDepth(20).setVisible(false);
-        this.redIzquierda.targetX = -200;
-        this.redIzquierda.targetY = this.H * 0.6;
-
-        this.redDerecha = this.add.image(-200, this.H * 0.6, 'red').setScale(0.3).setDepth(20).setVisible(false);
-        this.redDerecha.targetX = -200;
-        this.redDerecha.targetY = this.H * 0.6;
 
         // Sistema de hold
         this.holdBtn = null;
@@ -138,8 +290,68 @@ export class AnimalesScene extends Phaser.Scene {
         // 5. HUD
         this._buildHUD();
 
-        // 6. Mostrar Menú
-        this._mostrarMenuEscenarios();
+        if (this.reintentarEscenario) {
+            this._iniciarJuego(this.reintentarEscenario);
+        } else {
+            // 6. Mostrar Menú
+            this._mostrarMenuEscenarios();
+
+            // 7. Play Menu Music
+            this._playMenuMusic();
+        }
+    }
+
+    _playMenuMusic(songKey = null) {
+        const menuSongs = [
+            'menu_reyleon',
+            'menu_monsters',
+            'menu_aladdin',
+            'menu_cancion1',
+            'menu_cars',
+            'menu_cars2',
+            'menu_libro',
+            'menu_rio',
+            'menu_sing',
+            'menu_sing2',
+            'menu_sheck',
+            'menu_shek',
+            'menu_zotopia'
+        ];
+
+        if (this.menuMusic) {
+            this.menuMusic.stop();
+        } else {
+            // Limpiar cualquier otra cancion de menu que pudiera estar sonando
+            menuSongs.forEach(song => this.sound.stopByKey(song));
+        }
+
+        let nextSong = songKey;
+        if (!nextSong) {
+            nextSong = Phaser.Utils.Array.GetRandom(menuSongs);
+        }
+        this.currentMenuSongKey = nextSong;
+
+        const playConfig = { loop: true, volume: 0.5 };
+        if (nextSong === 'menu_cancion1') {
+            playConfig.seek = 24;
+        } else if (nextSong === 'menu_cars' || nextSong === 'menu_cars2') {
+            playConfig.seek = 26;
+        } else if (nextSong === 'menu_rio') {
+            playConfig.seek = 7;
+        } else if (nextSong === 'menu_shek') {
+            playConfig.seek = 7;
+        } else if (nextSong === 'menu_sheck') {
+            playConfig.seek = 3;
+        }
+
+        this.menuMusic = this.sound.add(nextSong, playConfig);
+        this.menuMusic.play();
+
+        // Actualizar el texto del botón si existe
+        if (this.btnMusicText && this.btnMusicText.scene) {
+            const friendlyName = SONG_NAMES[nextSong] || 'Canción 1';
+            this.btnMusicText.setText(friendlyName.toUpperCase());
+        }
     }
 
     _mostrarMenuEscenarios() {
@@ -344,6 +556,10 @@ export class AnimalesScene extends Phaser.Scene {
                 glow.lineStyle(4, esc.color, 1);
                 glow.strokeRoundedRect(-205, -105, 410, 210, 12);
 
+                if (this.menuMusic && this.menuMusic.isPlaying) {
+                    this.menuMusic.pause();
+                }
+
                 const soundKey = esc.id.replace('scenery_', 'sonido_');
                 this.sound.play(soundKey, { volume: 1 });
             });
@@ -353,6 +569,10 @@ export class AnimalesScene extends Phaser.Scene {
 
                 const soundKey = esc.id.replace('scenery_', 'sonido_');
                 this.sound.stopByKey(soundKey);
+
+                if (this.menuMusic && this.menuMusic.isPaused) {
+                    this.menuMusic.resume();
+                }
 
                 glow.clear();
                 glow.lineStyle(8, esc.color, 0.3);
@@ -392,40 +612,214 @@ export class AnimalesScene extends Phaser.Scene {
             });
             cardContainer.add([glow, img, labelBg, txt]);
         });
+
+        // Botón Cambiar Canción (Glassmorphism Púrpura, en la esquina inferior derecha)
+        const songBtnContainer = this.add.container(W - 140, H - 45);
+        this.menuContainer.add(songBtnContainer);
+
+        const songBtnBg = this.add.graphics();
+        songBtnBg.fillStyle(0x9c4eb3, 0.9); // Color púrpura vibrante
+        songBtnBg.fillRoundedRect(-100, -20, 200, 40, 10);
+        songBtnBg.lineStyle(2, 0xffffff, 0.5);
+        songBtnBg.strokeRoundedRect(-100, -20, 200, 40, 10);
+        songBtnContainer.add(songBtnBg);
+
+        const friendlyName = SONG_NAMES[this.currentMenuSongKey] || 'Canción 1';
+        this.btnMusicText = this.add.text(0, 0, friendlyName.toUpperCase(), {
+            fontSize: '18px',
+            fontFamily: 'Luckiest Guy',
+            color: '#ffffff'
+        }).setOrigin(0.5).setShadow(2, 2, '#000000', 4);
+        songBtnContainer.add(this.btnMusicText);
+
+        const songBtnArea = this.add.rectangle(0, 0, 200, 40, 0x000000, 0)
+            .setInteractive({ cursor: 'pointer' });
+        songBtnContainer.add(songBtnArea);
+
+        songBtnArea.on('pointerover', () => {
+            this.tweens.add({ targets: songBtnContainer, scale: 1.08, duration: 100 });
+            songBtnBg.clear();
+            songBtnBg.fillStyle(0x40c0dd, 1); // Cambia a cian en hover
+            songBtnBg.fillRoundedRect(-100, -20, 200, 40, 10);
+            songBtnBg.lineStyle(2, 0xffffff, 1);
+            songBtnBg.strokeRoundedRect(-100, -20, 200, 40, 10);
+        });
+
+        songBtnArea.on('pointerout', () => {
+            this.tweens.add({ targets: songBtnContainer, scale: 1.0, duration: 100 });
+            songBtnBg.clear();
+            songBtnBg.fillStyle(0x9c4eb3, 0.9);
+            songBtnBg.fillRoundedRect(-100, -20, 200, 40, 10);
+            songBtnBg.lineStyle(2, 0xffffff, 0.5);
+            songBtnBg.strokeRoundedRect(-100, -20, 200, 40, 10);
+        });
+
+        songBtnArea.on('pointerdown', () => {
+            this.sound.play('pop');
+            const menuSongs = [
+                'menu_reyleon',
+                'menu_monsters',
+                'menu_aladdin',
+                'menu_cancion1',
+                'menu_cars',
+                'menu_cars2',
+                'menu_libro',
+                'menu_rio',
+                'menu_sing',
+                'menu_sing2',
+                'menu_sheck',
+                'menu_shek',
+                'menu_zotopia'
+            ];
+            let currentIndex = menuSongs.indexOf(this.currentMenuSongKey);
+            let nextIndex = (currentIndex + 1) % menuSongs.length;
+            this._playMenuMusic(menuSongs[nextIndex]);
+        });
     }
 
     _iniciarJuego(escenarioId) {
-        this.sensorButtons = [];
         this.menuContainer.destroy();
         this.escenarioActual = escenarioId;
         this.estado = 'jugando';
-        this.juegoActivo = true;
+        this.juegoActivo = false;
 
         const { width: W, height: H } = this.scale;
 
         // Fondo seleccionado
         this.add.image(W / 2, H / 2, escenarioId).setDisplaySize(W, H).setDepth(-1);
 
-        // Mostrar elementos de juego
-        this.jaula.setVisible(true);
-        this.hada.setVisible(true);
-        this.hudGroup.setVisible(true);
-
-        // Detener sonidos de menú y empezar música ambiental en loop
+        // Detener sonidos de menú
         this.sound.stopAll();
-        const soundKey = escenarioId.replace('scenery_', 'sonido_');
-        this.bgMusic = this.sound.add(soundKey, { loop: true, volume: 0.6 });
-        this.bgMusic.play();
 
-        // Luciérnagas
-        this._createFireflies();
+        // Crear elementos de juego pero mantenerlos ocultos temporalmente durante la presentación
+        this.jaula.setVisible(false);
+        this.hada.setVisible(false);
+        this.hudGroup.setVisible(false);
 
-        // Spawn de enemigos
+        // 🎥 REPRODUCIR VIDEO DE PRESENTACIÓN (Cubre toda la pantalla)
+        const videoPresentacion = this.add.video(W / 2, H / 2, 'presentacion');
+        videoPresentacion.setDepth(300);
+        videoPresentacion.play();
+
+        // Escalar manteniendo la relación de aspecto original (sin estirar) y cubriendo la pantalla
+        videoPresentacion.on('play', () => {
+            if (videoPresentacion.width > 0 && videoPresentacion.height > 0) {
+                const scaleX = W / videoPresentacion.width;
+                const scaleY = H / videoPresentacion.height;
+                const scale = Math.max(scaleX, scaleY);
+                videoPresentacion.setScale(scale);
+
+                // Ajuste milimétrico perfecto: ligeramente por debajo de la mitad.
+                // Esto desplaza el video exactamente para que el rostro y la capucha
+                // se encuadren con una armonía de pantalla insuperable.
+                videoPresentacion.y = H / 2 + 10;
+            }
+        });
+
+        // Botón elegante para Saltar el video (Glassmorphic look)
+        const skipText = this.add.text(W - 40, 40, 'SALTAR ⏭', {
+            fontSize: '22px',
+            fontFamily: 'Luckiest Guy',
+            color: '#ffffff',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            padding: { x: 20, y: 10 }
+        }).setOrigin(1, 0.5).setDepth(301).setInteractive({ cursor: 'pointer' });
+
+        // Bordes redondeados y sombra para el botón de saltar
+        skipText.setShadow(2, 2, '#000000', 4);
+
+        let videoFinalizado = false;
+        const terminarIntro = () => {
+            if (videoFinalizado) return;
+            videoFinalizado = true;
+
+            // Limpieza del video e indicador
+            videoPresentacion.stop();
+            videoPresentacion.destroy();
+            skipText.destroy();
+
+            // Activar y mostrar los elementos del juego
+            this.jaula.setVisible(true);
+            this.hada.setVisible(true);
+            this.hudGroup.setVisible(true);
+
+            // Empezar música ambiental en loop
+            const soundKey = escenarioId.replace('scenery_', 'sonido_');
+            this.bgMusic = this.sound.add(soundKey, { loop: true, volume: 0.6 });
+            this.bgMusic.play();
+
+            // Luciérnagas
+            this._createFireflies();
+
+            // Iniciar el contador de cuenta regresiva
+            this._iniciarContador();
+        };
+
+        // Si el video termina solo, continuar el juego
+        videoPresentacion.on('complete', terminarIntro);
+
+        // Si el usuario/niño hace clic en Saltar, continuar el juego
+        skipText.on('pointerdown', () => {
+            this.sound.play('pop');
+            terminarIntro();
+        });
+    }
+
+    _iniciarContador() {
+        const { width: W, height: H } = this.scale;
+        let conteo = 3;
+
+        const rect = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.5).setDepth(200);
+        const textoContador = this.add.text(W / 2, H / 2, conteo.toString(), {
+            fontSize: '150px', fontFamily: 'Luckiest Guy', color: '#ffcc00', stroke: '#000', strokeThickness: 15
+        }).setOrigin(0.5).setDepth(201);
+
+        this.sound.play('tick');
+        this.tweens.add({
+            targets: textoContador,
+            scale: { start: 1.5, end: 1 },
+            duration: 300,
+            ease: 'Bounce.easeOut'
+        });
+
         this.time.addEvent({
-            delay: CONFIG.spawnRate,
-            callback: this._spawnEnemigo,
-            callbackScope: this,
-            loop: true
+            delay: 1000,
+            repeat: 3,
+            callback: () => {
+                conteo--;
+                if (conteo > 0) {
+                    textoContador.setText(conteo.toString());
+                    this.sound.play('tick');
+                    this.tweens.add({
+                        targets: textoContador,
+                        scale: { start: 1.5, end: 1 },
+                        duration: 300,
+                        ease: 'Bounce.easeOut'
+                    });
+                } else if (conteo === 0) {
+                    textoContador.setText('¡YA!');
+                    textoContador.setColor('#00ff00');
+                    this.sound.play('pop');
+                    this.tweens.add({
+                        targets: textoContador,
+                        scale: { start: 2, end: 1 },
+                        duration: 300,
+                        ease: 'Bounce.easeOut'
+                    });
+                } else {
+                    textoContador.destroy();
+                    rect.destroy();
+                    this.juegoActivo = true;
+
+                    // Spawn de enemigos
+                    this.time.addEvent({
+                        delay: CONFIG.spawnRate,
+                        callback: this._spawnEnemigo,
+                        callbackScope: this,
+                        loop: true
+                    });
+                }
+            }
         });
     }
 
@@ -477,20 +871,111 @@ export class AnimalesScene extends Phaser.Scene {
         }).setShadow(1, 1, '#000', 2);
         this.hudGroup.add(energyLabel);
 
-        // Botón Menú
-        this.btnMenu = this.add.text(this.W - 30, this.H - 30, '☰', {
-            fontSize: '32px', color: '#ffffff', alpha: 0.2
-        }).setOrigin(1).setInteractive({ cursor: 'pointer' });
-        this.btnMenu.on('pointerover', () => this.btnMenu.setAlpha(1));
-        this.btnMenu.on('pointerout', () => this.btnMenu.setAlpha(0.2));
-        this.btnMenu.on('pointerdown', () => {
+        // 3. Botón para abrir panel de animales
+        const btnSpawnX = this.W / 2;
+        const btnSpawnY = hudY + 10;
+        const btnSpawnBg = this.add.graphics();
+        btnSpawnBg.fillStyle(0x40c0dd, 1);
+        btnSpawnBg.fillRoundedRect(btnSpawnX - 100, btnSpawnY - 20, 200, 40, 10);
+        btnSpawnBg.lineStyle(2, 0xffffff, 1);
+        btnSpawnBg.strokeRoundedRect(btnSpawnX - 100, btnSpawnY - 20, 200, 40, 10);
+
+        const btnSpawnText = this.add.text(btnSpawnX, btnSpawnY, 'ELEGIR ANIMALES', {
+            fontSize: '20px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+        }).setOrigin(0.5).setShadow(2, 2, '#000000', 4);
+
+        const btnSpawnArea = this.add.rectangle(btnSpawnX, btnSpawnY, 200, 40, 0x000000, 0)
+            .setInteractive({ cursor: 'pointer' });
+
+        btnSpawnArea.on('pointerdown', () => {
             this.sound.play('pop');
-            this._volverAlMenu();
+            this._toggleMenuAnimales();
         });
-        this.hudGroup.add(this.btnMenu);
+
+        this.hudGroup.add(btnSpawnBg);
+        this.hudGroup.add(btnSpawnText);
+        this.hudGroup.add(btnSpawnArea);
 
         // Ocultar HUD inicialmente
         this.hudGroup.setVisible(false);
+    }
+
+    _toggleMenuAnimales() {
+        if (this.menuAnimalesContainer) {
+            this.menuAnimalesContainer.destroy();
+            this.menuAnimalesContainer = null;
+            return;
+        }
+
+        this.menuAnimalesContainer = this.add.container(this.W / 2, this.H / 2).setDepth(1000);
+
+        // Fondo semi-transparente para cerrar
+        const overlay = this.add.rectangle(0, 0, this.W, this.H, 0x000000, 0.6)
+            .setInteractive()
+            .on('pointerdown', () => this._toggleMenuAnimales());
+        this.menuAnimalesContainer.add(overlay);
+
+        const panelW = 800;
+        const panelH = 500;
+        const panelBg = this.add.graphics();
+        panelBg.fillStyle(0x2e1a4e, 0.95);
+        panelBg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 20);
+        panelBg.lineStyle(4, 0x40c0dd, 1);
+        panelBg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 20);
+        this.menuAnimalesContainer.add(panelBg);
+
+        const titulo = this.add.text(0, -panelH / 2 + 40, 'SELECCIONA UN ANIMAL PARA ENVIARLO', {
+            fontSize: '32px', fontFamily: 'Bubblegum Sans', color: '#ffffff'
+        }).setOrigin(0.5);
+        this.menuAnimalesContainer.add(titulo);
+
+        const pool = ANIMAL_POOLS[this.escenarioActual] || ANIMAL_POOLS['scenery_bosque'];
+        const cols = 5;
+        const cellW = 140;
+        const cellH = 100;
+        const startX = -panelW / 2 + (panelW - (cols * cellW)) / 2 + cellW / 2;
+        const startY = -panelH / 2 + 120;
+
+        pool.forEach((anim, i) => {
+            const row = Math.floor(i / cols);
+            const col = i % cols;
+            const x = startX + col * cellW;
+            const y = startY + row * cellH;
+
+            const card = this.add.container(x, y);
+
+            const cardBg = this.add.graphics();
+            cardBg.fillStyle(0x000000, 0.5);
+            cardBg.fillRoundedRect(-50, -40, 100, 80, 10);
+            cardBg.lineStyle(2, 0xffffff, 0.5);
+            cardBg.strokeRoundedRect(-50, -40, 100, 80, 10);
+
+            // Icono del animal (escalado para caber en el recuadro)
+            const icon = this.add.image(0, 0, anim.key);
+            // Asegurarse de que cabe en 80x60
+            const scale = Math.min(80 / icon.width, 60 / icon.height);
+            icon.setScale(scale);
+
+            const hitArea = this.add.rectangle(0, 0, 100, 80, 0x000000, 0).setInteractive({ cursor: 'pointer' });
+            hitArea.on('pointerdown', () => {
+                this.sound.play('pop');
+                this._spawnEnemigo(anim);
+                this._toggleMenuAnimales(); // Cierra el menú al seleccionar
+            });
+
+            card.add([cardBg, icon, hitArea]);
+            this.menuAnimalesContainer.add(card);
+        });
+
+        // Botón cerrar
+        const btnCerrar = this.add.text(0, panelH / 2 - 40, 'CERRAR', {
+            fontSize: '24px', fontFamily: 'Bangers', color: '#ffffff', backgroundColor: '#ff3344', padding: { x: 20, y: 10 }
+        }).setOrigin(0.5).setInteractive({ cursor: 'pointer' });
+        btnCerrar.on('pointerdown', () => {
+            this.sound.play('pop');
+            this._toggleMenuAnimales();
+        });
+        this.menuAnimalesContainer.add(btnCerrar);
     }
 
     _updateBarraEnergia() {
@@ -516,69 +1001,12 @@ export class AnimalesScene extends Phaser.Scene {
         this.barraEnergia.fillRoundedRect(energyX, hudY, barWidth * pct, barHeight / 2, { tl: 8, tr: 8, bl: 0, br: 0 });
     }
 
-    _spawnEnemigo() {
+    _spawnEnemigo(specificAnim = null) {
         if (!this.juegoActivo) return;
 
-        const pools = {
-            'scenery_bosque': [
-                { key: 'bosque_lobo', scale: 0.25, tipo: 'ground', reverseFlip: true },
-                { key: 'bosque_lobo2', scale: 0.25, tipo: 'ground', reverseFlip: true },
-                { key: 'bosque_lobo3', scale: 0.25, tipo: 'ground', reverseFlip: true },
-                { key: 'bosque_oso', scale: 0.35, tipo: 'ground' },
-                { key: 'bosque_oso2', scale: 0.35, tipo: 'ground' },
-                { key: 'bosque_oso3', scale: 0.35, tipo: 'ground' },
-                { key: 'bosque_serpiente', scale: 0.35, tipo: 'ground' },
-                { key: 'bosque_cuervo', scale: 0.08, tipo: 'flying', reverseFlip: true },
-                { key: 'bosque_aguila', scale: 0.25, tipo: 'flying' },
-                { key: 'bosque_buho', scale: 0.25, tipo: 'flying' },
-                { key: 'bosque_cazador', scale: 0.15, tipo: 'ground', reverseFlip: true }
-            ],
-            'scenery_desierto': [
-                { key: 'desierto_araña', scale: 0.25, tipo: 'ground' },
-                { key: 'desierto_ave', scale: 0.25, tipo: 'flying' },
-                { key: 'desierto_buho', scale: 0.25, tipo: 'flying' },
-                { key: 'desierto_camello', scale: 0.45, tipo: 'ground' },
-                { key: 'desierto_canguro', scale: 0.35, tipo: 'ground' },
-                { key: 'desierto_cobra', scale: 0.3, tipo: 'ground' },
-                { key: 'desierto_cobra2', scale: 0.3, tipo: 'ground' },
-                { key: 'desierto_cobra3', scale: 0.3, tipo: 'ground' },
-                { key: 'desierto_cobra4', scale: 0.3, tipo: 'ground' },
-                { key: 'desierto_coyote', scale: 0.25, tipo: 'ground' },
-                { key: 'desierto_escorpion', scale: 0.1, tipo: 'ground' }
-            ],
-            'scenery_hielo': [
-                { key: 'hielo_buho', scale: 0.25, tipo: 'flying' },
-                { key: 'hielo_foca', scale: 0.35, tipo: 'ground' },
-                { key: 'hielo_leopardo', scale: 0.3, tipo: 'ground' },
-                { key: 'hielo_lobo', scale: 0.3, tipo: 'ground' },
-                { key: 'hielo_mamut', scale: 0.4, tipo: 'ground' },
-                { key: 'hielo_morsa', scale: 0.35, tipo: 'ground' },
-                { key: 'hielo_oso', scale: 0.35, tipo: 'ground' },
-                { key: 'hielo_pinguino', scale: 0.25, tipo: 'ground' },
-                { key: 'hielo_reno', scale: 0.35, tipo: 'ground' },
-                { key: 'hielo_zorro', scale: 0.25, tipo: 'ground' }
-            ],
-            'scenery_pantano': [
-                { key: 'pantano_capibara', scale: 0.25, tipo: 'ground' },
-                { key: 'pantano_cisne', scale: 0.35, tipo: 'ground' },
-                { key: 'pantano_cocodrilo', scale: 0.45, tipo: 'ground' },
-                { key: 'pantano_garza', scale: 0.3, tipo: 'flying' },
-                { key: 'pantano_hipopotamo', scale: 0.45, tipo: 'ground' },
-                { key: 'pantano_murcielago', scale: 0.25, tipo: 'flying' },
-                { key: 'pantano_nutria', scale: 0.25, tipo: 'ground' },
-                { key: 'pantano_pato_volando', scale: 0.25, tipo: 'flying' },
-                { key: 'pantano_pato', scale: 0.2, tipo: 'ground' },
-                { key: 'pantano_sapo', scale: 0.15, tipo: 'ground' },
-                { key: 'pantano_sapo2', scale: 0.15, tipo: 'ground' },
-                { key: 'pantano_sapo3', scale: 0.15, tipo: 'ground' },
-                { key: 'pantano_sapo4', scale: 0.15, tipo: 'ground' },
-                { key: 'pantano_sapo5', scale: 0.15, tipo: 'ground' },
-                { key: 'pantano_tortuga', scale: 0.25, tipo: 'ground' }
-            ]
-        };
-
-        const pool = pools[this.escenarioActual] || pools['scenery_bosque'];
-        const anim = Phaser.Utils.Array.GetRandom(pool);
+        const pool = ANIMAL_POOLS[this.escenarioActual] || ANIMAL_POOLS['scenery_bosque'];
+        // Ensure specificAnim is an animal object and not a TimerEvent or similar argument
+        const anim = (specificAnim && specificAnim.key) ? specificAnim : Phaser.Utils.Array.GetRandom(pool);
 
         let x, y;
         const side = Math.random() > 0.5 ? 'left' : 'right';
@@ -602,7 +1030,7 @@ export class AnimalesScene extends Phaser.Scene {
 
         this.tweens.add({
             targets: enemigo,
-            scale: enemigo.baseScale,
+            entryScaleMultiplier: 1,
             duration: 300,
             ease: 'Back.easeOut'
         });
@@ -686,11 +1114,13 @@ export class AnimalesScene extends Phaser.Scene {
                     enemigo.estado = 'atacando';
                     enemigo.timerText.setVisible(false);
                     // Efecto de aviso antes de atacar
+                    enemigo.escalaAtaque = 1.0;
                     this.tweens.add({
                         targets: enemigo,
-                        scale: enemigo.baseScale * 1.3,
+                        escalaAtaque: 1.3,
                         duration: 100,
-                        yoyo: true
+                        yoyo: true,
+                        onComplete: () => { enemigo.escalaAtaque = 1.0; }
                     });
                 }
             } else {
@@ -711,13 +1141,42 @@ export class AnimalesScene extends Phaser.Scene {
             }
 
             // Escala basada en la profundidad (Y) para efecto 3D
-            const factorY = (enemigo.y / this.H);
-            const currentScale = enemigo.baseScale * (0.8 + factorY * 0.4);
+            let currentScale;
+            if (enemigo.spawnSide === 'back') {
+                // Si aparece desde el fondo (horizonte), empieza con minBackgroundScale y se agranda hasta su tamaño base
+                const totalDistY = enemigo.targetY - enemigo.spawnY;
+                const currentDistY = enemigo.y - enemigo.spawnY;
+                const progress = totalDistY > 0 ? Phaser.Math.Clamp(currentDistY / totalDistY, 0, 1) : 1;
+
+                const config = SCENARIO_SPAWN_CONFIGS[this.escenarioActual] || SCENARIO_SPAWN_CONFIGS['scenery_bosque'];
+                const minScaleMult = config.minBackgroundScale !== undefined ? config.minBackgroundScale : 0.5;
+                const scaleMultiplier = minScaleMult + progress * (1 - minScaleMult);
+                currentScale = enemigo.baseScale * scaleMultiplier;
+            } else {
+                // Spawns normales de izquierda/derecha
+                const factorY = (enemigo.y / this.H);
+                currentScale = enemigo.baseScale * (0.8 + factorY * 0.4);
+            }
+
+            // Aplicar el multiplicador de escala de la animación de entrada
+            if (enemigo.entryScaleMultiplier !== undefined) {
+                currentScale *= enemigo.entryScaleMultiplier;
+            }
+
+            // Para mantener el efecto del tween de aviso de ataque
+            if (enemigo.escalaAtaque) {
+                currentScale *= enemigo.escalaAtaque;
+            }
+
             enemigo.setScale(currentScale);
 
             if (enemigo.timerText) {
                 enemigo.timerText.x = enemigo.x;
                 enemigo.timerText.y = enemigo.y - (enemigo.displayHeight / 2 + 30);
+
+                // Escalar el texto del temporizador según el tamaño del enemigo (legibilidad mínima de 0.5)
+                const textScale = Math.max(0.5, currentScale / enemigo.baseScale);
+                enemigo.timerText.setScale(textScale);
             }
         });
     }
@@ -754,71 +1213,15 @@ export class AnimalesScene extends Phaser.Scene {
     _onWsMessage(event) {
         const data = event.detail;
 
-        // ── Puerto 8081 — LiDAR ──
-        if (data.port === 8081) {
-            let x, y;
-            if (data.touches?.length > 0) {
-                x = data.touches[0].x;
-                y = data.touches[0].y;
-            } else if (data.x !== undefined) {
-                x = data.x;
-                y = data.y;
-            } else return;
+        // Ahora escuchamos al puerto 8081 (LiDAR)
+        if (data.port !== 8081) return;
 
-            // Botones del menú de escenarios
-            if (this.sensorButtons?.length > 0) {
-                for (const btn of this.sensorButtons) {
-                    if (
-                        x >= btn.absX - btn.w / 2 &&
-                        x <= btn.absX + btn.w / 2 &&
-                        y >= btn.absY - btn.h / 2 &&
-                        y <= btn.absY + btn.h / 2
-                    ) {
-                        btn.callback();
-                        return;
-                    }
-                }
-            }
-
-            // Golpear enemigos con LiDAR si el juego está activo
-            if (this.juegoActivo) this._checkHit(x, y);
-            return;
-        }
-
-        // ── Puerto 8080 — Cámara ──
-        if (data.port !== 8080) return;
-        if (data.juego_activo !== 'impacto') return;
-        if (!data.impacto) return;
-        if (!this.juegoActivo) return;
-
-        const { mano_izquierda, mano_derecha } = data.impacto;
-
-        const remapX = (x) => {
-            const xMin = parseFloat(import.meta.env.VITE_REMAP_X_MIN ?? 0.1);
-            const xMax = parseFloat(import.meta.env.VITE_REMAP_X_MAX ?? 0.9);
-            return Math.max(0, Math.min(1, (x - xMin) / (xMax - xMin)));
-        };
-
-        const remapY = (y) => {
-            const yMin = parseFloat(import.meta.env.VITE_REMAP_Y_MIN ?? 0.1);
-            const yMax = parseFloat(import.meta.env.VITE_REMAP_Y_MAX ?? 0.8);
-            return Math.max(0, Math.min(1, (y - yMin) / (yMax - yMin)));
-        };
-
-        if (mano_izquierda?.visible) {
-            this.redIzquierda.targetX = (1 - remapX(mano_izquierda.x)) * this.W;
-            this.redIzquierda.targetY = remapY(mano_izquierda.y) * this.H;
-            this.redIzquierda.setVisible(true);
-        } else {
-            this.redIzquierda.setVisible(false);
-        }
-
-        if (mano_derecha?.visible) {
-            this.redDerecha.targetX = (1 - remapX(mano_derecha.x)) * this.W;
-            this.redDerecha.targetY = remapY(mano_derecha.y) * this.H;
-            this.redDerecha.setVisible(true);
-        } else {
-            this.redDerecha.setVisible(false);
+        if (data.touches && data.touches.length > 0) {
+            data.touches.forEach(touch => {
+                this._checkHit(touch.x, touch.y);
+            });
+        } else if (data.x !== undefined && data.y !== undefined) {
+            this._checkHit(data.x, data.y);
         }
     }
 
@@ -843,7 +1246,9 @@ export class AnimalesScene extends Phaser.Scene {
             if (e.timerText) e.timerText.destroy();
             e.destroy();
         });
-        this.scene.restart();
+        // Reiniciar la escena limpiando explícitamente el escenario a reintentar
+        // de esta manera Phaser 3 no mantiene la data del reintento anterior
+        this.scene.restart({ reintentarEscenario: null });
     }
 
     returnToMenu() {
@@ -856,28 +1261,85 @@ export class AnimalesScene extends Phaser.Scene {
 
     _gameOver() {
         this.juegoActivo = false;
-        this.add.rectangle(this.W / 2, this.H / 2, this.W, this.H, 0x000000, 0.7).setDepth(100);
-        this.add.text(this.W / 2, this.H / 2 - 80, 'EL HADA SE QUEDÓ SIN ENERGÍA', {
-            fontSize: '48px', color: '#ff0000', fontFamily: 'Arial Black'
-        }).setOrigin(0.5).setDepth(101);
+        this.sound.stopAll();
 
-        const btn = this.add.text(this.W / 2, this.H / 2 + 20, 'REINTENTAR', {
-            fontSize: '32px', color: '#ffffff', backgroundColor: '#9c4eb3', padding: { x: 20, y: 10 }
-        }).setOrigin(0.5).setDepth(101).setInteractive({ cursor: 'pointer' });
-        btn.on('pointerdown', () => {
-            this.sound.play('pop');
-            this.scene.restart();
+        const { width: W, height: H } = this.scale;
+
+        // 🎥 REPRODUCIR VIDEO FINAL (Cubre toda la pantalla)
+        const videoFinal = this.add.video(W / 2, H / 2, 'final');
+        videoFinal.setDepth(300);
+        videoFinal.play();
+
+        // Escalar manteniendo la relación de aspecto original (sin estirar) y cubriendo la pantalla
+        videoFinal.on('play', () => {
+            if (videoFinal.width > 0 && videoFinal.height > 0) {
+                const scaleX = W / videoFinal.width;
+                const scaleY = H / videoFinal.height;
+                const scale = Math.max(scaleX, scaleY);
+                videoFinal.setScale(scale);
+
+                // Ajuste milimétrico perfecto: ligeramente por debajo de la mitad.
+                // Esto desplaza el video exactamente para que el rostro y la capucha
+                // se encuadren con una armonía de pantalla insuperable.
+                videoFinal.y = H / 2 + 10;
+            }
         });
 
-        const btnMenuGO = this.add.text(this.W / 2, this.H / 2 + 90, '☰ VOLVER AL MENÚ', {
-            fontSize: '28px', color: '#ffffff', backgroundColor: '#2e1a4e', padding: { x: 20, y: 10 }
-        }).setOrigin(0.5).setDepth(101).setInteractive({ cursor: 'pointer' });
-        btnMenuGO.on('pointerdown', () => {
-            this.sound.play('pop');
-            this._volverAlMenu();
-        });
+        // Botón elegante para Saltar el video final (Glassmorphic look)
+        const skipText = this.add.text(W - 40, 40, 'SALTAR ⏭', {
+            fontSize: '22px',
+            fontFamily: 'Luckiest Guy',
+            color: '#ffffff',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            padding: { x: 20, y: 10 }
+        }).setOrigin(1, 0.5).setDepth(301).setInteractive({ cursor: 'pointer' });
 
-        this.sound.play('end');
+        skipText.setShadow(2, 2, '#000000', 4);
+
+        let videoFinalizado = false;
+        const terminarVideoFinal = () => {
+            if (videoFinalizado) return;
+            videoFinalizado = true;
+
+            // Limpieza del video e indicador
+            videoFinal.stop();
+            videoFinal.destroy();
+            skipText.destroy();
+
+            // ─── MOSTRAR PANTALLA DE GAME OVER ORIGINAL ───
+            this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setDepth(100);
+            this.add.text(W / 2, H / 2 - 80, 'EL HADA SE QUEDÓ SIN ENERGÍA', {
+                fontSize: '48px', color: '#ff0000', fontFamily: 'Arial Black'
+            }).setOrigin(0.5).setDepth(101);
+
+            const btn = this.add.text(W / 2, H / 2 + 20, 'REINTENTAR', {
+                fontSize: '32px', color: '#ffffff', backgroundColor: '#9c4eb3', padding: { x: 20, y: 10 }
+            }).setOrigin(0.5).setDepth(101).setInteractive({ cursor: 'pointer' });
+            btn.on('pointerdown', () => {
+                this.sound.play('pop');
+                this.sound.stopAll();
+                this.scene.restart({ reintentarEscenario: this.escenarioActual });
+            });
+
+            const btnMenuGO = this.add.text(W / 2, H / 2 + 90, '☰ VOLVER AL MENÚ', {
+                fontSize: '28px', color: '#ffffff', backgroundColor: '#2e1a4e', padding: { x: 20, y: 10 }
+            }).setOrigin(0.5).setDepth(101).setInteractive({ cursor: 'pointer' });
+            btnMenuGO.on('pointerdown', () => {
+                this.sound.play('pop');
+                this._volverAlMenu();
+            });
+
+            this.sound.play('end');
+        };
+
+        // Si el video termina solo, mostrar Game Over
+        videoFinal.on('complete', terminarVideoFinal);
+
+        // Si hacen clic en Saltar, mostrar Game Over
+        skipText.on('pointerdown', () => {
+            this.sound.play('pop');
+            terminarVideoFinal();
+        });
     }
 
     _createFireflies() {
