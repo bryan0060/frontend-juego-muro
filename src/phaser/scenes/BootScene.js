@@ -113,6 +113,8 @@ export class BootScene extends Phaser.Scene {
     // Nota: jaula_hada.png no existe en assets — AnimalesScene genera un fallback programático
     this.load.video('presentacion', 'assets/images/animales/videos/presentacion.mp4');
     this.load.video('final', 'assets/images/animales/videos/final.mp4');
+    this.load.video('perdio', 'assets/images/animales/videos/perdio.mp4');
+    this.load.video('animales_menu_video', 'assets/images/animales/menu.mp4');
 
     // Animales del Bosque
     this.load.image('bosque_lobo', 'assets/images/animales/animales%20para%20el%20bosque/lobo.png');
@@ -191,6 +193,10 @@ export class BootScene extends Phaser.Scene {
     this.load.audio('sonido_desierto', 'assets/audio/sonidos%20de%20animales/desierto.mp3');
     this.load.audio('sonido_hielo', 'assets/audio/sonidos%20de%20animales/hielo.mp3');
     this.load.audio('sonido_pantano', 'assets/audio/sonidos%20de%20animales/pantano.mp3');
+    this.load.audio('animal_golpe1', 'assets/audio/sonidos%20de%20animales/golpes/golpe1.mp3');
+    this.load.audio('animal_golpe2', 'assets/audio/sonidos%20de%20animales/golpes/golpe2.mp3');
+    this.load.audio('animal_golpe3', 'assets/audio/sonidos%20de%20animales/golpes/golpe3.mp3');
+    this.load.audio('animal_golpe4', 'assets/audio/sonidos%20de%20animales/golpes/golpe4.mp3');
     this.load.audio('menu_reyleon', 'assets/audio/sonidos%20de%20animales/esenarios/reyleon.mp3');
     this.load.audio('menu_monsters', 'assets/audio/sonidos%20de%20animales/esenarios/Monsters,%20Inc..mp3');
     this.load.audio('menu_aladdin', 'assets/audio/sonidos%20de%20animales/esenarios/Un%20Mundo%20Ideal%20%20Aladdín.mp3');
