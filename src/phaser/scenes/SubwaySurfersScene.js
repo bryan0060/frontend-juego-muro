@@ -10,6 +10,50 @@ const SCENARIOS = [
 // Mapeo de carril backend → índice de lane Phaser
 const CARRIL_A_LANE = { LEFT: 2, CENTER: 1, RIGHT: 0 };
 
+// Factor de reducción constante para optimizar rendimiento de croma sin alterar aspecto original
+const DOWNSCALE_FACTOR = 4;
+
+// Configuración de escala, posición (offset vertical) y croma para el deslizamiento de cada personaje
+const SLIDE_CONFIGS = {
+  NB1: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 45 }, // Niño Blanco (N-B-D.mp4 ajustado en tamaño y alineado al suelo)
+  NB2: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 45 }, // Niño Moreno (Mismas coordenadas perfectas que el Niño Blanco)
+  NB3: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 45 },
+  NB4: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 45 }
+};
+
+// Configuración de escala, posición (offset) y croma para el salto de cada personaje
+const JUMP_CONFIGS = {
+  NB1: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 45 }, // Niño Blanco (0519 (1).mp4 precargado con coordenadas perfectas del usuario)
+  NB2: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 45 }, // Niño Moreno (Mismas coordenadas perfectas que el Niño Blanco)
+  NB3: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 45 },
+  NB4: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 45 }
+};
+
+// Rutas de los videos de cada personaje (correr/idle, saltar y deslizarse)
+// Para configurar nuevos personajes o cambiar sus videos, solo debes editar las rutas aquí.
+const CHARACTER_VIDEOS = {
+  NB1: { // Personaje 1 (Niño Blanco)
+    run: 'assets/images/subway/Personaje/NB1.webm',
+    jump: 'assets/images/subway/Personaje/niño blanco/0519 (1).mp4',
+    slide: 'assets/images/subway/Personaje/niño blanco/N-B-D.mp4'
+  },
+  NB2: { // Personaje 2 (Niño Moreno)
+    run: 'assets/images/subway/Personaje/NB2.webm',
+    jump: 'assets/images/subway/Personaje/niño moreno/niño moreno saltando.mp4',
+    slide: 'assets/images/subway/Personaje/niño moreno/niño moreno deslizando.mp4'
+  },
+  NB3: { // Personaje 3 (Niña Blanca)
+    run: 'assets/images/subway/Personaje/NB1.webm',
+    jump: null, // Asignar cuando el usuario proporcione el video de salto de la Niña Blanca
+    slide: 'assets/images/subway/Personaje/niña blanca/niña blanca deslizando.mp4'
+  },
+  NB4: { // Personaje 4 (Niña Morena)
+    run: 'assets/images/subway/Personaje/NB2.webm',
+    jump: 'assets/images/subway/Personaje/niña morena/niña morena saltando.mp4',
+    slide: null // Asignar cuando el usuario proporcione el video de deslizamiento de la Niña Morena
+  }
+};
+
 export class SubwaySurfersScene extends Phaser.Scene {
   constructor() {
     super('SubwaySurfersScene');
@@ -44,7 +88,22 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.load.video('loop_piso1', 'assets/images/subway/ESCENARIO PRIMER PISO CC.mp4');
 
     const selectedChar = this.registry.get('personajeId') || 'NB1';
-    this.load.video('player', `assets/images/subway/Personaje/${selectedChar}.webm`);
+    const videos = CHARACTER_VIDEOS[selectedChar] || CHARACTER_VIDEOS.NB1;
+
+    // Video para correr / idle
+    if (videos.run) {
+      this.load.video('player', `${videos.run}?v=${Date.now()}`);
+    }
+
+    // Video de salto (condicional según disponibilidad)
+    if (videos.jump) {
+      this.load.video('player_jump', `${videos.jump}?v=${Date.now()}`);
+    }
+
+    // Video de deslizamiento (condicional según disponibilidad)
+    if (videos.slide) {
+      this.load.video('player_slide', `${videos.slide}?v=${Date.now()}`);
+    }
 
     this.load.image('logo_game', 'assets/images/subway/image26.png');
     this.load.image('obs_castle', 'assets/images/subway/image74.png');
@@ -137,6 +196,47 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.player.addMarker('run', 1, 5);
     this.player.playMarker('run', true);
     this.jumpContainer.add(this.player);
+
+    // Inicializar video de salto si se precargó (se mantiene invisible de fondo)
+    if (this.cache.video.exists('player_jump')) {
+      this.playerJump = this.add.video(0, 0, 'player_jump');
+      this.playerJump.setMute(true);
+      this.playerJump.setVisible(false);
+    } else {
+      this.playerJump = null;
+    }
+
+    // Guardar referencia al personaje seleccionado para su uso posterior
+    const selectedChar = this.registry.get('personajeId') || 'NB1';
+    this.selectedChar = selectedChar;
+
+    // Crear canvas texture para croma en tiempo real y el objeto de imagen correspondiente para deslizamiento
+    if (this.textures.exists('slide_chroma_texture')) {
+      this.textures.remove('slide_chroma_texture');
+    }
+    this.slideCanvas = this.textures.createCanvas('slide_chroma_texture', 300, 300);
+    this.playerSlideImg = this.add.image(0, 0, 'slide_chroma_texture').setOrigin(0.5, 1);
+    this.playerSlideImg.setVisible(false);
+    this.jumpContainer.add(this.playerSlideImg);
+
+    // Crear canvas texture para croma en tiempo real y el objeto de imagen correspondiente para salto
+    if (this.textures.exists('jump_chroma_texture')) {
+      this.textures.remove('jump_chroma_texture');
+    }
+    this.jumpCanvas = this.textures.createCanvas('jump_chroma_texture', 300, 300);
+    this.playerJumpImg = this.add.image(0, 0, 'jump_chroma_texture').setOrigin(0.5, 1);
+    this.playerJumpImg.setVisible(false);
+    this.jumpContainer.add(this.playerJumpImg);
+
+    // Inicializar video de deslizamiento si se precargó (se mantiene invisible de fondo)
+    if (this.cache.video.exists('player_slide')) {
+      this.playerSlide = this.add.video(0, 0, 'player_slide');
+      this.playerSlide.setMute(true);
+      this.playerSlide.setVisible(false);
+    } else {
+      this.playerSlide = null;
+    }
+
     this.playerContainer.setDepth(50);
 
     this.tweens.add({
@@ -320,8 +420,320 @@ export class SubwaySurfersScene extends Phaser.Scene {
     }
     if (this.isGameOver) return;
 
+    // Croma en tiempo real para el deslizamiento del jugador (remueve el fondo negro del video MP4)
+    if (this.isSliding && this.playerSlide && this.playerSlide.video && this.slideCanvas) {
+      try {
+        const video = this.playerSlide.video;
+        if (!video.paused && !video.ended) {
+          const rawWidth = video.videoWidth || 300;
+          const rawHeight = video.videoHeight || 300;
+          
+          if (rawWidth > 0 && rawHeight > 0) {
+            // Downscale by DOWNSCALE_FACTOR to avoid CPU bottleneck / performance drops
+            const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+            const height = Math.round(rawHeight / DOWNSCALE_FACTOR);
+
+            if (this.slideCanvas.width !== width || this.slideCanvas.height !== height) {
+              this.slideCanvas.setSize(width, height);
+              if (this.playerSlideImg) {
+                this.playerSlideImg.setSizeToFrame();
+              }
+            }
+            
+            const ctx = this.slideCanvas.context;
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(video, 0, 0, width, height);
+            
+            const imgData = ctx.getImageData(0, 0, width, height);
+            const data = imgData.data;
+            
+            const charId = this.selectedChar || 'NB1';
+            const config = SLIDE_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
+            const threshold = config.threshold !== undefined ? config.threshold : 45;
+            
+            // Eliminar fondo negro (píxeles donde RGB < threshold)
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i+1];
+              const b = data[i+2];
+              if (r < threshold && g < threshold && b < threshold) {
+                data[i+3] = 0; // Hacer transparente
+              }
+            }
+            ctx.putImageData(imgData, 0, 0);
+            this.slideCanvas.update();
+
+            // Compensar la escala por el downscaling del canvas
+            const scaleMultiplier = rawWidth / width;
+            if (this.playerSlideImg) {
+              this.playerSlideImg.setSizeToFrame();
+              this.playerSlideImg.setScale(config.scale * scaleMultiplier);
+              this.playerSlideImg.x = config.xOffset || 0;
+              this.playerSlideImg.y = config.yOffset;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error al procesar croma en update:', err);
+      }
+    }
+
+    // Croma en tiempo real para el salto del jugador (remueve el fondo negro del video MP4)
+    if (this.isJumping && this.playerJump && this.playerJump.video && this.jumpCanvas) {
+      try {
+        const video = this.playerJump.video;
+        if (!video.paused && !video.ended) {
+          const rawWidth = video.videoWidth || 300;
+          const rawHeight = video.videoHeight || 300;
+          
+          if (rawWidth > 0 && rawHeight > 0) {
+            // Downscale by DOWNSCALE_FACTOR to avoid CPU bottleneck / performance drops
+            const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+            const height = Math.round(rawHeight / DOWNSCALE_FACTOR);
+
+            if (this.jumpCanvas.width !== width || this.jumpCanvas.height !== height) {
+              this.jumpCanvas.setSize(width, height);
+              if (this.playerJumpImg) {
+                this.playerJumpImg.setSizeToFrame();
+              }
+            }
+            
+            const ctx = this.jumpCanvas.context;
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(video, 0, 0, width, height);
+            
+            const imgData = ctx.getImageData(0, 0, width, height);
+            const data = imgData.data;
+            
+            const charId = this.selectedChar || 'NB1';
+            const config = JUMP_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
+            const threshold = config.threshold !== undefined ? config.threshold : 45;
+            
+            // Eliminar fondo negro (píxeles donde RGB < threshold)
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i+1];
+              const b = data[i+2];
+              if (r < threshold && g < threshold && b < threshold) {
+                data[i+3] = 0; // Hacer transparente
+              }
+            }
+            ctx.putImageData(imgData, 0, 0);
+            this.jumpCanvas.update();
+
+            // Compensar la escala por el downscaling del canvas
+            const scaleMultiplier = rawWidth / width;
+            if (this.playerJumpImg) {
+              this.playerJumpImg.setSizeToFrame();
+              this.playerJumpImg.setScale(config.scale * scaleMultiplier);
+              this.playerJumpImg.x = config.xOffset || 0;
+              this.playerJumpImg.y = config.yOffset;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error al procesar croma de salto en update:', err);
+      }
+    }
+
+    // Teclas de Depuración interactiva para Ajustar el Deslizamiento/Salto en tiempo real
+    if (!this._debugKeys) {
+      this._debugKeys = {
+        P: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P),
+        Z: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z),
+        I: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I),
+        K: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K),
+        O: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O),
+        L: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L),
+        U: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.U),
+        J: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.J),
+      };
+    }
+
+    // Toggle modo depura deslizamiento (P)
+    if (Phaser.Input.Keyboard.JustDown(this._debugKeys.P)) {
+      if (this._jumpDebugMode) {
+        this._jumpDebugMode = false;
+        if (this.playerJump) this.playerJump.stop();
+        if (this.playerJumpImg) this.playerJumpImg.setVisible(false);
+      }
+      this._slideDebugMode = !this._slideDebugMode;
+      if (this._slideDebugMode) {
+        this.isSliding = true;
+        this.player.setVisible(false);
+        this.player.stop();
+        if (this.playerSlide) {
+          this.playerSlide.setLoop(true);
+          this.playerSlide.play(true);
+        }
+        if (this.playerSlideImg) {
+          this.playerSlideImg.setVisible(true);
+        }
+        // Pausar temporizador de spawn de obstáculos
+        if (this.spawnTimer) this.spawnTimer.paused = true;
+      } else {
+        this.isSliding = false;
+        if (this.playerSlide) {
+          this.playerSlide.stop();
+        }
+        if (this.playerSlideImg) {
+          this.playerSlideImg.setVisible(false);
+        }
+        this.player.setVisible(true);
+        this.player.playMarker('run', true);
+        if (this.spawnTimer) this.spawnTimer.paused = false;
+        if (this._debugText) this._debugText.setVisible(false);
+      }
+    }
+
+    // Toggle modo depura salto (Z)
+    if (Phaser.Input.Keyboard.JustDown(this._debugKeys.Z)) {
+      if (this._slideDebugMode) {
+        this._slideDebugMode = false;
+        if (this.playerSlide) this.playerSlide.stop();
+        if (this.playerSlideImg) this.playerSlideImg.setVisible(false);
+      }
+      this._jumpDebugMode = !this._jumpDebugMode;
+      if (this._jumpDebugMode) {
+        this.isJumping = true;
+        this.player.setVisible(false);
+        this.player.stop();
+        if (this.playerJump) {
+          this.playerJump.setLoop(true);
+          this.playerJump.play(true);
+        }
+        if (this.playerJumpImg) {
+          this.playerJumpImg.setVisible(true);
+        }
+        // Pausar temporizador de spawn de obstáculos
+        if (this.spawnTimer) this.spawnTimer.paused = true;
+      } else {
+        this.isJumping = false;
+        if (this.playerJump) {
+          this.playerJump.stop();
+        }
+        if (this.playerJumpImg) {
+          this.playerJumpImg.setVisible(false);
+        }
+        this.player.setVisible(true);
+        this.player.playMarker('run', true);
+        if (this.spawnTimer) this.spawnTimer.paused = false;
+        if (this._debugText) this._debugText.setVisible(false);
+      }
+    }
+
+    if (this._slideDebugMode) {
+      const charId = this.selectedChar || 'NB1';
+      const config = SLIDE_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
+
+      if (this._debugKeys.I.isDown) {
+        config.yOffset -= 1;
+      }
+      if (this._debugKeys.K.isDown) {
+        config.yOffset += 1;
+      }
+      if (this._debugKeys.O.isDown) {
+        config.scale += 0.002;
+      }
+      if (this._debugKeys.L.isDown) {
+        config.scale -= 0.002;
+      }
+      if (this._debugKeys.U.isDown) {
+        config.xOffset = (config.xOffset || 0) - 1;
+      }
+      if (this._debugKeys.J.isDown) {
+        config.xOffset = (config.xOffset || 0) + 1;
+      }
+
+      if (this.playerSlideImg) {
+        let scaleMultiplier = 1;
+        if (this.playerSlide && this.playerSlide.video) {
+          const video = this.playerSlide.video;
+          const rawWidth = video.videoWidth || 300;
+          const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+          scaleMultiplier = rawWidth / width;
+        }
+        this.playerSlideImg.setSizeToFrame();
+        this.playerSlideImg.setScale(config.scale * scaleMultiplier);
+        this.playerSlideImg.x = config.xOffset || 0;
+        this.playerSlideImg.y = config.yOffset;
+      }
+
+      if (!this._debugText) {
+        this._debugText = this.add.text(this.scale.width / 2, 250, '', {
+          fontSize: '24px', color: '#ffffff', backgroundColor: 'rgba(0,0,0,0.85)',
+          padding: { x: 15, y: 10 }, align: 'center', stroke: '#00ff00', strokeThickness: 2,
+          fontFamily: 'monospace'
+        }).setOrigin(0.5).setDepth(3000);
+      }
+      this._debugText.setVisible(true);
+      this._debugText.setText(
+        `🛠️ MODO DEPURA DESLIZAMIENTO 🛠️\n\n` +
+        `Mantén presionadas las teclas:\n` +
+        `• I / K : Subir / Bajar (yOffset: ${config.yOffset.toFixed(0)})\n` +
+        `• U / J : Izquierda / Derecha (xOffset: ${(config.xOffset || 0).toFixed(0)})\n` +
+        `• O / L : Agrandar / Achicar (scale: ${config.scale.toFixed(3)})\n\n` +
+        `Presiona 'P' para salir del modo depuración`
+      );
+    }
+
+    if (this._jumpDebugMode) {
+      const charId = this.selectedChar || 'NB1';
+      const config = JUMP_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
+
+      if (this._debugKeys.I.isDown) {
+        config.yOffset -= 1;
+      }
+      if (this._debugKeys.K.isDown) {
+        config.yOffset += 1;
+      }
+      if (this._debugKeys.O.isDown) {
+        config.scale += 0.002;
+      }
+      if (this._debugKeys.L.isDown) {
+        config.scale -= 0.002;
+      }
+      if (this._debugKeys.U.isDown) {
+        config.xOffset = (config.xOffset || 0) - 1;
+      }
+      if (this._debugKeys.J.isDown) {
+        config.xOffset = (config.xOffset || 0) + 1;
+      }
+
+      if (this.playerJumpImg) {
+        let scaleMultiplier = 1;
+        if (this.playerJump && this.playerJump.video) {
+          const video = this.playerJump.video;
+          const rawWidth = video.videoWidth || 300;
+          const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+          scaleMultiplier = rawWidth / width;
+        }
+        this.playerJumpImg.setSizeToFrame();
+        this.playerJumpImg.setScale(config.scale * scaleMultiplier);
+        this.playerJumpImg.x = config.xOffset || 0;
+        this.playerJumpImg.y = config.yOffset;
+      }
+
+      if (!this._debugText) {
+        this._debugText = this.add.text(this.scale.width / 2, 250, '', {
+          fontSize: '24px', color: '#ffffff', backgroundColor: 'rgba(0,0,0,0.85)',
+          padding: { x: 15, y: 10 }, align: 'center', stroke: '#00ffff', strokeThickness: 2,
+          fontFamily: 'monospace'
+        }).setOrigin(0.5).setDepth(3000);
+      }
+      this._debugText.setVisible(true);
+      this._debugText.setText(
+        `🛠️ MODO DEPURA SALTO 🛠️\n\n` +
+        `Mantén presionadas las teclas:\n` +
+        `• I / K : Subir / Bajar (yOffset: ${config.yOffset.toFixed(0)})\n` +
+        `• U / J : Izquierda / Derecha (xOffset: ${(config.xOffset || 0).toFixed(0)})\n` +
+        `• O / L : Agrandar / Achicar (scale: ${config.scale.toFixed(3)})\n\n` +
+        `Presiona 'Z' para salir del modo depuración`
+      );
+    }
+
     // Teclado — sigue funcionando en paralelo al backend
-    if (!this.isIntroPlaying) {
+    if (!this.isIntroPlaying && !this._slideDebugMode && !this._jumpDebugMode) {
       if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this._setLane(Math.max(0, this.currentLane - 1));
       if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this._setLane(Math.min(2, this.currentLane + 1));
       if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) this._jump();
@@ -383,7 +795,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       const verticalDist = Math.abs(obj.y - playerY);
       if (verticalDist < 50 && obj.lane === this.currentLane) {
         if (this.obstacles && this.obstacles.contains(obj)) {
-          if (!this.isJumping) this._gameOver();
+          if (!this.isJumping && !this._slideDebugMode && !this._jumpDebugMode) this._gameOver();
         } else {
           this._collectSun(obj);
         }
@@ -426,29 +838,131 @@ export class SubwaySurfersScene extends Phaser.Scene {
   }
 
   _jump() {
-    if (this.isJumping) return;
+    if (this.isJumping || this.isSliding) return;
     this.isJumping = true;
+
+    // Si tiene video de salto, pausar video de correr y mostrar/reproducir salto
+    if (this.playerJump) {
+      this.player.setVisible(false);
+      this.player.stop();
+
+      // Configurar imagen del salto según el personaje
+      const charId = this.selectedChar || 'NB1';
+      const config = JUMP_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
+      
+      if (this.playerJumpImg) {
+        let scaleMultiplier = DOWNSCALE_FACTOR;
+        if (this.playerJump.video) {
+          const video = this.playerJump.video;
+          const rawWidth = video.videoWidth || 300;
+          const rawHeight = video.videoHeight || 300;
+          if (rawWidth > 0 && rawHeight > 0) {
+            const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+            const height = Math.round(rawHeight / DOWNSCALE_FACTOR);
+            if (this.jumpCanvas.width !== width || this.jumpCanvas.height !== height) {
+              this.jumpCanvas.setSize(width, height);
+            }
+            scaleMultiplier = rawWidth / width;
+          }
+        }
+        this.playerJumpImg.setSizeToFrame();
+        this.playerJumpImg.setScale(config.scale * scaleMultiplier);
+        this.playerJumpImg.x = config.xOffset || 0;
+        this.playerJumpImg.y = config.yOffset;
+        this.playerJumpImg.setVisible(true);
+      }
+
+      this.playerJump.play(false);
+    }
+
     this.tweens.add({
       targets: this.jumpContainer,
       y: -280,
       duration: 400,
       yoyo: true,
       ease: 'Cubic.easeOut',
-      onComplete: () => { this.isJumping = false; this.jumpContainer.y = 0; }
+      onComplete: () => {
+        this.isJumping = false;
+        this.jumpContainer.y = 0;
+
+        if (this.playerJump) {
+          this.playerJump.stop();
+        }
+        if (this.playerJumpImg) {
+          this.playerJumpImg.setVisible(false);
+        }
+
+        // Volver a mostrar y reproducir el video de correr
+        this.player.setVisible(true);
+        this.player.playMarker('run', true);
+      }
     });
   }
 
   _slide() {
-    if (this.isSliding) return;
+    if (this.isSliding || this.isJumping) return;
     this.isSliding = true;
-    this.tweens.add({
-      targets: this.player,
-      scaleY: 0.15,
-      duration: 150,
-      yoyo: true,
-      hold: 600,
-      onComplete: () => { this.isSliding = false; this.player.scaleY = 0.38; }
-    });
+
+    // Si tiene video de deslizamiento, pausar video de correr y mostrar/reproducir deslizamiento
+    if (this.playerSlide) {
+      this.player.setVisible(false);
+      this.player.stop();
+
+      // Configurar imagen del deslizamiento según el personaje
+      const charId = this.selectedChar || 'NB1';
+      const config = SLIDE_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
+      
+      if (this.playerSlideImg) {
+        let scaleMultiplier = DOWNSCALE_FACTOR;
+        if (this.playerSlide.video) {
+          const video = this.playerSlide.video;
+          const rawWidth = video.videoWidth || 300;
+          const rawHeight = video.videoHeight || 300;
+          if (rawWidth > 0 && rawHeight > 0) {
+            const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+            const height = Math.round(rawHeight / DOWNSCALE_FACTOR);
+            if (this.slideCanvas.width !== width || this.slideCanvas.height !== height) {
+              this.slideCanvas.setSize(width, height);
+            }
+            scaleMultiplier = rawWidth / width;
+          }
+        }
+        this.playerSlideImg.setSizeToFrame();
+        this.playerSlideImg.setScale(config.scale * scaleMultiplier);
+        this.playerSlideImg.x = config.xOffset || 0;
+        this.playerSlideImg.y = config.yOffset;
+        this.playerSlideImg.setVisible(true);
+      }
+
+      this.playerSlide.play(false);
+
+      // Duración del video de deslizamiento (aprox 900ms)
+      this.time.delayedCall(900, () => {
+        this.isSliding = false;
+        if (this.playerSlide) {
+          this.playerSlide.stop();
+        }
+        if (this.playerSlideImg) {
+          this.playerSlideImg.setVisible(false);
+        }
+        // Volver a mostrar y reproducir el video de correr
+        this.player.setVisible(true);
+        this.player.playMarker('run', true);
+      });
+    } else {
+      // Comportamiento de respaldo (squish del video de correr)
+      this.tweens.add({
+        targets: this.player,
+        scaleY: 0.15,
+        duration: 150,
+        yoyo: true,
+        hold: 600,
+        onComplete: () => {
+          this.isSliding = false;
+          this.player.scaleY = 0.38;
+        }
+      });
+    }
   }
 
   _collectSun(sun) {
@@ -468,6 +982,14 @@ export class SubwaySurfersScene extends Phaser.Scene {
     if (this.timeScoreTimer) this.timeScoreTimer.destroy();
     if (this.countdownTimer) this.countdownTimer.destroy();
     if (this.introTimerEvent) this.introTimerEvent.destroy();
+
+    // Remover la textura del canvas de croma para evitar colisiones en futuros reinicios
+    if (this.textures.exists('slide_chroma_texture')) {
+      this.textures.remove('slide_chroma_texture');
+    }
+    if (this.textures.exists('jump_chroma_texture')) {
+      this.textures.remove('jump_chroma_texture');
+    }
   }
 
   _drawStaticTrack() { }

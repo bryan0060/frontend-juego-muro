@@ -15,6 +15,50 @@
     href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap"
     rel="stylesheet" />
 
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      const div = document.createElement('div');
+      div.style.position = 'fixed';
+      div.style.bottom = '10px';
+      div.style.left = '10px';
+      div.style.right = '10px';
+      div.style.backgroundColor = 'rgba(220, 53, 69, 0.95)';
+      div.style.color = 'white';
+      div.style.padding = '15px';
+      div.style.zIndex = '9999999';
+      div.style.fontFamily = 'monospace';
+      div.style.fontSize = '13px';
+      div.style.borderRadius = '8px';
+      div.style.maxHeight = '250px';
+      div.style.overflowY = 'auto';
+      div.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+      div.style.border = '2px solid white';
+      div.innerText = '🔴 ERROR DETECTADO EN PANTALLA:\n' + message + '\n\nEn: ' + source + ' (Línea: ' + lineno + ', Columna: ' + colno + ')' + (error && error.stack ? '\n\nPila de ejecución:\n' + error.stack : '');
+      document.body.appendChild(div);
+      return false;
+    };
+    window.onunhandledrejection = function(event) {
+      const div = document.createElement('div');
+      div.style.position = 'fixed';
+      div.style.bottom = '10px';
+      div.style.left = '10px';
+      div.style.right = '10px';
+      div.style.backgroundColor = 'rgba(220, 53, 69, 0.95)';
+      div.style.color = 'white';
+      div.style.padding = '15px';
+      div.style.zIndex = '9999999';
+      div.style.fontFamily = 'monospace';
+      div.style.fontSize = '13px';
+      div.style.borderRadius = '8px';
+      div.style.maxHeight = '250px';
+      div.style.overflowY = 'auto';
+      div.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+      div.style.border = '2px solid white';
+      div.innerText = '🔴 RECHAZO DE PROCESO NO CONTROLADO:\n' + event.reason;
+      document.body.appendChild(div);
+    };
+  </script>
+
 </head>
 
 <body>
