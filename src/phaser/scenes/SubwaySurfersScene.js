@@ -16,17 +16,25 @@ const DOWNSCALE_FACTOR = 4;
 // Configuración de escala, posición (offset vertical) y croma para el deslizamiento de cada personaje
 const SLIDE_CONFIGS = {
   NB1: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 45 }, // Niño Blanco (N-B-D.mp4 ajustado en tamaño y alineado al suelo)
-  NB2: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 45 }, // Niño Moreno (Mismas coordenadas perfectas que el Niño Blanco)
+  NB2: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 4 }, // Niño Moreno (Valores iniciales para 1080p, listos para calibración del nuevo video)
   NB3: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 45 },
-  NB4: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 45 }
+  NB4: { scale: 0.8, xOffset: 0, yOffset: 0, threshold: 45 } // Niña Morena (Imagen PNG estática, valores iniciales listos para calibración)
 };
 
 // Configuración de escala, posición (offset) y croma para el salto de cada personaje
 const JUMP_CONFIGS = {
   NB1: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 45 }, // Niño Blanco (0519 (1).mp4 precargado con coordenadas perfectas del usuario)
-  NB2: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 45 }, // Niño Moreno (Mismas coordenadas perfectas que el Niño Blanco)
-  NB3: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 45 },
+  NB2: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 4 }, // Niño Moreno (Umbral calibrado a 4 para recuperar el cabello al 100%)
+  NB3: { scale: 0.8, xOffset: 0, yOffset: 0, threshold: 45 }, // Niña Blanca (Imagen PNG estática, valores iniciales listos para calibración)
   NB4: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 45 }
+};
+
+// Configuración de escala, posición y croma para correr/idle de cada personaje
+const RUN_CONFIGS = {
+  NB1: { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 },
+  NB2: { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 },
+  NB3: { scale: 0.8, xOffset: 0, yOffset: 0, threshold: 45 }, // Niña Blanca (Video MP4 con fondo negro)
+  NB4: { scale: 0.8, xOffset: 0, yOffset: 0, threshold: 45 }  // Niña Morena (Video MP4 con fondo negro)
 };
 
 // Rutas de los videos de cada personaje (correr/idle, saltar y deslizarse)
@@ -40,17 +48,17 @@ const CHARACTER_VIDEOS = {
   NB2: { // Personaje 2 (Niño Moreno)
     run: 'assets/images/subway/Personaje/NB2.webm',
     jump: 'assets/images/subway/Personaje/niño moreno/niño moreno saltando.mp4',
-    slide: 'assets/images/subway/Personaje/niño moreno/niño moreno deslizando.mp4'
+    slide: 'assets/images/subway/Personaje/niño moreno/verdadero saltando.mp4'
   },
   NB3: { // Personaje 3 (Niña Blanca)
-    run: 'assets/images/subway/Personaje/NB1.webm',
-    jump: null, // Asignar cuando el usuario proporcione el video de salto de la Niña Blanca
-    slide: 'assets/images/subway/Personaje/niña blanca/niña blanca deslizando.mp4'
+    run: 'assets/images/subway/Personaje/niña blanca/niña blanca corriendo.mp4',
+    jump: 'assets/images/subway/Personaje/niña blanca/Niña blanca saltando.png', // <-- Imagen PNG
+    slide: 'assets/images/subway/Personaje/niña blanca/nIña delizando verdadero.mp4'
   },
   NB4: { // Personaje 4 (Niña Morena)
-    run: 'assets/images/subway/Personaje/NB2.webm',
+    run: 'assets/images/subway/Personaje/niña morena/niña morena corriendo.mp4',
     jump: 'assets/images/subway/Personaje/niña morena/niña morena saltando.mp4',
-    slide: null // Asignar cuando el usuario proporcione el video de deslizamiento de la Niña Morena
+    slide: 'assets/images/subway/Personaje/niña morena/Niña morena deslizandose.png' // <-- Imagen PNG
   }
 };
 
@@ -95,14 +103,22 @@ export class SubwaySurfersScene extends Phaser.Scene {
       this.load.video('player', `${videos.run}?v=${Date.now()}`);
     }
 
-    // Video de salto (condicional según disponibilidad)
+    // Video o Imagen de salto (condicional según disponibilidad)
     if (videos.jump) {
-      this.load.video('player_jump', `${videos.jump}?v=${Date.now()}`);
+      if (videos.jump.endsWith('.png') || videos.jump.endsWith('.jpg') || videos.jump.endsWith('.jpeg')) {
+        this.load.image('player_jump_img', `${videos.jump}?v=${Date.now()}`);
+      } else {
+        this.load.video('player_jump', `${videos.jump}?v=${Date.now()}`);
+      }
     }
 
-    // Video de deslizamiento (condicional según disponibilidad)
+    // Video o Imagen de deslizamiento (condicional según disponibilidad)
     if (videos.slide) {
-      this.load.video('player_slide', `${videos.slide}?v=${Date.now()}`);
+      if (videos.slide.endsWith('.png') || videos.slide.endsWith('.jpg') || videos.slide.endsWith('.jpeg')) {
+        this.load.image('player_slide_img', `${videos.slide}?v=${Date.now()}`);
+      } else {
+        this.load.video('player_slide', `${videos.slide}?v=${Date.now()}`);
+      }
     }
 
     this.load.image('logo_game', 'assets/images/subway/image26.png');
@@ -420,57 +436,69 @@ export class SubwaySurfersScene extends Phaser.Scene {
     }
     if (this.isGameOver) return;
 
-    // Croma en tiempo real para el deslizamiento del jugador (remueve el fondo negro del video MP4)
-    if (this.isSliding && this.playerSlide && this.playerSlide.video && this.slideCanvas) {
+    // Croma en tiempo real para el deslizamiento del jugador (remueve el fondo negro de la imagen o del video MP4)
+    if (this.isSliding && this.slideCanvas) {
       try {
-        const video = this.playerSlide.video;
-        if (!video.paused && !video.ended) {
-          const rawWidth = video.videoWidth || 300;
-          const rawHeight = video.videoHeight || 300;
-          
-          if (rawWidth > 0 && rawHeight > 0) {
-            // Downscale by DOWNSCALE_FACTOR to avoid CPU bottleneck / performance drops
-            const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
-            const height = Math.round(rawHeight / DOWNSCALE_FACTOR);
+        let source = null;
+        let rawWidth = 300;
+        let rawHeight = 300;
 
-            if (this.slideCanvas.width !== width || this.slideCanvas.height !== height) {
-              this.slideCanvas.setSize(width, height);
-              if (this.playerSlideImg) {
-                this.playerSlideImg.setSizeToFrame();
-              }
-            }
-            
-            const ctx = this.slideCanvas.context;
-            ctx.clearRect(0, 0, width, height);
-            ctx.drawImage(video, 0, 0, width, height);
-            
-            const imgData = ctx.getImageData(0, 0, width, height);
-            const data = imgData.data;
-            
-            const charId = this.selectedChar || 'NB1';
-            const config = SLIDE_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
-            const threshold = config.threshold !== undefined ? config.threshold : 45;
-            
-            // Eliminar fondo negro (píxeles donde RGB < threshold)
-            for (let i = 0; i < data.length; i += 4) {
-              const r = data[i];
-              const g = data[i+1];
-              const b = data[i+2];
-              if (r < threshold && g < threshold && b < threshold) {
-                data[i+3] = 0; // Hacer transparente
-              }
-            }
-            ctx.putImageData(imgData, 0, 0);
-            this.slideCanvas.update();
+        if (this.playerSlide && this.playerSlide.video) {
+          const video = this.playerSlide.video;
+          if (!video.paused && !video.ended) {
+            source = video;
+            rawWidth = video.videoWidth || 300;
+            rawHeight = video.videoHeight || 300;
+          }
+        } else if (this.textures.exists('player_slide_img')) {
+          const imgTex = this.textures.get('player_slide_img');
+          source = imgTex.getSourceImage();
+          rawWidth = source.width || 300;
+          rawHeight = source.height || 300;
+        }
 
-            // Compensar la escala por el downscaling del canvas
-            const scaleMultiplier = rawWidth / width;
+        if (source && rawWidth > 0 && rawHeight > 0) {
+          // Downscale by DOWNSCALE_FACTOR to avoid CPU bottleneck / performance drops
+          const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+          const height = Math.round(rawHeight / DOWNSCALE_FACTOR);
+
+          if (this.slideCanvas.width !== width || this.slideCanvas.height !== height) {
+            this.slideCanvas.setSize(width, height);
             if (this.playerSlideImg) {
               this.playerSlideImg.setSizeToFrame();
-              this.playerSlideImg.setScale(config.scale * scaleMultiplier);
-              this.playerSlideImg.x = config.xOffset || 0;
-              this.playerSlideImg.y = config.yOffset;
             }
+          }
+          
+          const ctx = this.slideCanvas.context;
+          ctx.clearRect(0, 0, width, height);
+          ctx.drawImage(source, 0, 0, width, height);
+          
+          const imgData = ctx.getImageData(0, 0, width, height);
+          const data = imgData.data;
+          
+          const charId = this.selectedChar || 'NB1';
+          const config = SLIDE_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
+          const threshold = config.threshold !== undefined ? config.threshold : 45;
+          
+          // Eliminar fondo negro (píxeles donde RGB < threshold)
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i+1];
+            const b = data[i+2];
+            if (r < threshold && g < threshold && b < threshold) {
+              data[i+3] = 0; // Hacer transparente
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+          this.slideCanvas.update();
+
+          // Compensar la escala por el downscaling del canvas
+          const scaleMultiplier = rawWidth / width;
+          if (this.playerSlideImg) {
+            this.playerSlideImg.setSizeToFrame();
+            this.playerSlideImg.setScale(config.scale * scaleMultiplier);
+            this.playerSlideImg.x = config.xOffset || 0;
+            this.playerSlideImg.y = config.yOffset;
           }
         }
       } catch (err) {
@@ -478,57 +506,69 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
     }
 
-    // Croma en tiempo real para el salto del jugador (remueve el fondo negro del video MP4)
-    if (this.isJumping && this.playerJump && this.playerJump.video && this.jumpCanvas) {
+    // Croma en tiempo real para el salto del jugador (remueve el fondo negro de la imagen o del video MP4)
+    if (this.isJumping && this.jumpCanvas) {
       try {
-        const video = this.playerJump.video;
-        if (!video.paused && !video.ended) {
-          const rawWidth = video.videoWidth || 300;
-          const rawHeight = video.videoHeight || 300;
-          
-          if (rawWidth > 0 && rawHeight > 0) {
-            // Downscale by DOWNSCALE_FACTOR to avoid CPU bottleneck / performance drops
-            const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
-            const height = Math.round(rawHeight / DOWNSCALE_FACTOR);
+        let source = null;
+        let rawWidth = 300;
+        let rawHeight = 300;
 
-            if (this.jumpCanvas.width !== width || this.jumpCanvas.height !== height) {
-              this.jumpCanvas.setSize(width, height);
-              if (this.playerJumpImg) {
-                this.playerJumpImg.setSizeToFrame();
-              }
-            }
-            
-            const ctx = this.jumpCanvas.context;
-            ctx.clearRect(0, 0, width, height);
-            ctx.drawImage(video, 0, 0, width, height);
-            
-            const imgData = ctx.getImageData(0, 0, width, height);
-            const data = imgData.data;
-            
-            const charId = this.selectedChar || 'NB1';
-            const config = JUMP_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
-            const threshold = config.threshold !== undefined ? config.threshold : 45;
-            
-            // Eliminar fondo negro (píxeles donde RGB < threshold)
-            for (let i = 0; i < data.length; i += 4) {
-              const r = data[i];
-              const g = data[i+1];
-              const b = data[i+2];
-              if (r < threshold && g < threshold && b < threshold) {
-                data[i+3] = 0; // Hacer transparente
-              }
-            }
-            ctx.putImageData(imgData, 0, 0);
-            this.jumpCanvas.update();
+        if (this.playerJump && this.playerJump.video) {
+          const video = this.playerJump.video;
+          if (!video.paused && !video.ended) {
+            source = video;
+            rawWidth = video.videoWidth || 300;
+            rawHeight = video.videoHeight || 300;
+          }
+        } else if (this.textures.exists('player_jump_img')) {
+          const imgTex = this.textures.get('player_jump_img');
+          source = imgTex.getSourceImage();
+          rawWidth = source.width || 300;
+          rawHeight = source.height || 300;
+        }
 
-            // Compensar la escala por el downscaling del canvas
-            const scaleMultiplier = rawWidth / width;
+        if (source && rawWidth > 0 && rawHeight > 0) {
+          // Downscale by DOWNSCALE_FACTOR to avoid CPU bottleneck / performance drops
+          const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+          const height = Math.round(rawHeight / DOWNSCALE_FACTOR);
+
+          if (this.jumpCanvas.width !== width || this.jumpCanvas.height !== height) {
+            this.jumpCanvas.setSize(width, height);
             if (this.playerJumpImg) {
               this.playerJumpImg.setSizeToFrame();
-              this.playerJumpImg.setScale(config.scale * scaleMultiplier);
-              this.playerJumpImg.x = config.xOffset || 0;
-              this.playerJumpImg.y = config.yOffset;
             }
+          }
+          
+          const ctx = this.jumpCanvas.context;
+          ctx.clearRect(0, 0, width, height);
+          ctx.drawImage(source, 0, 0, width, height);
+          
+          const imgData = ctx.getImageData(0, 0, width, height);
+          const data = imgData.data;
+          
+          const charId = this.selectedChar || 'NB1';
+          const config = JUMP_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
+          const threshold = config.threshold !== undefined ? config.threshold : 45;
+          
+          // Eliminar fondo negro (píxeles donde RGB < threshold)
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i+1];
+            const b = data[i+2];
+            if (r < threshold && g < threshold && b < threshold) {
+              data[i+3] = 0; // Hacer transparente
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+          this.jumpCanvas.update();
+
+          // Compensar la escala por el downscaling del canvas
+          const scaleMultiplier = rawWidth / width;
+          if (this.playerJumpImg) {
+            this.playerJumpImg.setSizeToFrame();
+            this.playerJumpImg.setScale(config.scale * scaleMultiplier);
+            this.playerJumpImg.x = config.xOffset || 0;
+            this.playerJumpImg.y = config.yOffset;
           }
         }
       } catch (err) {
@@ -547,6 +587,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
         L: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L),
         U: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.U),
         J: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.J),
+        T: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T),
+        G: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.G),
       };
     }
 
@@ -624,7 +666,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
     if (this._slideDebugMode) {
       const charId = this.selectedChar || 'NB1';
-      const config = SLIDE_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
+      const config = SLIDE_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
 
       if (this._debugKeys.I.isDown) {
         config.yOffset -= 1;
@@ -643,6 +685,12 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
       if (this._debugKeys.J.isDown) {
         config.xOffset = (config.xOffset || 0) + 1;
+      }
+      if (this._debugKeys.T.isDown) {
+        config.threshold = Math.min(255, (config.threshold || 0) + 1);
+      }
+      if (this._debugKeys.G.isDown) {
+        config.threshold = Math.max(0, (config.threshold || 0) - 1);
       }
 
       if (this.playerSlideImg) {
@@ -672,14 +720,17 @@ export class SubwaySurfersScene extends Phaser.Scene {
         `Mantén presionadas las teclas:\n` +
         `• I / K : Subir / Bajar (yOffset: ${config.yOffset.toFixed(0)})\n` +
         `• U / J : Izquierda / Derecha (xOffset: ${(config.xOffset || 0).toFixed(0)})\n` +
-        `• O / L : Agrandar / Achicar (scale: ${config.scale.toFixed(3)})\n\n` +
+        `• O / L : Agrandar / Achicar (scale: ${config.scale.toFixed(3)})\n` +
+        `• T / G : Umbral Croma (threshold: ${(config.threshold || 0).toFixed(0)})\n\n` +
+        `Copia y pega esto en SLIDE_CONFIGS.${charId}:\n` +
+        `{ scale: ${config.scale.toFixed(3)}, xOffset: ${config.xOffset.toFixed(0)}, yOffset: ${config.yOffset.toFixed(0)}, threshold: ${config.threshold.toFixed(0)} }\n\n` +
         `Presiona 'P' para salir del modo depuración`
       );
     }
 
     if (this._jumpDebugMode) {
       const charId = this.selectedChar || 'NB1';
-      const config = JUMP_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
+      const config = JUMP_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
 
       if (this._debugKeys.I.isDown) {
         config.yOffset -= 1;
@@ -698,6 +749,12 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
       if (this._debugKeys.J.isDown) {
         config.xOffset = (config.xOffset || 0) + 1;
+      }
+      if (this._debugKeys.T.isDown) {
+        config.threshold = Math.min(255, (config.threshold || 0) + 1);
+      }
+      if (this._debugKeys.G.isDown) {
+        config.threshold = Math.max(0, (config.threshold || 0) - 1);
       }
 
       if (this.playerJumpImg) {
@@ -727,7 +784,10 @@ export class SubwaySurfersScene extends Phaser.Scene {
         `Mantén presionadas las teclas:\n` +
         `• I / K : Subir / Bajar (yOffset: ${config.yOffset.toFixed(0)})\n` +
         `• U / J : Izquierda / Derecha (xOffset: ${(config.xOffset || 0).toFixed(0)})\n` +
-        `• O / L : Agrandar / Achicar (scale: ${config.scale.toFixed(3)})\n\n` +
+        `• O / L : Agrandar / Achicar (scale: ${config.scale.toFixed(3)})\n` +
+        `• T / G : Umbral Croma (threshold: ${(config.threshold || 0).toFixed(0)})\n\n` +
+        `Copia y pega esto en JUMP_CONFIGS.${charId}:\n` +
+        `{ scale: ${config.scale.toFixed(3)}, xOffset: ${config.xOffset.toFixed(0)}, yOffset: ${config.yOffset.toFixed(0)}, threshold: ${config.threshold.toFixed(0)} }\n\n` +
         `Presiona 'Z' para salir del modo depuración`
       );
     }
@@ -841,27 +901,27 @@ export class SubwaySurfersScene extends Phaser.Scene {
     if (this.isJumping || this.isSliding) return;
     this.isJumping = true;
 
-    // Si tiene video de salto, pausar video de correr y mostrar/reproducir salto
-    if (this.playerJump) {
+    // Configurar imagen del salto según el personaje
+    const charId = this.selectedChar || 'NB1';
+    const config = JUMP_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
+
+    // Si tiene video de salto o imagen de salto, pausar video de correr y mostrar/reproducir salto
+    if (this.playerJump || this.textures.exists('player_jump_img')) {
       this.player.setVisible(false);
       this.player.stop();
-
-      // Configurar imagen del salto según el personaje
-      const charId = this.selectedChar || 'NB1';
-      const config = JUMP_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
       
       if (this.playerJumpImg) {
         let scaleMultiplier = DOWNSCALE_FACTOR;
-        if (this.playerJump.video) {
-          const video = this.playerJump.video;
-          const rawWidth = video.videoWidth || 300;
-          const rawHeight = video.videoHeight || 300;
-          if (rawWidth > 0 && rawHeight > 0) {
+        let source = null;
+        if (this.playerJump && this.playerJump.video) {
+          source = this.playerJump.video;
+        } else if (this.textures.exists('player_jump_img')) {
+          source = this.textures.get('player_jump_img').getSourceImage();
+        }
+        if (source) {
+          const rawWidth = source.videoWidth || source.width || 300;
+          if (rawWidth > 0) {
             const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
-            const height = Math.round(rawHeight / DOWNSCALE_FACTOR);
-            if (this.jumpCanvas.width !== width || this.jumpCanvas.height !== height) {
-              this.jumpCanvas.setSize(width, height);
-            }
             scaleMultiplier = rawWidth / width;
           }
         }
@@ -872,7 +932,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
         this.playerJumpImg.setVisible(true);
       }
 
-      this.playerJump.play(false);
+      if (this.playerJump) {
+        this.playerJump.play(false);
+      }
     }
 
     this.tweens.add({
@@ -903,27 +965,27 @@ export class SubwaySurfersScene extends Phaser.Scene {
     if (this.isSliding || this.isJumping) return;
     this.isSliding = true;
 
-    // Si tiene video de deslizamiento, pausar video de correr y mostrar/reproducir deslizamiento
-    if (this.playerSlide) {
+    // Configurar imagen del deslizamiento según el personaje
+    const charId = this.selectedChar || 'NB1';
+    const config = SLIDE_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
+
+    // Si tiene video de deslizamiento o imagen de deslizamiento, pausar video de correr y mostrar/reproducir deslizamiento
+    if (this.playerSlide || this.textures.exists('player_slide_img')) {
       this.player.setVisible(false);
       this.player.stop();
-
-      // Configurar imagen del deslizamiento según el personaje
-      const charId = this.selectedChar || 'NB1';
-      const config = SLIDE_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
       
       if (this.playerSlideImg) {
         let scaleMultiplier = DOWNSCALE_FACTOR;
-        if (this.playerSlide.video) {
-          const video = this.playerSlide.video;
-          const rawWidth = video.videoWidth || 300;
-          const rawHeight = video.videoHeight || 300;
-          if (rawWidth > 0 && rawHeight > 0) {
+        let source = null;
+        if (this.playerSlide && this.playerSlide.video) {
+          source = this.playerSlide.video;
+        } else if (this.textures.exists('player_slide_img')) {
+          source = this.textures.get('player_slide_img').getSourceImage();
+        }
+        if (source) {
+          const rawWidth = source.videoWidth || source.width || 300;
+          if (rawWidth > 0) {
             const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
-            const height = Math.round(rawHeight / DOWNSCALE_FACTOR);
-            if (this.slideCanvas.width !== width || this.slideCanvas.height !== height) {
-              this.slideCanvas.setSize(width, height);
-            }
             scaleMultiplier = rawWidth / width;
           }
         }
@@ -934,7 +996,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
         this.playerSlideImg.setVisible(true);
       }
 
-      this.playerSlide.play(false);
+      if (this.playerSlide) {
+        this.playerSlide.play(false);
+      }
 
       // Duración del video de deslizamiento (aprox 900ms)
       this.time.delayedCall(900, () => {
