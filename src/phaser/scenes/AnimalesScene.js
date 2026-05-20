@@ -435,23 +435,82 @@ export class AnimalesScene extends Phaser.Scene {
 
         this.menuContainer = this.add.container(0, 0).setDepth(200);
 
-        // Fondo de Video en Bucle Mudo
-        const bgVideo = this.add.video(W / 2, H / 2, 'animales_menu_video');
-        bgVideo.setMute(true);
-        bgVideo.play(true); // Loop: true
-        this.menuContainer.add(bgVideo);
+        // Fondo de Video en Bucle Mudo con Transición Suave (Cross-fade)
+        const bgVideo1 = this.add.video(W / 2, H / 2, 'animales_menu_video').setMute(true);
+        const bgVideo2 = this.add.video(W / 2, H / 2, 'animales_menu_video').setMute(true);
+
+        this.menuContainer.add(bgVideo1);
+        this.menuContainer.add(bgVideo2);
+
+        // Video 1 empieza visible, Video 2 invisible
+        bgVideo1.setAlpha(1);
+        bgVideo2.setAlpha(0);
 
         // Escalar video proporcionalmente para cubrir toda la pantalla sin distorsión
-        const scaleVideo = () => {
-            if (bgVideo.width > 0 && bgVideo.height > 0) {
-                const scaleX = W / bgVideo.width;
-                const scaleY = H / bgVideo.height;
+        const scaleVideo = (videoObj) => {
+            if (videoObj && videoObj.width > 0 && videoObj.height > 0) {
+                const scaleX = W / videoObj.width;
+                const scaleY = H / videoObj.height;
                 const scale = Math.max(scaleX, scaleY);
-                bgVideo.setScale(scale);
+                videoObj.setScale(scale);
             }
         };
-        bgVideo.on('play', scaleVideo);
-        scaleVideo();
+
+        bgVideo1.on('play', () => scaleVideo(bgVideo1));
+        bgVideo2.on('play', () => scaleVideo(bgVideo2));
+
+        bgVideo1.play();
+
+        let activeVideo = bgVideo1;
+        let standbyVideo = bgVideo2;
+        let isTransitioning = false;
+
+        // Monitorear constantemente el tiempo de reproducción cada 100ms
+        this.menuVideoLoopTimer = this.time.addEvent({
+            delay: 100,
+            loop: true,
+            callback: () => {
+                if (!activeVideo || !activeVideo.video || isTransitioning) return;
+
+                const rawVid = activeVideo.video;
+                const duration = rawVid.duration;
+                const currentTime = rawVid.currentTime;
+
+                // Si queda menos de 1 segundo para que acabe el video activo
+                if (duration > 0 && (duration - currentTime) < 1.0) {
+                    isTransitioning = true;
+
+                    // Iniciamos el video en espera
+                    standbyVideo.setAlpha(0);
+                    standbyVideo.play();
+
+                    // Hacemos el fundido cruzado (cross-fade)
+                    this.tweens.add({
+                        targets: activeVideo,
+                        alpha: 0,
+                        duration: 800,
+                        ease: 'Linear',
+                        onComplete: () => {
+                            if (activeVideo) activeVideo.stop();
+                        }
+                    });
+
+                    this.tweens.add({
+                        targets: standbyVideo,
+                        alpha: 1,
+                        duration: 800,
+                        ease: 'Linear',
+                        onComplete: () => {
+                            // Intercambiamos los roles
+                            const temp = activeVideo;
+                            activeVideo = standbyVideo;
+                            standbyVideo = temp;
+                            isTransitioning = false;
+                        }
+                    });
+                }
+            }
+        });
 
         // Sistema de partículas para el clic (Estrellas mágicas)
         this.clickParticles = this.add.particles(0, 0, 'estrella_magica', {
@@ -614,6 +673,11 @@ export class AnimalesScene extends Phaser.Scene {
     }
 
     _iniciarJuego(escenarioId) {
+        if (this.menuVideoLoopTimer) {
+            this.menuVideoLoopTimer.destroy();
+            this.menuVideoLoopTimer = null;
+        }
+
         if (this.menuContainer) {
             this.menuContainer.destroy();
             this.menuContainer = null;
