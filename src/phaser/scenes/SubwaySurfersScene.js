@@ -97,15 +97,15 @@ export class SubwaySurfersScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('background_mall', 'assets/images/subway/scenario_base.png');
-    this.load.video('intro_calle', 'assets/images/subway/INTRO CALLE.mp4', 'loadeddata', false, true);
-    this.load.video('loop_calle', 'assets/images/subway/ESCENARIO CALLE.mp4', 'loadeddata', false, true);
-    this.load.video('intro_piso1', 'assets/images/subway/INTRO PRIMER PISO CC.mp4', 'loadeddata', false, true);
-    this.load.video('loop_piso1', 'assets/images/subway/ESCENARIO PRIMER PISO CC.mp4', 'loadeddata', false, true);
-    this.load.video('intro_piso2', 'assets/images/subway/INTRO SEGUNDO PISO CC.mp4', 'loadeddata', false, true);
-    this.load.video('loop_piso2', 'assets/images/subway/ESCENARIO SEGUNDO PISO CC.mp4', 'loadeddata', false, true);
-    this.load.video('intro_piso3', 'assets/images/subway/INTRO TERCER PISO CC.mp4', 'loadeddata', false, true);
-    this.load.video('loop_piso3', 'assets/images/subway/ESCENARIO TERCER PISO CC.mp4', 'loadeddata', false, true);
+    this.load.image('background_mall', 'assets/images/subway/Escenarios/scenario_base.png');
+    this.load.video('intro_calle', 'assets/images/subway/Escenarios/INTRO CALLE.mp4', 'loadeddata', false, true);
+    this.load.video('loop_calle', 'assets/images/subway/Escenarios/ESCENARIO CALLE.mp4', 'loadeddata', false, true);
+    this.load.video('intro_piso1', 'assets/images/subway/Escenarios/INTRO PRIMER PISO CC.mp4', 'loadeddata', false, true);
+    this.load.video('loop_piso1', 'assets/images/subway/Escenarios/ESCENARIO PRIMER PISO CC.mp4', 'loadeddata', false, true);
+    this.load.video('intro_piso2', 'assets/images/subway/Escenarios/INTRO SEGUNDO PISO CC.mp4', 'loadeddata', false, true);
+    this.load.video('loop_piso2', 'assets/images/subway/Escenarios/ESCENARIO SEGUNDO PISO CC.mp4', 'loadeddata', false, true);
+    this.load.video('intro_piso3', 'assets/images/subway/Escenarios/INTRO TERCER PISO CC.mp4', 'loadeddata', false, true);
+    this.load.video('loop_piso3', 'assets/images/subway/Escenarios/ESCENARIO TERCER PISO CC.mp4', 'loadeddata', false, true);
 
     const selectedChar = this.registry.get('personajeId') || 'NB1';
     const videos = CHARACTER_VIDEOS[selectedChar] || CHARACTER_VIDEOS.NB1;
@@ -136,8 +136,10 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.load.image('logo_game', 'assets/images/subway/image26.png');
     this.load.image('obs_castle', 'assets/images/subway/image74.png');
     this.load.image('obs_rainbow', 'assets/images/subway/image27.png');
-    this.load.image('obs_valla', 'assets/images/subway/image73.png');
-    this.load.image('sun', 'assets/images/subway/image64.png');
+    this.load.image('obs_valla', 'assets/images/subway/Obstaculos/image73.png');
+    this.load.image('sun', 'assets/images/subway/Potenciadores/image64.png');
+    this.load.image('potenciador_60', 'assets/images/subway/Potenciadores/image60.png');
+    this.load.image('potenciador_75', 'assets/images/subway/Potenciadores/image75.png');
     this.load.image('fire', 'https://labs.phaser.io/assets/particles/muzzleflash3.png');
   }
 
@@ -149,6 +151,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.currentLane = 1;
     this.spawnDelay = 2000;
     this._isRestarting = false;
+    this.isInvincible = false;
+    this.isDoublePoints = false;
     this.isJumping = false;
     this.isSliding = false;
     this.obstacles = null;
@@ -362,7 +366,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
   _updateScore() {
     if (this.isGameOver || this.isIntroPlaying) return;
-    this.score += 5;
+    this.score += this.isDoublePoints ? 10 : 5;
     this.scoreText.setText(this.score);
 
     const nextScenarioIndex = this.currentScenarioIndex + 1;
@@ -1280,7 +1284,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       const verticalDist = Math.abs(obj.y - playerY);
       if (verticalDist < 50 && obj.lane === this.currentLane) {
         if (this.obstacles && this.obstacles.contains(obj)) {
-          if (!this.isJumping && !this._slideDebugMode && !this._jumpDebugMode) this._gameOver();
+          if (!this.isJumping && !this._slideDebugMode && !this._jumpDebugMode && !this.isInvincible) this._gameOver();
         } else {
           this._collectSun(obj);
         }
@@ -1305,10 +1309,20 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
   _spawnCollectible(lane) {
     if (!this.collectibles) this.collectibles = this.add.group();
-    const sun = this.add.sprite(this.scale.width / 2, this.scale.height * 0.45, 'sun');
-    sun.lane = lane;
-    sun.setOrigin(0.5, 1);
-    this.collectibles.add(sun);
+    
+    // Probabilidades
+    const rand = Phaser.Math.Between(1, 100);
+    let key = 'sun';
+    if (rand <= 15) { // 15% Estrella (invencibilidad) - medio frecuente
+      key = 'potenciador_75';
+    } else if (rand <= 45) { // 30% Arcoiris (puntos x2) - frecuente
+      key = 'potenciador_60';
+    }
+
+    const item = this.add.sprite(this.scale.width / 2, this.scale.height * 0.45, key);
+    item.lane = lane;
+    item.setOrigin(0.5, 1);
+    this.collectibles.add(item);
   }
 
   _getPlayerXForLane(lane) {
@@ -1478,11 +1492,35 @@ export class SubwaySurfersScene extends Phaser.Scene {
     }
   }
 
-  _collectSun(sun) {
-    sun.destroy();
-    this.score += 50;
-    this.scoreText.setText(this.score);
-    this.tweens.add({ targets: this.scoreText, scale: 1.2, duration: 100, yoyo: true });
+  _collectSun(obj) {
+    obj.destroy();
+    
+    if (obj.texture.key === 'potenciador_75') {
+      // Estrella: Invencibilidad 5 seg
+      this.isInvincible = true;
+      if (this.invincibleTimer) this.invincibleTimer.destroy();
+      this.invincibleTimer = this.time.delayedCall(5000, () => {
+        this.isInvincible = false;
+      });
+      this.scoreText.setText("¡ESCUDO!");
+      this.time.delayedCall(1000, () => this.scoreText.setText(this.score));
+      
+    } else if (obj.texture.key === 'potenciador_60') {
+      // Arcoiris: Puntos x2 45 seg
+      this.isDoublePoints = true;
+      if (this.doublePointsTimer) this.doublePointsTimer.destroy();
+      this.doublePointsTimer = this.time.delayedCall(45000, () => {
+        this.isDoublePoints = false;
+      });
+      this.scoreText.setText("¡PUNTOS x2!");
+      this.time.delayedCall(1000, () => this.scoreText.setText(this.score));
+      
+    } else {
+      // Sol u otro
+      this.score += this.isDoublePoints ? 100 : 50;
+      this.scoreText.setText(this.score);
+      this.tweens.add({ targets: this.scoreText, scale: 1.2, duration: 100, yoyo: true });
+    }
   }
 
   _cleanup() {
