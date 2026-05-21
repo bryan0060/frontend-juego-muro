@@ -39,7 +39,7 @@ const SONG_NAMES = {
     'menu_reyleon': 'Canción 1',
     'menu_monsters': 'Canción 2',
     'menu_aladdin': 'Canción 3',
-    'menu_cancion1': 'Canción 4',
+    'menu_fox': 'Canción 4',
     'menu_cars': 'Canción 5',
     'menu_cars2': 'Canción 6',
     'menu_libro': 'Canción 7',
@@ -60,15 +60,15 @@ const ANIMAL_POOLS = {
         { key: 'bosque_oso2', scale: 0.35, tipo: 'ground' },
         { key: 'bosque_oso3', scale: 0.35, tipo: 'ground' },
         { key: 'bosque_serpiente', scale: 0.35, tipo: 'ground' },
-        { key: 'bosque_cuervo', scale: 0.08, tipo: 'flying', reverseFlip: true },
-        { key: 'bosque_aguila', scale: 0.25, tipo: 'flying' },
-        { key: 'bosque_buho', scale: 0.25, tipo: 'flying' },
-        { key: 'bosque_abeja', scale: 0.15, tipo: 'flying', reverseFlip: true },
-        { key: 'bosque_carpintero', scale: 0.2, tipo: 'flying' },
+        { key: 'bosque_cuervo', scale: 0.10, tipo: 'flying', reverseFlip: true },
+        { key: 'bosque_aguila', scale: 0.27, tipo: 'flying' },
+        { key: 'bosque_buho', scale: 0.27, tipo: 'flying' },
+        { key: 'bosque_abeja', scale: 0.16, tipo: 'flying', reverseFlip: true },
+        { key: 'bosque_carpintero', scale: 0.22, tipo: 'flying' },
         { key: 'bosque_conejo', scale: 0.2, tipo: 'ground', reverseFlip: true },
         { key: 'bosque_elefante', scale: 0.45, tipo: 'ground' },
         { key: 'bosque_gorilla', scale: 0.35, tipo: 'ground' },
-        { key: 'bosque_mariposa', scale: 0.15, tipo: 'flying' },
+        { key: 'bosque_mariposa', scale: 0.16, tipo: 'flying' },
         { key: 'bosque_zorrillo', scale: 0.2, tipo: 'ground', reverseFlip: true },
         { key: 'bosque_zorro', scale: 0.25, tipo: 'ground' },
         { key: 'bosque_mapache', scale: 0.2, tipo: 'ground' }
@@ -369,7 +369,7 @@ export class AnimalesScene extends Phaser.Scene {
             'menu_reyleon',
             'menu_monsters',
             'menu_aladdin',
-            'menu_cancion1',
+            'menu_fox',
             'menu_cars',
             'menu_cars2',
             'menu_libro',
@@ -400,10 +400,10 @@ export class AnimalesScene extends Phaser.Scene {
         this.currentMenuSongKey = nextSong;
 
         const playConfig = { loop: false, volume: 0.5 };
-        if (nextSong === 'menu_cancion1') {
-            playConfig.seek = 24;
+        if (nextSong === 'menu_reyleon') {
+            playConfig.seek = 0;
         } else if (nextSong === 'menu_cars' || nextSong === 'menu_cars2') {
-            playConfig.seek = 26;
+            playConfig.seek = 29;
         } else if (nextSong === 'menu_rio') {
             playConfig.seek = 7;
         } else if (nextSong === 'menu_shek') {
@@ -411,9 +411,12 @@ export class AnimalesScene extends Phaser.Scene {
         } else if (nextSong === 'menu_sheck') {
             playConfig.seek = 3;
         }
+        else if (nextSong === 'menu_fox') {
+            playConfig.seek = 24;
+        }
 
         this.menuMusic = this.sound.add(nextSong, playConfig);
-        this.menuMusic.play();
+        this.menuMusic.play(playConfig);
 
         // Al finalizar la canción, reproducir otra aleatoria si seguimos en el menú
         this.menuMusic.once('complete', () => {
@@ -535,7 +538,7 @@ export class AnimalesScene extends Phaser.Scene {
                 this.clickParticles.setPosition(pointer.x, pointer.y);
                 this.clickParticles.explode(40);
                 this.sound.play('pop', { volume: 0.5, detune: Phaser.Math.Between(-500, 500) });
-                
+
                 // Efecto de transición e inicio del juego inmediato
                 this.cameras.main.flash(400, 255, 255, 255);
                 this._iniciarJuego('scenery_bosque');
@@ -699,16 +702,16 @@ export class AnimalesScene extends Phaser.Scene {
         // Crear la playlist circular con los 4 escenarios
         const todosEscenarios = ['scenery_bosque', 'scenery_desierto', 'scenery_hielo', 'scenery_pantano'];
         const idx = todosEscenarios.indexOf(escenarioId) !== -1 ? todosEscenarios.indexOf(escenarioId) : 0;
-        
+
         this.playlistEscenarios = [];
         for (let i = 0; i < 4; i++) {
             this.playlistEscenarios.push(todosEscenarios[(idx + i) % 4]);
         }
-        
+
         this.playlistIndex = 0;
         this.escenarioActual = this.playlistEscenarios[0];
         this.enTransicion = false;
-        
+
         this.estado = 'jugando';
         this.juegoActivo = false;
 
@@ -1168,7 +1171,7 @@ export class AnimalesScene extends Phaser.Scene {
         }
 
         let x, y;
-        
+
         // Helper inline to calculate the coordinates
         const resolveCoordinate = (cfg) => {
             let minX = 0, maxX = 0, minY = 0, maxY = 0;
