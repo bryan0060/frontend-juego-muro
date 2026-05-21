@@ -3,8 +3,8 @@ import * as Phaser from 'phaser';
 const SCENARIOS = [
   { id: 'calle', intro: 'intro_calle', loop: 'loop_calle', threshold: 0 },
   { id: 'piso1', intro: 'intro_piso1', loop: 'loop_piso1', threshold: 1000 },
-  { id: 'piso2', intro: null, loop: null, threshold: 2500 },
-  { id: 'piso3', intro: null, loop: null, threshold: 4000 }
+  { id: 'piso2', intro: 'intro_piso2', loop: 'loop_piso2', threshold: 2500 },
+  { id: 'piso3', intro: 'intro_piso3', loop: 'loop_piso3', threshold: 4000 }
 ];
 
 // Mapeo de carril backend → índice de lane Phaser
@@ -90,10 +90,14 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
   preload() {
     this.load.image('background_mall', 'assets/images/subway/scenario_base.png');
-    this.load.video('intro_calle', 'assets/images/subway/INTRO CALLE.mp4');
-    this.load.video('loop_calle', 'assets/images/subway/ESCENARIO CALLE.mp4');
-    this.load.video('intro_piso1', 'assets/images/subway/INTRO PRIMER PISO CC.mp4');
-    this.load.video('loop_piso1', 'assets/images/subway/ESCENARIO PRIMER PISO CC.mp4');
+    this.load.video('intro_calle', 'assets/images/subway/INTRO CALLE.mp4', 'loadeddata', false, true);
+    this.load.video('loop_calle', 'assets/images/subway/ESCENARIO CALLE.mp4', 'loadeddata', false, true);
+    this.load.video('intro_piso1', 'assets/images/subway/INTRO PRIMER PISO CC.mp4', 'loadeddata', false, true);
+    this.load.video('loop_piso1', 'assets/images/subway/ESCENARIO PRIMER PISO CC.mp4', 'loadeddata', false, true);
+    this.load.video('intro_piso2', 'assets/images/subway/INTRO SEGUNDO PISO CC.mp4', 'loadeddata', false, true);
+    this.load.video('loop_piso2', 'assets/images/subway/ESCENARIO SEGUNDO PISO CC.mp4', 'loadeddata', false, true);
+    this.load.video('intro_piso3', 'assets/images/subway/INTRO TERCER PISO CC.mp4', 'loadeddata', false, true);
+    this.load.video('loop_piso3', 'assets/images/subway/ESCENARIO TERCER PISO CC.mp4', 'loadeddata', false, true);
 
     const selectedChar = this.registry.get('personajeId') || 'NB1';
     const videos = CHARACTER_VIDEOS[selectedChar] || CHARACTER_VIDEOS.NB1;
@@ -254,6 +258,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     }
 
     this.playerContainer.setDepth(50);
+    this.playerContainer.setVisible(false);
 
     this.tweens.add({
       targets: this.player, y: -10, duration: 200,
@@ -342,7 +347,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       this.gameSpeed += 0.1;
       this.spawnDelay = Math.max(2000, this.spawnDelay - 100);
       this._startSpawnTimer();
-      this.cameras.main.flash(400, 255, 255, 255, 0.05);
+      // this.cameras.main.flash(400, 255, 255, 255, 0.05);
     }
   }
 
@@ -360,6 +365,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       if (this.background) this.background.setVisible(true);
     }
     this.isIntroPlaying = false;
+    if (this.playerContainer) this.playerContainer.setVisible(true);
     if (this.levelCompleteText) this.levelCompleteText.setVisible(false);
     if (this.countdownText) {
       this.countdownText.setText('¡GO!');
@@ -372,6 +378,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     const currentScenario = SCENARIOS[this.currentScenarioIndex];
     this.isIntroPlaying = true;
     this.introCountdown = 7;
+    if (this.playerContainer) this.playerContainer.setVisible(false);
 
     this.countdownText.setText(this.introCountdown);
     this.countdownText.setVisible(true);
