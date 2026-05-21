@@ -200,7 +200,7 @@ export class BootScene extends Phaser.Scene {
     this.load.audio('menu_reyleon', 'assets/audio/sonidos%20de%20animales/esenarios/reyleon.mp3');
     this.load.audio('menu_monsters', 'assets/audio/sonidos%20de%20animales/esenarios/Monsters,%20Inc..mp3');
     this.load.audio('menu_aladdin', 'assets/audio/sonidos%20de%20animales/esenarios/Un%20Mundo%20Ideal%20%20Aladdín.mp3');
-    this.load.audio('menu_cancion1', 'assets/audio/sonidos%20de%20animales/esenarios/cancion1.mp3');
+    this.load.audio('menu_fox', 'assets/audio/sonidos%20de%20animales/esenarios/fox.mp3');
     this.load.audio('menu_cars', 'assets/audio/sonidos%20de%20animales/esenarios/cars.mp3');
     this.load.audio('menu_cars2', 'assets/audio/sonidos%20de%20animales/esenarios/cars2.mp3');
     this.load.audio('menu_libro', 'assets/audio/sonidos%20de%20animales/esenarios/libro.mp3');
