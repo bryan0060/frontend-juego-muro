@@ -301,9 +301,13 @@ export class AnimalesScene extends Phaser.Scene {
         this.esqueletoActual = null;
         this.enemigos = this.add.group();
 
-        // Inicializar redes como null — se crean cuando el WS envía posición
-        this.redIzquierda = null;
-        this.redDerecha = null;
+        this.redIzquierda = this.add.image(-200, -200, 'red').setScale(0.3).setDepth(20).setVisible(false);
+        this.redIzquierda.targetX = -200;
+        this.redIzquierda.targetY = -200;
+
+        this.redDerecha = this.add.image(-200, -200, 'red').setScale(0.3).setDepth(20).setVisible(false);
+        this.redDerecha.targetX = -200;
+        this.redDerecha.targetY = -200;
 
         // Sistema de hold
         this.holdBtn = null;
@@ -1437,23 +1441,56 @@ export class AnimalesScene extends Phaser.Scene {
     _onWsMessage(event) {
         const data = event.detail;
 
-        // Ahora escuchamos al puerto 8081 (LiDAR)
-        if (data.port !== 8081) return;
-
-        // Si estamos en el menú de selección, cualquier toque del LiDAR inicia el juego
-        if (this.estado === 'seleccion') {
-            this.sound.play('pop');
-            this.cameras.main.flash(400, 255, 255, 255);
-            this._iniciarJuego('scenery_bosque');
+        // ── Puerto 8081 — LiDAR ──
+        if (data.port === 8081) {
+            if (this.estado === 'seleccion') {
+                this.sound.play('pop');
+                this.cameras.main.flash(400, 255, 255, 255);
+                this._iniciarJuego('scenery_bosque');
+                return;
+            }
+            if (data.touches?.length > 0) {
+                data.touches.forEach(touch => this._checkHit(touch.x, touch.y));
+            } else if (data.x !== undefined) {
+                this._checkHit(data.x, data.y);
+            }
             return;
         }
 
-        if (data.touches && data.touches.length > 0) {
-            data.touches.forEach(touch => {
-                this._checkHit(touch.x, touch.y);
-            });
-        } else if (data.x !== undefined && data.y !== undefined) {
-            this._checkHit(data.x, data.y);
+        // ── Puerto 8080 — Cámara ──
+        if (data.port !== 8080) return;
+        if (data.juego_activo !== 'impacto') return;
+        if (!data.impacto) return;
+        if (!this.juegoActivo) return;
+
+        const { mano_izquierda, mano_derecha } = data.impacto;
+
+        const remapX = (x) => {
+            const xMin = parseFloat(import.meta.env.VITE_REMAP_X_MIN ?? 0.1);
+            const xMax = parseFloat(import.meta.env.VITE_REMAP_X_MAX ?? 0.9);
+            return Math.max(0, Math.min(1, (x - xMin) / (xMax - xMin)));
+        };
+
+        const remapY = (y) => {
+            const yMin = parseFloat(import.meta.env.VITE_REMAP_Y_MIN ?? 0.1);
+            const yMax = parseFloat(import.meta.env.VITE_REMAP_Y_MAX ?? 0.8);
+            return Math.max(0, Math.min(1, (y - yMin) / (yMax - yMin)));
+        };
+
+        if (mano_izquierda?.visible) {
+            this.redIzquierda.targetX = (1 - remapX(mano_izquierda.x)) * this.W;
+            this.redIzquierda.targetY = remapY(mano_izquierda.y) * this.H;
+            this.redIzquierda.setVisible(true);
+        } else {
+            this.redIzquierda.setVisible(false);
+        }
+
+        if (mano_derecha?.visible) {
+            this.redDerecha.targetX = (1 - remapX(mano_derecha.x)) * this.W;
+            this.redDerecha.targetY = remapY(mano_derecha.y) * this.H;
+            this.redDerecha.setVisible(true);
+        } else {
+            this.redDerecha.setVisible(false);
         }
     }
 
