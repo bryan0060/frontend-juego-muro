@@ -23,26 +23,26 @@ const DOWNSCALE_FACTOR = 4;
 
 // Configuración de escala, posición (offset vertical) y croma para el deslizamiento de cada personaje
 const SLIDE_CONFIGS = {
-  NB1: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 45 }, // Niño Blanco (N-B-D.mp4 ajustado en tamaño y alineado al suelo)
-  NB2: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 4 }, // Niño Moreno (Valores iniciales para 1080p, listos para calibración del nuevo video)
-  NB3: { scale: 0.204, xOffset: -74, yOffset: 42, threshold: 45 },
-  NB4: { scale: 0.8, xOffset: 0, yOffset: 0, threshold: 45 } // Niña Morena (Imagen PNG estática, valores iniciales listos para calibración)
+  NB1: { scale: 0.204, xOffset: -43, yOffset: 42, threshold: 45 }, // Niño Blanco (N-B-D.mp4 ajustado en tamaño y alineado al suelo)
+  NB2: { scale: 0.204, xOffset: -24, yOffset: 42, threshold: 4 }, // Niño Moreno (Valores iniciales para 1080p, listos para calibración del nuevo video)
+  NB3: { scale: 0.182, xOffset: -9, yOffset: 42, threshold: 60, chromaColor: 'white' }, // Niña Blanca (valores calibrados con fondo blanco)
+  NB4: { scale: 0.230, xOffset: 23, yOffset: 147, threshold: 26 }, // Niña Morena (video PNG updated), valores calibrados)
 };
 
 // Configuración de escala, posición (offset) y croma para el salto de cada personaje
 const JUMP_CONFIGS = {
-  NB1: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 45 }, // Niño Blanco (0519 (1).mp4 precargado con coordenadas perfectas del usuario)
-  NB2: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 4 }, // Niño Moreno (Umbral calibrado a 4 para recuperar el cabello al 100%)
-  NB3: { scale: 0.8, xOffset: 0, yOffset: 0, threshold: 45 }, // Niña Blanca (Imagen PNG estática, valores iniciales listos para calibración)
-  NB4: { scale: 0.228, xOffset: -39, yOffset: -14, threshold: 45 }
+  NB1: { scale: 0.228, xOffset: -6, yOffset: -14, threshold: 45 }, // Niño Blanco (0519 (1).mp4 precargado con coordenadas perfectas del usuario)
+  NB2: { scale: 0.228, xOffset: -12, yOffset: -14, threshold: 4 }, // Niño Moreno (Umbral calibrado a 4 para recuperar el cabello al 100%)
+  NB3: { scale: 0.268, xOffset: 26, yOffset: 137, threshold: 24 }, // Niña Blanca (valores calibrados)
+  NB4: { scale: 0.450, xOffset: 139, yOffset: 296, threshold: 34 }
 };
 
 // Configuración de escala, posición y croma para correr/idle de cada personaje
 const RUN_CONFIGS = {
-  NB1: { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 },
-  NB2: { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 },
-  NB3: { scale: 0.552, xOffset: -205, yOffset: 371, threshold: 31 }, // Niña Blanca (Video MP4 con fondo negro)
-  NB4: { scale: 0.8, xOffset: 0, yOffset: 0, threshold: 45 }  // Niña Morena (Video MP4 con fondo negro)
+  NB1: { scale: 0.34, xOffset: 47, yOffset: 0, threshold: 45 },
+  NB2: { scale: 0.38, xOffset: 37, yOffset: 0, threshold: 45 },
+  NB3: { scale: 0.440, xOffset: 127, yOffset: 323, threshold: 31 }, // Niña Blanca (Video MP4 con fondo negro, valores calibrados)
+  NB4: { scale: 0.390, xOffset: 134, yOffset: 266, threshold: 27 }  // Niña Morena (Video MP4 con fondo negro)
 };
 
 // Rutas de los videos de cada personaje (correr/idle, saltar y deslizarse)
@@ -64,9 +64,9 @@ const CHARACTER_VIDEOS = {
     slide: 'assets/images/subway/Personaje/niña blanca/nIña delizando verdadero.mp4'
   },
   NB4: { // Personaje 4 (Niña Morena)
-    run: 'assets/images/subway/Personaje/niña morena/niña morena corriendo.mp4',
-    jump: 'assets/images/subway/Personaje/niña morena/niña morena saltando.mp4',
-    slide: 'assets/images/subway/Personaje/niña morena/Niña morena deslizandose.png' // <-- Imagen PNG
+    run: 'assets/images/subway/Personaje/nina_morena/nina_morena_corriendo.mp4',
+    jump: 'assets/images/subway/Personaje/nina_morena/nina_morena_saltando.mp4',
+    slide: 'assets/images/subway/Personaje/nina_morena/nina_morena_deslizandose.png' // <-- Imagen PNG
   }
 };
 
@@ -166,7 +166,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     // Estado de Escenarios
     this.currentScenarioIndex = 0;
     this.isIntroPlaying = true;
-    this.introCountdown = 7;
+    this.introCountdown = 3;
 
     this.cameras.main.fadeIn(300, 0, 0, 0);
     this._createUI();
@@ -184,9 +184,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.bgVideo.play();
 
     if (this.introTimerEvent) this.introTimerEvent.destroy();
-    this.introTimerEvent = this.time.delayedCall(7000, () => this._finishIntro());
+    this.introTimerEvent = this.time.delayedCall(3000, () => this._finishIntro());
 
-    this.countdownText = this.add.text(width / 2, height / 2, '7', {
+    this.countdownText = this.add.text(width / 2, height / 2, '3', {
       fontSize: '180px', color: '#ffffff', stroke: '#fa804f',
       strokeThickness: 18, fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(200);
@@ -408,7 +408,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.currentScenarioIndex++;
     const currentScenario = SCENARIOS[this.currentScenarioIndex];
     this.isIntroPlaying = true;
-    this.introCountdown = 7;
+    this.introCountdown = 3;
     if (this.playerContainer) this.playerContainer.setVisible(false);
 
     this.countdownText.setText(this.introCountdown);
@@ -428,7 +428,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     }
 
     if (this.introTimerEvent) this.introTimerEvent.destroy();
-    this.introTimerEvent = this.time.delayedCall(7000, () => this._finishIntro());
+    this.introTimerEvent = this.time.delayedCall(3000, () => this._finishIntro());
 
     if (this.obstacles) this.obstacles.clear(true, true);
     if (this.collectibles) this.collectibles.clear(true, true);
@@ -513,13 +513,25 @@ export class SubwaySurfersScene extends Phaser.Scene {
           const config = RUN_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
           const threshold = config.threshold !== undefined ? config.threshold : 45;
           
-          // Eliminar fondo negro (píxeles donde RGB < threshold)
-          for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i+1];
-            const b = data[i+2];
-            if (r < threshold && g < threshold && b < threshold) {
-              data[i+3] = 0; // Hacer transparente
+          // Eliminar fondo (negro por defecto, o blanco si está configurado)
+          if (config.chromaColor === 'white') {
+            const minColorVal = 255 - threshold;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i+1];
+              const b = data[i+2];
+              if (r > minColorVal && g > minColorVal && b > minColorVal) {
+                data[i+3] = 0; // Hacer transparente
+              }
+            }
+          } else {
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i+1];
+              const b = data[i+2];
+              if (r < threshold && g < threshold && b < threshold) {
+                data[i+3] = 0; // Hacer transparente
+              }
             }
           }
           ctx.putImageData(imgData, 0, 0);
@@ -586,13 +598,25 @@ export class SubwaySurfersScene extends Phaser.Scene {
           const config = SLIDE_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
           const threshold = config.threshold !== undefined ? config.threshold : 45;
           
-          // Eliminar fondo negro (píxeles donde RGB < threshold)
-          for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i+1];
-            const b = data[i+2];
-            if (r < threshold && g < threshold && b < threshold) {
-              data[i+3] = 0; // Hacer transparente
+          // Eliminar fondo (negro por defecto, o blanco si está configurado)
+          if (config.chromaColor === 'white') {
+            const minColorVal = 255 - threshold;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i+1];
+              const b = data[i+2];
+              if (r > minColorVal && g > minColorVal && b > minColorVal) {
+                data[i+3] = 0; // Hacer transparente
+              }
+            }
+          } else {
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i+1];
+              const b = data[i+2];
+              if (r < threshold && g < threshold && b < threshold) {
+                data[i+3] = 0; // Hacer transparente
+              }
             }
           }
           ctx.putImageData(imgData, 0, 0);
@@ -656,13 +680,25 @@ export class SubwaySurfersScene extends Phaser.Scene {
           const config = JUMP_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
           const threshold = config.threshold !== undefined ? config.threshold : 45;
           
-          // Eliminar fondo negro (píxeles donde RGB < threshold)
-          for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i+1];
-            const b = data[i+2];
-            if (r < threshold && g < threshold && b < threshold) {
-              data[i+3] = 0; // Hacer transparente
+          // Eliminar fondo (negro por defecto, o blanco si está configurado)
+          if (config.chromaColor === 'white') {
+            const minColorVal = 255 - threshold;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i+1];
+              const b = data[i+2];
+              if (r > minColorVal && g > minColorVal && b > minColorVal) {
+                data[i+3] = 0; // Hacer transparente
+              }
+            }
+          } else {
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i+1];
+              const b = data[i+2];
+              if (r < threshold && g < threshold && b < threshold) {
+                data[i+3] = 0; // Hacer transparente
+              }
             }
           }
           ctx.putImageData(imgData, 0, 0);
@@ -907,7 +943,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
 
       if (this.playerRunImg) {
-        let scaleMultiplier = 1;
+        let scaleMultiplier = DOWNSCALE_FACTOR;
         if (this.player && this.player.video) {
           const video = this.player.video;
           const rawWidth = video.videoWidth || 300;
@@ -975,12 +1011,20 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
 
       if (this.playerSlideImg) {
-        let scaleMultiplier = 1;
+        let scaleMultiplier = DOWNSCALE_FACTOR;
         if (this.playerSlide && this.playerSlide.video) {
           const video = this.playerSlide.video;
           const rawWidth = video.videoWidth || 300;
           const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
           scaleMultiplier = rawWidth / width;
+        } else if (this.textures.exists('player_slide_img')) {
+          const imgTex = this.textures.get('player_slide_img');
+          const source = imgTex.getSourceImage();
+          if (source) {
+            const rawWidth = source.width || 300;
+            const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+            scaleMultiplier = rawWidth / width;
+          }
         }
         this.playerSlideImg.setSizeToFrame();
         this.playerSlideImg.setScale(config.scale * scaleMultiplier);
@@ -1039,12 +1083,20 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
 
       if (this.playerJumpImg) {
-        let scaleMultiplier = 1;
+        let scaleMultiplier = DOWNSCALE_FACTOR;
         if (this.playerJump && this.playerJump.video) {
           const video = this.playerJump.video;
           const rawWidth = video.videoWidth || 300;
           const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
           scaleMultiplier = rawWidth / width;
+        } else if (this.textures.exists('player_jump_img')) {
+          const imgTex = this.textures.get('player_jump_img');
+          const source = imgTex.getSourceImage();
+          if (source) {
+            const rawWidth = source.width || 300;
+            const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+            scaleMultiplier = rawWidth / width;
+          }
         }
         this.playerJumpImg.setSizeToFrame();
         this.playerJumpImg.setScale(config.scale * scaleMultiplier);

@@ -153,7 +153,7 @@ const PhaserGame = ({ escenaInicial = 'SoccerScene', wsPort, wsPath = '', wsJueg
           background: '#00ff00',
           transition: 'width 0.1s linear'
         }} />
-        ← Menú
+        {escenaInicial === 'SubwaySurfersScene' ? '← Cambiar Personajes' : '← Menú'}
       </div>
     </div>
   );

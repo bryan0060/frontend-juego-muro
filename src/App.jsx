@@ -38,9 +38,14 @@ function App() {
   };
 
   const handleBack = () => {
-    setJuegoActivo(null);
-    setPersonajeSeleccionado(null);
-    setPantalla('menu');
+    if (juegoActivo?.id === 'subway-surfers') {
+      setPersonajeSeleccionado(null);
+      setPantalla('seleccion-personaje');
+    } else {
+      setJuegoActivo(null);
+      setPersonajeSeleccionado(null);
+      setPantalla('menu');
+    }
   };
 
   return (
@@ -57,7 +62,10 @@ function App() {
       {pantalla === 'seleccion-personaje' && (
         <CharacterSelection
           onSelect={handleSelectCharacter}
-          onBack={() => setPantalla('menu')}
+          onBack={() => {
+            setJuegoActivo(null);
+            setPantalla('menu');
+          }}
         />
       )}
       {pantalla === 'juego' && juegoActivo && (

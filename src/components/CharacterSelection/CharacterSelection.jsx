@@ -1,18 +1,61 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './CharacterSelection.module.css';
 import { getFirstTouch } from '../../services/websocket/WebSocketClient';
 
 const CHARACTERS = [
-  { id: 'NB1', image: 'assets/images/subway/Personaje/personaje1.png', label: 'Personaje 1' },
-  { id: 'NB2', image: 'assets/images/subway/Personaje/Personaje2.png', label: 'Personaje 2' },
-  { id: 'NB3', image: 'assets/images/subway/Personaje/personaje3.png', label: 'Personaje 3' },
-  { id: 'NB4', image: 'assets/images/subway/Personaje/Personaje4.png', label: 'Personaje 4' },
+  { id: 'NB1', image: 'assets/images/subway/Personaje/personajef1.png', label: 'Personaje 1' },
+  { id: 'NB2', image: 'assets/images/subway/Personaje/personajef2.png', label: 'Personaje 2' },
+  { id: 'NB3', image: 'assets/images/subway/Personaje/personajef3.png', label: 'Personaje 3' },
+  { id: 'NB4', image: 'assets/images/subway/Personaje/personajef4.png', label: 'Personaje 4' },
 ];
 
 const CharacterSelection = ({ onSelect, onBack }) => {
   const cardRefs = useRef({});
   const backBtnRef = useRef(null);
 
+  const [isHolding, setIsHolding] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+
+  const sensorHoldingRef = useRef(false);
+  const mouseHoldingRef = useRef(false);
+
+  const updateHoldingState = () => {
+    setIsHolding(sensorHoldingRef.current || mouseHoldingRef.current);
+  };
+
+  // Temporizador para el progreso de mantención (llenado y vaciado progresivo)
+  useEffect(() => {
+    let timer = null;
+    if (isHolding) {
+      timer = setInterval(() => {
+        setHoldProgress((prev) => {
+          const next = Math.min(prev + (20 / 2000) * 100, 100); // 2 segundos en total
+          if (next >= 100) {
+            clearInterval(timer);
+            setTimeout(onBack, 0); // Evitar disparar en medio de la actualización de estado
+          }
+          return next;
+        });
+      }, 20);
+    } else {
+      // Vaciado suave (drain) del progreso al soltar
+      timer = setInterval(() => {
+        setHoldProgress((prev) => {
+          if (prev <= 0) {
+            clearInterval(timer);
+            return 0;
+          }
+          return Math.max(prev - (20 / 300) * 100, 0); // Vaciado rápido en 300ms
+        });
+      }, 20);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isHolding, onBack]);
+
+  // Listener para el sensor WebSocket (Radar LiDAR / Toque)
   useEffect(() => {
     const mountTime = Date.now();
 
@@ -21,20 +64,28 @@ const CharacterSelection = ({ onSelect, onBack }) => {
       if (Date.now() - mountTime < 1000) return; // Pequeño delay para evitar toques accidentales
 
       const touch = getFirstTouch(e.detail);
-      if (!touch) return;
+      if (!touch) {
+        sensorHoldingRef.current = false;
+        updateHoldingState();
+        return;
+      }
       const { x, y } = touch;
 
-      // Botón Volver
+      // Detectar si el sensor está tocando el Botón Volver
       const backEl = backBtnRef.current;
       if (backEl) {
         const rect = backEl.getBoundingClientRect();
         if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-          onBack();
+          sensorHoldingRef.current = true;
+          updateHoldingState();
           return;
         }
       }
 
-      // Selección de Personajes
+      sensorHoldingRef.current = false;
+      updateHoldingState();
+
+      // Selección de Personajes (toque instantáneo normal)
       for (const char of CHARACTERS) {
         const el = cardRefs.current[char.id];
         if (!el) continue;
@@ -48,7 +99,17 @@ const CharacterSelection = ({ onSelect, onBack }) => {
 
     window.addEventListener('ws-message', handleSensor);
     return () => window.removeEventListener('ws-message', handleSensor);
-  }, [onSelect, onBack]);
+  }, [onSelect]);
+
+  const handleMouseDown = () => {
+    mouseHoldingRef.current = true;
+    updateHoldingState();
+  };
+
+  const handleMouseUpOrLeave = () => {
+    mouseHoldingRef.current = false;
+    updateHoldingState();
+  };
 
   return (
     <div className={styles.container}>
@@ -74,10 +135,17 @@ const CharacterSelection = ({ onSelect, onBack }) => {
 
       <button
         ref={backBtnRef}
-        className={styles.backButton}
-        onClick={onBack}
+        className={`${styles.backButton} ${isHolding ? styles.holding : ''}`}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUpOrLeave}
+        onMouseLeave={handleMouseUpOrLeave}
+        onTouchStart={handleMouseDown}
+        onTouchEnd={handleMouseUpOrLeave}
       >
-        ← Menú
+        <span className={styles.progressFill} style={{ width: `${holdProgress}%` }} />
+        <span className={styles.buttonText}>
+          {holdProgress > 0 ? `Mantén: ${Math.round(holdProgress)}%` : '← Menú'}
+        </span>
       </button>
 
       <div className={styles.hint}>Toca una foto para elegir</div>

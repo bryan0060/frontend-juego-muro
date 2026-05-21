@@ -104,12 +104,40 @@
   font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .backButton:hover {
-  background: #fa804f;
+  background: rgba(250, 128, 79, 0.2);
   border-color: #fff;
   transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(250, 128, 79, 0.3);
+}
+
+.backButton.holding {
+  border-color: #ff9e79;
+  box-shadow: 0 0 25px rgba(250, 128, 79, 0.7);
+  transform: scale(1.05);
+}
+
+.progressFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #fa804f, #ff9e79);
+  z-index: 1;
+  transition: width 0.05s linear;
+  opacity: 0.85;
+}
+
+.buttonText {
+  position: relative;
+  z-index: 2;
+  font-weight: bold;
 }
 
 .hint {
