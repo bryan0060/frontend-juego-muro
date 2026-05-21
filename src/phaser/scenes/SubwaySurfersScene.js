@@ -10,6 +10,14 @@ const SCENARIOS = [
 // Mapeo de carril backend → índice de lane Phaser
 const CARRIL_A_LANE = { LEFT: 2, CENTER: 1, RIGHT: 0 };
 
+// Configuración de calibración de la pista (desplazamiento, espacio de carriles y punto de fuga)
+const TRACK_CONFIG = {
+  centerXOffset: -80,         // Desplazamiento horizontal del centro de la pista en el suelo
+  laneSpacing: 350,           // Distancia entre carriles en el suelo
+  vanishingPointXOffset: -20, // Desplazamiento horizontal del punto de fuga (horizonte)
+  horizonYFactor: 0.58        // Altura del horizonte/punto de fuga (de 0.0 a 1.0)
+};
+
 // Factor de reducción constante para optimizar rendimiento de croma sin alterar aspecto original
 const DOWNSCALE_FACTOR = 4;
 
@@ -33,7 +41,7 @@ const JUMP_CONFIGS = {
 const RUN_CONFIGS = {
   NB1: { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 },
   NB2: { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 },
-  NB3: { scale: 0.8, xOffset: 0, yOffset: 0, threshold: 45 }, // Niña Blanca (Video MP4 con fondo negro)
+  NB3: { scale: 0.552, xOffset: -205, yOffset: 371, threshold: 31 }, // Niña Blanca (Video MP4 con fondo negro)
   NB4: { scale: 0.8, xOffset: 0, yOffset: 0, threshold: 45 }  // Niña Morena (Video MP4 con fondo negro)
 };
 
@@ -66,7 +74,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
   constructor() {
     super('SubwaySurfersScene');
     this.player = null;
-    this.lanes = [-300, 0, 300];
+    this.lanes = [-TRACK_CONFIG.laneSpacing, 0, TRACK_CONFIG.laneSpacing];
     this.currentLane = 1;
     this.isJumping = false;
     this.isSliding = false;
@@ -207,15 +215,41 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.trackGraphics = this.add.graphics().setDepth(1);
     this._drawStaticTrack();
 
-    this.playerContainer = this.add.container(width / 2 + this.lanes[this.currentLane], height - 100);
+    // Guardar referencia al personaje seleccionado para su uso posterior
+    const selectedChar = this.registry.get('personajeId') || 'NB1';
+    this.selectedChar = selectedChar;
+    const runConfig = RUN_CONFIGS[selectedChar] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
+
+    const initialPlayerX = this._getPlayerXForLane(this.currentLane);
+    this.playerContainer = this.add.container(initialPlayerX, height - 100);
     this.jumpContainer = this.add.container(0, 0);
     this.playerContainer.add(this.jumpContainer);
 
-    this.player = this.add.video(0, 0, 'player').setScale(0.38).setOrigin(0.5, 1);
+    this.player = this.add.video(0, 0, 'player').setOrigin(0.5, 1);
     this.player.setMute(true);
     this.player.addMarker('run', 1, 5);
     this.player.playMarker('run', true);
     this.jumpContainer.add(this.player);
+
+    const videos = CHARACTER_VIDEOS[selectedChar] || CHARACTER_VIDEOS.NB1;
+    const needsRunChroma = videos.run && videos.run.endsWith('.mp4');
+
+    if (needsRunChroma) {
+      if (this.textures.exists('run_chroma_texture')) {
+        this.textures.remove('run_chroma_texture');
+      }
+      this.runCanvas = this.textures.createCanvas('run_chroma_texture', 300, 300);
+      this.playerRunImg = this.add.image(runConfig.xOffset || 0, runConfig.yOffset || 0, 'run_chroma_texture').setOrigin(0.5, 1);
+      this.jumpContainer.add(this.playerRunImg);
+      this.player.setVisible(false);
+    } else {
+      this.runCanvas = null;
+      this.playerRunImg = null;
+      this.player.setScale(runConfig.scale);
+      this.player.x = runConfig.xOffset || 0;
+      this.player.y = runConfig.yOffset || 0;
+      this.player.setVisible(true);
+    }
 
     // Inicializar video de salto si se precargó (se mantiene invisible de fondo)
     if (this.cache.video.exists('player_jump')) {
@@ -225,10 +259,6 @@ export class SubwaySurfersScene extends Phaser.Scene {
     } else {
       this.playerJump = null;
     }
-
-    // Guardar referencia al personaje seleccionado para su uso posterior
-    const selectedChar = this.registry.get('personajeId') || 'NB1';
-    this.selectedChar = selectedChar;
 
     // Crear canvas texture para croma en tiempo real y el objeto de imagen correspondiente para deslizamiento
     if (this.textures.exists('slide_chroma_texture')) {
@@ -260,8 +290,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.playerContainer.setDepth(50);
     this.playerContainer.setVisible(false);
 
-    this.tweens.add({
-      targets: this.player, y: -10, duration: 200,
+    const bounceTarget = this.playerRunImg || this.player;
+    this.runBounceTween = this.tweens.add({
+      targets: bounceTarget, y: (runConfig.yOffset || 0) - 10, duration: 200,
       yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
     });
 
@@ -443,6 +474,74 @@ export class SubwaySurfersScene extends Phaser.Scene {
     }
     if (this.isGameOver) return;
 
+    // Croma en tiempo real para correr/idle del jugador (remueve el fondo negro de la imagen o del video MP4)
+    if (!this.isSliding && !this.isJumping && !this._slideDebugMode && !this._jumpDebugMode && this.runCanvas) {
+      try {
+        let source = null;
+        let rawWidth = 300;
+        let rawHeight = 300;
+
+        if (this.player && this.player.video) {
+          const video = this.player.video;
+          if (!video.paused && !video.ended) {
+            source = video;
+            rawWidth = video.videoWidth || 300;
+            rawHeight = video.videoHeight || 300;
+          }
+        }
+
+        if (source && rawWidth > 0 && rawHeight > 0) {
+          // Downscale by DOWNSCALE_FACTOR to avoid CPU bottleneck / performance drops
+          const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+          const height = Math.round(rawHeight / DOWNSCALE_FACTOR);
+
+          if (this.runCanvas.width !== width || this.runCanvas.height !== height) {
+            this.runCanvas.setSize(width, height);
+            if (this.playerRunImg) {
+              this.playerRunImg.setSizeToFrame();
+            }
+          }
+          
+          const ctx = this.runCanvas.context;
+          ctx.clearRect(0, 0, width, height);
+          ctx.drawImage(source, 0, 0, width, height);
+          
+          const imgData = ctx.getImageData(0, 0, width, height);
+          const data = imgData.data;
+          
+          const charId = this.selectedChar || 'NB1';
+          const config = RUN_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
+          const threshold = config.threshold !== undefined ? config.threshold : 45;
+          
+          // Eliminar fondo negro (píxeles donde RGB < threshold)
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i+1];
+            const b = data[i+2];
+            if (r < threshold && g < threshold && b < threshold) {
+              data[i+3] = 0; // Hacer transparente
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+          this.runCanvas.update();
+
+          // Compensar la escala por el downscaling del canvas
+          const scaleMultiplier = rawWidth / width;
+          if (this.playerRunImg) {
+            this.playerRunImg.setSizeToFrame();
+            this.playerRunImg.setScale(config.scale * scaleMultiplier);
+            this.playerRunImg.x = config.xOffset || 0;
+            // Solo pisamos la Y si estamos en modo depuración (de lo contrario el bounce tween la controla)
+            if (this._runDebugMode) {
+              this.playerRunImg.y = config.yOffset;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error al procesar croma de correr en update:', err);
+      }
+    }
+
     // Croma en tiempo real para el deslizamiento del jugador (remueve el fondo negro de la imagen o del video MP4)
     if (this.isSliding && this.slideCanvas) {
       try {
@@ -583,11 +682,13 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
     }
 
-    // Teclas de Depuración interactiva para Ajustar el Deslizamiento/Salto en tiempo real
+    // Teclas de Depuración interactiva para Ajustar el Correr/Deslizamiento/Salto en tiempo real
     if (!this._debugKeys) {
       this._debugKeys = {
         P: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P),
         Z: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z),
+        X: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X),
+        C: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C),
         I: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I),
         K: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K),
         O: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O),
@@ -599,8 +700,82 @@ export class SubwaySurfersScene extends Phaser.Scene {
       };
     }
 
+    // Toggle modo depura correr (X)
+    if (Phaser.Input.Keyboard.JustDown(this._debugKeys.X)) {
+      if (this._trackDebugMode) {
+        this._trackDebugMode = false;
+        if (this.trackGraphics) this.trackGraphics.clear();
+      }
+      if (this._slideDebugMode) {
+        this._slideDebugMode = false;
+        if (this.playerSlide) this.playerSlide.stop();
+        if (this.playerSlideImg) this.playerSlideImg.setVisible(false);
+      }
+      if (this._jumpDebugMode) {
+        this._jumpDebugMode = false;
+        if (this.playerJump) this.playerJump.stop();
+        if (this.playerJumpImg) this.playerJumpImg.setVisible(false);
+      }
+      this._runDebugMode = !this._runDebugMode;
+      if (this._runDebugMode) {
+        // Pausar bounce tween para calibración exacta
+        if (this.runBounceTween) this.runBounceTween.pause();
+        this.isSliding = false;
+        this.isJumping = false;
+        this.player.setVisible(false);
+        if (this.playerRunImg) {
+          this.playerRunImg.setVisible(true);
+        } else {
+          this.player.setVisible(true);
+        }
+        this.player.playMarker('run', true);
+        // Pausar temporizador de spawn de obstáculos
+        if (this.spawnTimer) this.spawnTimer.paused = true;
+      } else {
+        if (this.spawnTimer) this.spawnTimer.paused = false;
+        if (this._debugText) this._debugText.setVisible(false);
+
+        // Reanudar bounce tween actualizando los offsets del target
+        const activeTarget = this.playerRunImg || this.player;
+        const charId = this.selectedChar || 'NB1';
+        const config = RUN_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
+        if (this.runBounceTween) {
+          this.runBounceTween.stop();
+          this.runBounceTween = this.tweens.add({
+            targets: activeTarget,
+            y: (config.yOffset || 0) - 10,
+            duration: 200,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+          });
+        }
+      }
+    }
+
     // Toggle modo depura deslizamiento (P)
     if (Phaser.Input.Keyboard.JustDown(this._debugKeys.P)) {
+      if (this._trackDebugMode) {
+        this._trackDebugMode = false;
+        if (this.trackGraphics) this.trackGraphics.clear();
+      }
+      if (this._runDebugMode) {
+        this._runDebugMode = false;
+        if (this.runBounceTween) {
+          const activeTarget = this.playerRunImg || this.player;
+          const charId = this.selectedChar || 'NB1';
+          const config = RUN_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
+          this.runBounceTween.stop();
+          this.runBounceTween = this.tweens.add({
+            targets: activeTarget,
+            y: (config.yOffset || 0) - 10,
+            duration: 200,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+          });
+        }
+      }
       if (this._jumpDebugMode) {
         this._jumpDebugMode = false;
         if (this.playerJump) this.playerJump.stop();
@@ -610,6 +785,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       if (this._slideDebugMode) {
         this.isSliding = true;
         this.player.setVisible(false);
+        if (this.playerRunImg) this.playerRunImg.setVisible(false);
         this.player.stop();
         if (this.playerSlide) {
           this.playerSlide.setLoop(true);
@@ -628,7 +804,11 @@ export class SubwaySurfersScene extends Phaser.Scene {
         if (this.playerSlideImg) {
           this.playerSlideImg.setVisible(false);
         }
-        this.player.setVisible(true);
+        if (this.playerRunImg) {
+          this.playerRunImg.setVisible(true);
+        } else {
+          this.player.setVisible(true);
+        }
         this.player.playMarker('run', true);
         if (this.spawnTimer) this.spawnTimer.paused = false;
         if (this._debugText) this._debugText.setVisible(false);
@@ -637,6 +817,27 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
     // Toggle modo depura salto (Z)
     if (Phaser.Input.Keyboard.JustDown(this._debugKeys.Z)) {
+      if (this._trackDebugMode) {
+        this._trackDebugMode = false;
+        if (this.trackGraphics) this.trackGraphics.clear();
+      }
+      if (this._runDebugMode) {
+        this._runDebugMode = false;
+        if (this.runBounceTween) {
+          const activeTarget = this.playerRunImg || this.player;
+          const charId = this.selectedChar || 'NB1';
+          const config = RUN_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
+          this.runBounceTween.stop();
+          this.runBounceTween = this.tweens.add({
+            targets: activeTarget,
+            y: (config.yOffset || 0) - 10,
+            duration: 200,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+          });
+        }
+      }
       if (this._slideDebugMode) {
         this._slideDebugMode = false;
         if (this.playerSlide) this.playerSlide.stop();
@@ -646,6 +847,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       if (this._jumpDebugMode) {
         this.isJumping = true;
         this.player.setVisible(false);
+        if (this.playerRunImg) this.playerRunImg.setVisible(false);
         this.player.stop();
         if (this.playerJump) {
           this.playerJump.setLoop(true);
@@ -664,11 +866,83 @@ export class SubwaySurfersScene extends Phaser.Scene {
         if (this.playerJumpImg) {
           this.playerJumpImg.setVisible(false);
         }
-        this.player.setVisible(true);
+        if (this.playerRunImg) {
+          this.playerRunImg.setVisible(true);
+        } else {
+          this.player.setVisible(true);
+        }
         this.player.playMarker('run', true);
         if (this.spawnTimer) this.spawnTimer.paused = false;
         if (this._debugText) this._debugText.setVisible(false);
       }
+    }
+
+    if (this._runDebugMode) {
+      const charId = this.selectedChar || 'NB1';
+      const config = RUN_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0, threshold: 45 };
+
+      if (this._debugKeys.I.isDown) {
+        config.yOffset -= 1;
+      }
+      if (this._debugKeys.K.isDown) {
+        config.yOffset += 1;
+      }
+      if (this._debugKeys.O.isDown) {
+        config.scale += 0.002;
+      }
+      if (this._debugKeys.L.isDown) {
+        config.scale -= 0.002;
+      }
+      if (this._debugKeys.U.isDown) {
+        config.xOffset = (config.xOffset || 0) - 1;
+      }
+      if (this._debugKeys.J.isDown) {
+        config.xOffset = (config.xOffset || 0) + 1;
+      }
+      if (this._debugKeys.T.isDown) {
+        config.threshold = Math.min(255, (config.threshold || 0) + 1);
+      }
+      if (this._debugKeys.G.isDown) {
+        config.threshold = Math.max(0, (config.threshold || 0) - 1);
+      }
+
+      if (this.playerRunImg) {
+        let scaleMultiplier = 1;
+        if (this.player && this.player.video) {
+          const video = this.player.video;
+          const rawWidth = video.videoWidth || 300;
+          const width = Math.round(rawWidth / DOWNSCALE_FACTOR);
+          scaleMultiplier = rawWidth / width;
+        }
+        this.playerRunImg.setSizeToFrame();
+        this.playerRunImg.setScale(config.scale * scaleMultiplier);
+        this.playerRunImg.x = config.xOffset || 0;
+        this.playerRunImg.y = config.yOffset;
+      } else {
+        this.player.setScale(config.scale);
+        this.player.x = config.xOffset || 0;
+        this.player.y = config.yOffset;
+      }
+
+      if (!this._debugText) {
+        this._debugText = this.add.text(this.scale.width / 2, 250, '', {
+          fontSize: '24px', color: '#ffffff', backgroundColor: 'rgba(0,0,0,0.85)',
+          padding: { x: 15, y: 10 }, align: 'center', stroke: '#ffff00', strokeThickness: 2,
+          fontFamily: 'monospace'
+        }).setOrigin(0.5).setDepth(3000);
+      }
+      this._debugText.setVisible(true);
+      this._debugText.setText(
+        `🛠️ MODO DEPURA CORRER 🛠️\n\n` +
+        `Mantén presionadas las teclas:\n` +
+        `• I / K : Subir / Bajar (yOffset: ${config.yOffset.toFixed(0)})\n` +
+        `• U / J : Izquierda / Derecha (xOffset: ${(config.xOffset || 0).toFixed(0)})\n` +
+        `• O / L : Agrandar / Achicar (scale: ${config.scale.toFixed(3)})\n` +
+        `• T / G : Umbral Croma (threshold: ${(config.threshold || 0).toFixed(0)})\n\n` +
+        `Copia y pega esto en RUN_CONFIGS.${charId}:\n` +
+        `{ scale: ${config.scale.toFixed(3)}, xOffset: ${config.xOffset.toFixed(0)}, yOffset: ${config.yOffset.toFixed(0)}, threshold: ${config.threshold.toFixed(0)} }\n\n` +
+        `Presiona 'X' para salir del modo depuración`
+      );
     }
 
     if (this._slideDebugMode) {
@@ -799,15 +1073,101 @@ export class SubwaySurfersScene extends Phaser.Scene {
       );
     }
 
+    // Toggle modo depura pista (C)
+    if (Phaser.Input.Keyboard.JustDown(this._debugKeys.C)) {
+      if (this._runDebugMode) {
+        this._runDebugMode = false;
+        if (this.runBounceTween) this.runBounceTween.play();
+      }
+      if (this._slideDebugMode) {
+        this._slideDebugMode = false;
+        if (this.playerSlide) this.playerSlide.stop();
+        if (this.playerSlideImg) this.playerSlideImg.setVisible(false);
+      }
+      if (this._jumpDebugMode) {
+        this._jumpDebugMode = false;
+        if (this.playerJump) this.playerJump.stop();
+        if (this.playerJumpImg) this.playerJumpImg.setVisible(false);
+      }
+      this._trackDebugMode = !this._trackDebugMode;
+      if (this._trackDebugMode) {
+        if (this.spawnTimer) this.spawnTimer.paused = true;
+      } else {
+        if (this.spawnTimer) this.spawnTimer.paused = false;
+        if (this._debugText) this._debugText.setVisible(false);
+        if (this.trackGraphics) this.trackGraphics.clear();
+      }
+    }
+
+    if (this._trackDebugMode) {
+      if (this._debugKeys.U.isDown) {
+        TRACK_CONFIG.centerXOffset -= 1;
+      }
+      if (this._debugKeys.J.isDown) {
+        TRACK_CONFIG.centerXOffset += 1;
+      }
+      if (this._debugKeys.I.isDown) {
+        TRACK_CONFIG.vanishingPointXOffset -= 1;
+      }
+      if (this._debugKeys.K.isDown) {
+        TRACK_CONFIG.vanishingPointXOffset += 1;
+      }
+      if (this._debugKeys.O.isDown) {
+        TRACK_CONFIG.laneSpacing += 1;
+      }
+      if (this._debugKeys.L.isDown) {
+        TRACK_CONFIG.laneSpacing = Math.max(50, TRACK_CONFIG.laneSpacing - 1);
+      }
+      if (this._debugKeys.T.isDown) {
+        TRACK_CONFIG.horizonYFactor = Math.min(1.0, TRACK_CONFIG.horizonYFactor + 0.002);
+      }
+      if (this._debugKeys.G.isDown) {
+        TRACK_CONFIG.horizonYFactor = Math.max(0.2, TRACK_CONFIG.horizonYFactor - 0.002);
+      }
+
+      // Sincronizar this.lanes
+      this.lanes = [-TRACK_CONFIG.laneSpacing, 0, TRACK_CONFIG.laneSpacing];
+
+      // Actualizar posición del playerContainer inmediatamente
+      if (this.playerContainer) {
+        this.playerContainer.x = this._getPlayerXForLane(this.currentLane);
+      }
+
+      if (!this._debugText) {
+        this._debugText = this.add.text(this.scale.width / 2, 250, '', {
+          fontSize: '24px', color: '#ffffff', backgroundColor: 'rgba(0,0,0,0.85)',
+          padding: { x: 15, y: 10 }, align: 'center', stroke: '#ff00ff', strokeThickness: 2,
+          fontFamily: 'monospace'
+        }).setOrigin(0.5).setDepth(3000);
+      }
+      this._debugText.setVisible(true);
+      this._debugText.setText(
+        `🛠️ MODO DEPURA PISTA / CARRILES 🛠️\n\n` +
+        `Mantén presionadas las teclas:\n` +
+        `• U / J : Mover Centro de Pista (centerXOffset: ${TRACK_CONFIG.centerXOffset.toFixed(0)})\n` +
+        `• I / K : Mover Punto de Fuga / Horizonte (vanishingPointXOffset: ${TRACK_CONFIG.vanishingPointXOffset.toFixed(0)})\n` +
+        `• O / L : Ajustar Ancho de Carriles (laneSpacing: ${TRACK_CONFIG.laneSpacing.toFixed(0)})\n` +
+        `• T / G : Mover Altura del Horizonte (horizonYFactor: ${TRACK_CONFIG.horizonYFactor.toFixed(3)})\n\n` +
+        `Copia y pega esto al inicio de SubwaySurfersScene.js en TRACK_CONFIG:\n` +
+        `const TRACK_CONFIG = {\n` +
+        `  centerXOffset: ${TRACK_CONFIG.centerXOffset.toFixed(0)},\n` +
+        `  laneSpacing: ${TRACK_CONFIG.laneSpacing.toFixed(0)},\n` +
+        `  vanishingPointXOffset: ${TRACK_CONFIG.vanishingPointXOffset.toFixed(0)},\n` +
+        `  horizonYFactor: ${TRACK_CONFIG.horizonYFactor.toFixed(3)}\n` +
+        `};\n\n` +
+        `Presiona 'C' para salir del modo depuración`
+      );
+    }
+
     // Teclado — sigue funcionando en paralelo al backend
-    if (!this.isIntroPlaying && !this._slideDebugMode && !this._jumpDebugMode) {
+    if (!this.isIntroPlaying && !this._slideDebugMode && !this._jumpDebugMode && !this._runDebugMode && !this._trackDebugMode) {
       if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this._setLane(Math.max(0, this.currentLane - 1));
       if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this._setLane(Math.min(2, this.currentLane + 1));
       if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) this._jump();
       if (Phaser.Input.Keyboard.JustDown(this.cursors.down)) this._slide();
     }
 
-    const horizonY = this.scale.height * 0.45;
+    const horizonY = this.scale.height * TRACK_CONFIG.horizonYFactor;
     const floatY = (this.scale.height / 2) + Math.sin(this.time.now * 0.01) * 2;
     this.bgVideo.y = floatY;
     if (this.background && this.background.visible) this.background.y = floatY;
@@ -817,8 +1177,11 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.floorStrips.getChildren().forEach(strip => {
       strip.y += this.gameSpeed * 1.5;
       const progress = (strip.y - horizonY) / (this.scale.height - horizonY);
-      const targetX = this.scale.width / 2 + this.lanes[strip.lane];
-      const startX = this.scale.width / 2 + (this.lanes[strip.lane] * 0.02);
+      
+      const relativeOffset = (strip.lane - 1) * TRACK_CONFIG.laneSpacing;
+      const startX = this.scale.width / 2 + TRACK_CONFIG.vanishingPointXOffset;
+      const targetX = this.scale.width / 2 + TRACK_CONFIG.centerXOffset + relativeOffset;
+      
       strip.x = Phaser.Math.Linear(startX, targetX, progress);
       strip.scaleX = 0.1 + progress * 2;
       strip.alpha = Phaser.Math.Clamp(progress * 2, 0, 0.4);
@@ -850,8 +1213,11 @@ export class SubwaySurfersScene extends Phaser.Scene {
     objs.forEach(obj => {
       obj.y += this.gameSpeed;
       const progress = (obj.y - horizonY) / (this.scale.height - horizonY);
-      const startX = this.scale.width / 2 + (this.lanes[obj.lane] * 0.02);
-      const targetX = this.scale.width / 2 + this.lanes[obj.lane];
+      
+      const relativeOffset = (obj.lane - 1) * TRACK_CONFIG.laneSpacing;
+      const startX = this.scale.width / 2 + TRACK_CONFIG.vanishingPointXOffset;
+      const targetX = this.scale.width / 2 + TRACK_CONFIG.centerXOffset + relativeOffset;
+      
       obj.x = Phaser.Math.Linear(startX, targetX, progress);
       obj.setDisplaySize(200 * progress, 200 * progress);
       obj.setAlpha(Phaser.Math.Clamp(progress * 4, 0, 1));
@@ -893,12 +1259,24 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.collectibles.add(sun);
   }
 
+  _getPlayerXForLane(lane) {
+    const horizonY = this.scale.height * TRACK_CONFIG.horizonYFactor;
+    const playerY = this.scale.height - 100;
+    const progress = (playerY - horizonY) / (this.scale.height - horizonY);
+    
+    const relativeOffset = (lane - 1) * TRACK_CONFIG.laneSpacing;
+    const startX = this.scale.width / 2 + TRACK_CONFIG.vanishingPointXOffset;
+    const targetX = this.scale.width / 2 + TRACK_CONFIG.centerXOffset + relativeOffset;
+    
+    return Phaser.Math.Linear(startX, targetX, progress);
+  }
+
   _setLane(lane) {
     if (this.currentLane === lane) return;
     this.currentLane = lane;
     this.tweens.add({
       targets: this.playerContainer,
-      x: this.scale.width / 2 + this.lanes[lane],
+      x: this._getPlayerXForLane(lane),
       duration: 150,
       ease: 'Power2'
     });
@@ -915,6 +1293,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     // Si tiene video de salto o imagen de salto, pausar video de correr y mostrar/reproducir salto
     if (this.playerJump || this.textures.exists('player_jump_img')) {
       this.player.setVisible(false);
+      if (this.playerRunImg) this.playerRunImg.setVisible(false);
       this.player.stop();
       
       if (this.playerJumpImg) {
@@ -962,7 +1341,11 @@ export class SubwaySurfersScene extends Phaser.Scene {
         }
 
         // Volver a mostrar y reproducir el video de correr
-        this.player.setVisible(true);
+        if (this.playerRunImg) {
+          this.playerRunImg.setVisible(true);
+        } else {
+          this.player.setVisible(true);
+        }
         this.player.playMarker('run', true);
       }
     });
@@ -979,6 +1362,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     // Si tiene video de deslizamiento o imagen de deslizamiento, pausar video de correr y mostrar/reproducir deslizamiento
     if (this.playerSlide || this.textures.exists('player_slide_img')) {
       this.player.setVisible(false);
+      if (this.playerRunImg) this.playerRunImg.setVisible(false);
       this.player.stop();
       
       if (this.playerSlideImg) {
@@ -1017,20 +1401,26 @@ export class SubwaySurfersScene extends Phaser.Scene {
           this.playerSlideImg.setVisible(false);
         }
         // Volver a mostrar y reproducir el video de correr
-        this.player.setVisible(true);
+        if (this.playerRunImg) {
+          this.playerRunImg.setVisible(true);
+        } else {
+          this.player.setVisible(true);
+        }
         this.player.playMarker('run', true);
       });
     } else {
       // Comportamiento de respaldo (squish del video de correr)
+      const targetObj = this.playerRunImg || this.player;
+      const originalScaleY = targetObj.scaleY;
       this.tweens.add({
-        targets: this.player,
-        scaleY: 0.15,
+        targets: targetObj,
+        scaleY: originalScaleY * 0.15,
         duration: 150,
         yoyo: true,
         hold: 600,
         onComplete: () => {
           this.isSliding = false;
-          this.player.scaleY = 0.38;
+          targetObj.scaleY = originalScaleY;
         }
       });
     }
@@ -1061,10 +1451,47 @@ export class SubwaySurfersScene extends Phaser.Scene {
     if (this.textures.exists('jump_chroma_texture')) {
       this.textures.remove('jump_chroma_texture');
     }
+    if (this.textures.exists('run_chroma_texture')) {
+      this.textures.remove('run_chroma_texture');
+    }
   }
 
   _drawStaticTrack() { }
-  _drawDynamicTrack() { if (this.trackGraphics) this.trackGraphics.clear(); }
+  _drawDynamicTrack() {
+    if (!this.trackGraphics) return;
+    this.trackGraphics.clear();
+    
+    // Solo dibujar si estamos en el modo depuración de pista
+    if (this._trackDebugMode) {
+      const horizonY = this.scale.height * 0.45;
+      const bottomY = this.scale.height;
+      
+      // Dibujar las 3 líneas de los carriles
+      for (let lane = 0; lane < 3; lane++) {
+        const relativeOffset = (lane - 1) * TRACK_CONFIG.laneSpacing;
+        
+        // Punto inicial (punto de fuga en horizonte)
+        const startX = this.scale.width / 2 + TRACK_CONFIG.vanishingPointXOffset + (relativeOffset * 0.02);
+        // Punto final (suelo)
+        const targetX = this.scale.width / 2 + TRACK_CONFIG.centerXOffset + relativeOffset;
+        
+        // Línea central verde, laterales magenta
+        this.trackGraphics.lineStyle(6, lane === 1 ? 0x00ff00 : 0xff00ff, 0.8);
+        this.trackGraphics.beginPath();
+        this.trackGraphics.moveTo(startX, horizonY);
+        this.trackGraphics.lineTo(targetX, bottomY);
+        this.trackGraphics.strokePath();
+        
+        // Dibujar un círculo en la posición del jugador para este carril
+        const playerY = this.scale.height - 100;
+        const progress = (playerY - horizonY) / (this.scale.height - horizonY);
+        const playerX = Phaser.Math.Linear(startX, targetX, progress);
+        
+        this.trackGraphics.fillStyle(lane === this.currentLane ? 0x00ff00 : 0xffff00, 0.7);
+        this.trackGraphics.fillCircle(playerX, playerY, 15);
+      }
+    }
+  }
   _spawnFloorStrip() { return; }
   _spawnSideDecoration() { return; }
   _spawnSpeedLine() { return; }
