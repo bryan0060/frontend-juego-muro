@@ -38,15 +38,16 @@ const GRADES = [
 
 const ST = { SELECT: 'SELECT', COUNTDOWN: 'COUNTDOWN', PLAYING: 'PLAYING', PREVIEW: 'PREVIEW', EVAL: 'EVAL', RESULTS: 'RESULTS' };
 
-function cosineSim(a, b) {
-  let dot = 0, mA = 0, mB = 0;
-  Object.keys(b).forEach(k => {
-    if (!a[k] || !b[k]) return;
-    dot += a[k].x * b[k].x + a[k].y * b[k].y;
-    mA += a[k].x ** 2 + a[k].y ** 2;
-    mB += b[k].x ** 2 + b[k].y ** 2;
-  });
-  return (mA && mB) ? dot / (Math.sqrt(mA) * Math.sqrt(mB)) : 0;
+function poseSim(a, b) {
+  const keys = Object.keys(b).filter(k => a[k] && b[k]);
+  if (keys.length === 0) return 0;
+  const totalDist = keys.reduce((sum, k) => {
+    const dx = a[k].x - b[k].x;
+    const dy = a[k].y - b[k].y;
+    return sum + Math.sqrt(dx * dx + dy * dy);
+  }, 0);
+  const avgDist = totalDist / keys.length;
+  return Math.max(0, 1 - avgDist * 4);
 }
 
 function getGrade(sim) {
@@ -79,6 +80,8 @@ export class JustDanceScene extends Phaser.Scene {
 
     this._wsHandler = this._onWsMessage.bind(this);
     window.addEventListener('ws-message', this._wsHandler);
+
+    this.grafEsqueleto = this.add.graphics().setDepth(15);
 
     this.holdGraphics = this.add.graphics().setDepth(99999);
     this.gfxSilueta = this.add.graphics().setDepth(50);
@@ -361,7 +364,7 @@ export class JustDanceScene extends Phaser.Scene {
     }
 
     evals.forEach((ev) => {
-      const previewT = ev.t - 3;
+      const previewT = ev.t - 2;
 
       if (previewT > 0) {
         this.time.delayedCall(previewT * 1000, () => {
@@ -371,7 +374,7 @@ export class JustDanceScene extends Phaser.Scene {
         });
       }
 
-      this.time.delayedCall(ev.t * 1000, () => {
+      this.time.delayedCall((ev.t + 1) * 1000, () => {
         if (this.state !== ST.RESULTS) {
           this._evaluarPose(ev.esqueleto);
         }
@@ -572,9 +575,9 @@ export class JustDanceScene extends Phaser.Scene {
     if (this._stickCanvas) { this._stickCanvas.remove(); this._stickCanvas = null; }
 
     const esquNorm = this.esqueletoActual ? this._normalizarEsqueleto(this.esqueletoActual) : null;
-    const sim = esquNorm ? cosineSim(esquNorm, poseObjetivo) : 0;
+    const sim = esquNorm ? poseSim(esquNorm, poseObjetivo) : 0;
     const grade = getGrade(sim);
-    
+
 
     if (grade.label !== '¡MUÉVETE!') {
       this.combo++;
@@ -759,19 +762,99 @@ export class JustDanceScene extends Phaser.Scene {
   }
 
   // ── DIBUJAR ESQUELETO ────────────────────────────────────────────────────────
-  _dibujarEsqueleto(gfx, pose, offX, offY, areaW, areaH, color, grosor, radio) {
-    gfx.lineStyle(grosor, color, 0.9);
-    CONEXIONES.forEach(([a, b]) => {
-      if (!pose[a] || !pose[b]) return;
-      gfx.beginPath();
-      gfx.moveTo(offX + pose[a].x * areaW, offY + pose[a].y * areaH);
-      gfx.lineTo(offX + pose[b].x * areaW, offY + pose[b].y * areaH);
-      gfx.strokePath();
+  _dibujarEsqueleto(graphics, esqueleto, offsetX, offsetY, areaW, areaH, color, grosor, radio) {
+    const hIzq = esqueleto['hombro_izquierdo'];
+    const hDer = esqueleto['hombro_derecho'];
+    const cIzq = esqueleto['cadera_izquierda'];
+    const cDer = esqueleto['cadera_derecha'];
+    const nariz = esqueleto['nariz'];
+
+    const cxH = hIzq && hDer ? (hIzq.x + hDer.x) / 2 : null;
+    const cyH = hIzq && hDer ? (hIzq.y + hDer.y) / 2 : null;
+    const cxC = cIzq && cDer ? (cIzq.x + cDer.x) / 2 : null;
+    const cyC = cIzq && cDer ? (cIzq.y + cDer.y) / 2 : null;
+
+    let cabeza = null;
+    if (cxH !== null && nariz) {
+      const distNH = Math.sqrt((nariz.x - cxH) ** 2 + (nariz.y - cyH) ** 2);
+      cabeza = {
+        x: cxH + (nariz.x - cxH) * 0.3,
+        y: cyH - distNH * 0.4,
+      };
+    }
+
+    graphics.lineStyle(grosor, color, 1);
+
+    // Torso
+    if (cxH !== null && cxC !== null) {
+      graphics.beginPath();
+      graphics.moveTo(offsetX + cxH * areaW, offsetY + cyH * areaH);
+      graphics.lineTo(offsetX + cxC * areaW, offsetY + cyC * areaH);
+      graphics.strokePath();
+    }
+
+    // Hombros
+    if (hIzq && hDer) {
+      graphics.beginPath();
+      graphics.moveTo(offsetX + hIzq.x * areaW, offsetY + hIzq.y * areaH);
+      graphics.lineTo(offsetX + hDer.x * areaW, offsetY + hDer.y * areaH);
+      graphics.strokePath();
+    }
+
+    // Brazos
+    const codoIzq = esqueleto['codo_izquierdo'];
+    const munecaIzq = esqueleto['muneca_izquierda'];
+    const codoDer = esqueleto['codo_derecho'];
+    const munecaDer = esqueleto['muneca_derecha'];
+
+    [[hIzq, codoIzq], [codoIzq, munecaIzq], [hDer, codoDer], [codoDer, munecaDer]].forEach(([a, b]) => {
+      if (!a || !b) return;
+      graphics.beginPath();
+      graphics.moveTo(offsetX + a.x * areaW, offsetY + a.y * areaH);
+      graphics.lineTo(offsetX + b.x * areaW, offsetY + b.y * areaH);
+      graphics.strokePath();
     });
-    gfx.fillStyle(color, 1);
-    Object.values(pose).forEach(p => {
-      gfx.fillCircle(offX + p.x * areaW, offY + p.y * areaH, radio);
-    });
+
+    // Piernas desde centro cadera
+    if (cxC !== null) {
+      const ox = offsetX + cxC * areaW;
+      const oy = offsetY + cyC * areaH;
+      const rodIzq = esqueleto['rodilla_izquierda'];
+      const tobIzq = esqueleto['tobillo_izquierdo'];
+      const rodDer = esqueleto['rodilla_derecha'];
+      const tobDer = esqueleto['tobillo_derecho'];
+
+      [[{ x: cxC, y: cyC }, rodIzq], [rodIzq, tobIzq], [{ x: cxC, y: cyC }, rodDer], [rodDer, tobDer]].forEach(([a, b]) => {
+        if (!a || !b) return;
+        graphics.beginPath();
+        graphics.moveTo(offsetX + a.x * areaW, offsetY + a.y * areaH);
+        graphics.lineTo(offsetX + b.x * areaW, offsetY + b.y * areaH);
+        graphics.strokePath();
+      });
+    }
+
+    // Joints
+    graphics.fillStyle(color, 1);
+    ['codo_izquierdo', 'codo_derecho', 'muneca_izquierda', 'muneca_derecha',
+      'rodilla_izquierda', 'rodilla_derecha', 'tobillo_izquierdo', 'tobillo_derecho'].forEach(nombre => {
+        const p = esqueleto[nombre];
+        if (!p) return;
+        graphics.fillCircle(offsetX + p.x * areaW, offsetY + p.y * areaH, radio);
+      });
+
+    // Cabeza
+    if (cabeza && hIzq && hDer) {
+      const anchoHombros = Math.abs(hDer.x - hIzq.x) * areaW;
+      const radioCabeza = Math.min(Math.max(radio * 2, anchoHombros * 0.18), 35);
+      const cx = offsetX + cabeza.x * areaW;
+      const cy = offsetY + cabeza.y * areaH;
+      graphics.fillStyle(color, 0.2);
+      graphics.fillCircle(cx, cy, radioCabeza * 1.4);
+      graphics.fillStyle(color, 1);
+      graphics.fillCircle(cx, cy, radioCabeza);
+      graphics.lineStyle(3, 0xffffff, 0.6);
+      graphics.strokeCircle(cx, cy, radioCabeza);
+    }
   }
 
   // ── RESULTADOS ───────────────────────────────────────────────────────────────
@@ -911,10 +994,17 @@ export class JustDanceScene extends Phaser.Scene {
     makBtn(W / 2 - 180, btnY, 300, 56, '🔄 JUGAR DE NUEVO', C.purple, () => this._seleccionarCancion(this.cancion));
     makBtn(W / 2 + 180, btnY, 300, 56, '🏠 CAMBIAR CANCIÓN', C.blue, () => this._mostrarSongSelect());
   }
+  _espejearEsqueleto(esq) {
+    const result = {};
+    Object.entries(esq).forEach(([key, p]) => {
+      if (!p) { result[key] = p; return; }
+      result[key] = { x: 1 - p.x, y: p.y };
+    });
+    return result;
+  }
 
   // ── UPDATE ───────────────────────────────────────────────────────────────────
   update() {
-    // Hold (LiDAR)
     if (this.holdBtn) {
       this.holdBtn.time += this.game.loop.delta;
       const p = Math.min(this.holdBtn.time / this.holdBtn.duration, 1);
@@ -925,10 +1015,21 @@ export class JustDanceScene extends Phaser.Scene {
       this.holdGraphics.strokePath();
       if (p >= 1) { const cb = this.holdBtn.callback; this.holdBtn = null; this.holdGraphics.clear(); cb(); }
     }
+
+    if (!this.grafEsqueleto) return;
+    this.grafEsqueleto.clear();
+
+    if (this.esqueletoActual && (this.state === ST.PLAYING || this.state === ST.PREVIEW || this.state === ST.EVAL)) {
+      const esqNorm = this._normalizarEsqueleto(this.esqueletoActual);
+      const esqEsp = this._espejearEsqueleto(esqNorm);
+      this._dibujarEsqueleto(this.grafEsqueleto, esqEsp, 0, 0, this.W, this.H, C.blue, 48, 36);
+      this._dibujarEsqueleto(this.grafEsqueleto, esqEsp, 0, 0, this.W, this.H, 0xffffff, 18, 18);
+    }
   }
 
   // ── UTILS ────────────────────────────────────────────────────────────────────
   _limpiarEscena() {
+    if (this.grafEsqueleto) this.grafEsqueleto.clear();
     if (this._video) { this._video.stop(); this._video.destroy(); this._video = null; }
     if (this._txtPreview) { this._txtPreview.destroy(); this._txtPreview = null; }
     if (this._cuentaPreview) { this._cuentaPreview.destroy(); this._cuentaPreview = null; }
@@ -939,7 +1040,7 @@ export class JustDanceScene extends Phaser.Scene {
     if (this.gfxHUD) { this.gfxHUD.clear(); }
 
     [...this.children.list]
-      .filter(c => c !== this.holdGraphics && c !== this.gfxSilueta && c !== this.gfxHUD)
+      .filter(c => c !== this.holdGraphics && c !== this.gfxSilueta && c !== this.gfxHUD && c !== this.grafEsqueleto)
       .forEach(c => { if (c && c.destroy) c.destroy(); });
 
     this.tweens.killAll();
