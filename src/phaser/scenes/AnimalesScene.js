@@ -1026,30 +1026,7 @@ export class AnimalesScene extends Phaser.Scene {
         }).setShadow(1, 1, '#000', 2);
         this.hudGroup.add(energyLabel);
 
-        // 3. Botón para abrir panel de animales
-        const btnSpawnX = this.W / 2;
-        const btnSpawnY = hudY + 10;
-        const btnSpawnBg = this.add.graphics();
-        btnSpawnBg.fillStyle(0x40c0dd, 1);
-        btnSpawnBg.fillRoundedRect(btnSpawnX - 100, btnSpawnY - 20, 200, 40, 10);
-        btnSpawnBg.lineStyle(2, 0xffffff, 1);
-        btnSpawnBg.strokeRoundedRect(btnSpawnX - 100, btnSpawnY - 20, 200, 40, 10);
 
-        const btnSpawnText = this.add.text(btnSpawnX, btnSpawnY, 'ELEGIR ANIMALES', {
-            fontSize: '20px', fontFamily: 'Luckiest Guy', color: '#ffffff'
-        }).setOrigin(0.5).setShadow(2, 2, '#000000', 4);
-
-        const btnSpawnArea = this.add.rectangle(btnSpawnX, btnSpawnY, 200, 40, 0x000000, 0)
-            .setInteractive({ cursor: 'pointer' });
-
-        btnSpawnArea.on('pointerdown', () => {
-            this.sound.play('pop');
-            this._toggleMenuAnimales();
-        });
-
-        this.hudGroup.add(btnSpawnBg);
-        this.hudGroup.add(btnSpawnText);
-        this.hudGroup.add(btnSpawnArea);
 
         // Ocultar HUD inicialmente
         this.hudGroup.setVisible(false);
@@ -1231,8 +1208,8 @@ export class AnimalesScene extends Phaser.Scene {
 
         const enemigo = this.add.sprite(x, y, anim.key).setScale(0).setDepth(4);
 
-        // ESCALA INDIVIDUAL: Ahora cada animal usa exactamente su valor de la pool
-        enemigo.baseScale = anim.scale;
+        // ESCALA INDIVIDUAL: Ahora cada animal usa exactamente su valor de la pool (con un factor de 1.5 para hacerlos más grandes)
+        enemigo.baseScale = anim.scale * 1.5;
 
         if (anim.tipo === 'ground') {
             enemigo.setOrigin(0.5, 1);
