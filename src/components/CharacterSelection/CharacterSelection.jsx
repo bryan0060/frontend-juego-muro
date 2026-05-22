@@ -23,6 +23,22 @@ const CharacterSelection = ({ onSelect, onBack }) => {
     setIsHolding(sensorHoldingRef.current || mouseHoldingRef.current);
   };
 
+  // Música de fondo del menú
+  useEffect(() => {
+    const audio = new Audio('assets/audio/subway surfer/menú de personajes/Song_1.mp3');
+    audio.loop = true;
+    audio.volume = 0.4;
+    
+    // El autoplay puede estar bloqueado por el navegador hasta que haya interacción,
+    // pero intentamos reproducirlo de inmediato.
+    audio.play().catch(e => console.log('Audio autoplay bloqueado:', e));
+
+    return () => {
+      audio.pause();
+      audio.src = '';
+    };
+  }, []);
+
   // Temporizador para el progreso de mantención (llenado y vaciado progresivo)
   useEffect(() => {
     let timer = null;
