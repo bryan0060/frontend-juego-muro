@@ -20,12 +20,12 @@ let TRACK_CONFIG = {
 
 // Configuración para obstáculos aéreos (como el carro futurista)
 let AIRBORNE_CONFIG = {
-  yOffset: -430,
-  scaleMultiplier: 0.975,
-  centerXOffset: 5,
-  laneSpacing: 524,
-  vanishingPointXOffset: 7,
-  horizonYFactor: 0.568
+  yOffset: -364,
+  scaleMultiplier: 0.855,
+  centerXOffset: 8,
+  laneSpacing: 541,
+  vanishingPointXOffset: 9,
+  horizonYFactor: 0.566
 };
 
 // Factor de reducción constante para optimizar rendimiento de croma sin alterar aspecto original
@@ -148,7 +148,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.load.image('obs_rainbow', 'assets/images/subway/image27.png');
 
     // Obstáculos de Calle
-    this.load.image('obs_carro_futurista', 'assets/images/subway/Obstaculos/Escenario Calle/Carro Futurista.png');
+    this.load.image('obs_avion', 'assets/images/subway/Obstaculos/Escenario Calle/avion.png');
     this.load.image('obs_carro_1', 'assets/images/subway/Obstaculos/Escenario Calle/Carro_1.png');
     this.load.image('obs_carro_2', 'assets/images/subway/Obstaculos/Escenario Calle/Carro_2.png');
     this.load.image('obs_moto_1', 'assets/images/subway/Obstaculos/Escenario Calle/Moto_1.png');
@@ -175,8 +175,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.load.image('obs_piso3_pesas', 'assets/images/subway/Obstaculos/Escenario Tercer Piso CC/Pesas.png');
 
     // Sonidos
-    this.load.audio('crash1', 'assets/audio/subway surfer/golpe1.mp3');
-    this.load.audio('crash3', 'assets/audio/subway surfer/golpe3.mp3');
+    this.load.audio('crash1', 'assets/audio/subway surfer/choque con obstaculos/golpe1.mp3');
+    this.load.audio('crash3', 'assets/audio/subway surfer/choque con obstaculos/golpe3.mp3');
+    this.load.audio('sound_potenciador', ('/assets/audio/subway surfer/potenciadores/Efecto_Potenciadores.mp3'));
 
     this.load.image('sun', 'assets/images/subway/Potenciadores/image64.png');
     this.load.image('potenciador_60', 'assets/images/subway/Potenciadores/image60.png');
@@ -514,6 +515,114 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.cameras.main.flash(500, 255, 255, 255);
   }
 
+  _goToScenario(index) {
+    if (index === this.currentScenarioIndex) return;
+    this.currentScenarioIndex = index;
+    const currentScenario = SCENARIOS[this.currentScenarioIndex];
+    this.score = currentScenario.threshold;
+    this.scoreText.setText(this.score);
+
+    if (currentScenario.trackConfig) {
+      TRACK_CONFIG = { ...currentScenario.trackConfig };
+    }
+
+    this.isIntroPlaying = true;
+    this.introCountdown = 5;
+    if (this.playerContainer) this.playerContainer.setVisible(false);
+
+    if (this._currentBgm) this._currentBgm.stop();
+    const bgmKeys = ['bgm_calle', 'bgm_piso1', 'bgm_piso2', 'bgm_piso3'];
+    if (bgmKeys[this.currentScenarioIndex]) {
+      this._currentBgm = this.sound.add(bgmKeys[this.currentScenarioIndex], { loop: true, volume: 0.4 });
+      this._currentBgm.play();
+    }
+
+    this.countdownText.setText(this.introCountdown);
+    this.countdownText.setVisible(true);
+
+    if (this.levelCompleteText) {
+      this.levelCompleteText.setVisible(true).setScale(0);
+      this.tweens.add({ targets: this.levelCompleteText, scale: 1, duration: 500, ease: 'Back.easeOut' });
+    }
+
+    if (currentScenario.intro) {
+      if (this.background) this.background.setVisible(false);
+      this.bgVideo.setVisible(true);
+      this.bgVideo.changeSource(currentScenario.intro);
+      this.bgVideo.setMute(true);
+      this.bgVideo.play();
+    } else if (currentScenario.loop) {
+      if (this.background) this.background.setVisible(false);
+      this.bgVideo.setVisible(true);
+      this.bgVideo.changeSource(currentScenario.loop);
+      this.bgVideo.setMute(true);
+      this.bgVideo.setLoop(true);
+      this.bgVideo.play();
+      this._finishIntro();
+    }
+
+    if (this.introTimerEvent) this.introTimerEvent.destroy();
+    this.introTimerEvent = this.time.delayedCall(5000, () => this._finishIntro());
+
+    if (this.obstacles) this.obstacles.clear(true, true);
+    if (this.collectibles) this.collectibles.clear(true, true);
+
+    this.cameras.main.flash(500, 255, 255, 255);
+  }
+
+  _buildScenarioMenu() {
+    const { width } = this.scale;
+
+    this.scenarioMenuContainer = this.add.container(width - 150, 150).setDepth(200).setVisible(false);
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.8);
+    bg.fillRoundedRect(-100, 0, 200, 220, 10);
+    bg.lineStyle(2, 0x40c0dd, 1);
+    bg.strokeRoundedRect(-100, 0, 200, 220, 10);
+    this.scenarioMenuContainer.add(bg);
+
+    const title = this.add.text(0, 20, 'Escenarios', {
+      fontSize: '20px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+    }).setOrigin(0.5);
+    this.scenarioMenuContainer.add(title);
+
+    SCENARIOS.forEach((scen, idx) => {
+      const btnBg = this.add.rectangle(0, 60 + idx * 45, 180, 35, 0x40c0dd, 1).setInteractive({ cursor: 'pointer' });
+      const btnTxt = this.add.text(0, 60 + idx * 45, scen.id.toUpperCase(), {
+        fontSize: '18px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+      }).setOrigin(0.5);
+
+      btnBg.on('pointerover', () => btnBg.setFillStyle(0x2da0bc));
+      btnBg.on('pointerout', () => btnBg.setFillStyle(0x40c0dd));
+      btnBg.on('pointerdown', () => {
+        this.scenarioMenuContainer.setVisible(false);
+        this._goToScenario(idx);
+      });
+
+      this.scenarioMenuContainer.add([btnBg, btnTxt]);
+    });
+
+    const toggleBtn = this.add.container(width - 150, 60).setDepth(200);
+    const toggleBg = this.add.graphics();
+    toggleBg.fillStyle(0x000000, 0.7);
+    toggleBg.fillRoundedRect(-100, -20, 200, 40, 10);
+    toggleBg.lineStyle(2, 0x40c0dd, 1);
+    toggleBg.strokeRoundedRect(-100, -20, 200, 40, 10);
+    toggleBtn.add(toggleBg);
+
+    const toggleTxt = this.add.text(0, 0, '🎯 Saltar', {
+      fontSize: '18px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+    }).setOrigin(0.5);
+    toggleBtn.add(toggleTxt);
+
+    const hitArea = this.add.rectangle(0, 0, 200, 40, 0x000000, 0).setInteractive({ cursor: 'pointer' });
+    hitArea.on('pointerdown', () => {
+      this.scenarioMenuContainer.setVisible(!this.scenarioMenuContainer.visible);
+    });
+    toggleBtn.add(hitArea);
+  }
+
   _startSpawnTimer() {
     if (this.spawnTimer) this.spawnTimer.destroy();
     this.spawnTimer = this.time.addEvent({
@@ -528,6 +637,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.scoreText = this.add.text(width / 2, 80, '0', {
       fontSize: '110px', color: '#ffffff', stroke: '#9c4eb3', strokeThickness: 10
     }).setOrigin(0.5).setDepth(100);
+    this._buildScenarioMenu();
   }
 
   _cancelHold() {
@@ -1302,10 +1412,10 @@ export class SubwaySurfersScene extends Phaser.Scene {
         if (this.collectibles) this.collectibles.clear(true, true);
         if (this.obstacles) this.obstacles.clear(true, true);
 
-        // Spawnear el carro volador congelado en el centro
+        // Spawnear el avion congelado en el centro
         this._spawnObstacle(1);
         const obs = this.obstacles.getChildren()[0];
-        obs.setTexture('obs_carro_futurista');
+        obs.setTexture('obs_avion');
         obs.isAirborne = true;
         obs.trackY = this.scale.height * 0.8; // en medio de la pista visualmente
       } else {
@@ -1447,8 +1557,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
       if (obj.trackY === undefined) obj.trackY = obj.y;
       obj.trackY += currentSpeed;
 
-      const isCarroVolador = obj.isAirborne && this.obstacles && this.obstacles.contains(obj);
-      const conf = isCarroVolador ? AIRBORNE_CONFIG : TRACK_CONFIG;
+      const isAvion = obj.isAirborne && this.obstacles && this.obstacles.contains(obj);
+      const conf = isAvion ? AIRBORNE_CONFIG : TRACK_CONFIG;
       const localHorizonY = this.scale.height * conf.horizonYFactor;
 
       const customProgress = (obj.trackY - localHorizonY) / (this.scale.height - localHorizonY);
@@ -1475,7 +1585,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       obj.x = Phaser.Math.Linear(startX, targetX, progress);
 
       // Si el objeto está en el aire, se eleva visualmente según la configuración
-      const airborneYOffset = obj.isAirborne ? (isCarroVolador ? AIRBORNE_CONFIG.yOffset : -550) * progress : 0;
+      const airborneYOffset = obj.isAirborne ? (isAvion ? AIRBORNE_CONFIG.yOffset : -550) * progress : 0;
       obj.y = obj.trackY + airborneYOffset;
 
       const pulse = obj.pulseFactor !== undefined ? obj.pulseFactor : 1;
@@ -1514,8 +1624,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
       if (!isCalibrating && verticalDist < 60 && obj.lane === this.currentLane && !obj.hit) {
         if (this.obstacles && this.obstacles.contains(obj)) {
           if (obj.isAirborne) {
-            // Es el carro volador: te estrellas si SALTAS
-            if (this.isJumping && !this._jumpDebugMode && !this.isInvincible) {
+            // Es el avion: te estrellas si NO TE DESLIZAS
+            if (!this.isSliding && !this._slideDebugMode && !this.isInvincible) {
               obj.hit = true;
               this._gameOver();
             }
@@ -1558,8 +1668,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
     if (this.currentScenarioIndex === 0) { // calle
       const r = Phaser.Math.Between(1, 100);
-      if (r <= 35) { // 35% probabilidad de carro volador
-        obsKey = 'obs_carro_futurista';
+      if (r <= 35) { // 35% probabilidad de avion
+        obsKey = 'obs_avion';
         isAirborne = true;
       } else if (r <= 50) {
         obsKey = 'obs_carro_1';
@@ -1820,6 +1930,13 @@ export class SubwaySurfersScene extends Phaser.Scene {
     if (obj.glowCircle) obj.glowCircle.destroy();
     obj.destroy();
 
+    try {
+      const sfx = this.sound.add('sound_potenciador', { volume: 1.0 });
+      sfx.play();
+    } catch (e) {
+      console.error("Error al reproducir sonido de potenciador:", e);
+    }
+
     if (obj.texture.key === 'potenciador_75') {
       // Estrella: Invencibilidad 5 seg
       this.isInvincible = true;
@@ -1895,6 +2012,66 @@ export class SubwaySurfersScene extends Phaser.Scene {
     });
   }
 
+  _gameOver() {
+    if (this._isGameOverTriggered) return;
+    this._isGameOverTriggered = true;
+
+    // Reproducir sonido de choque aleatorio
+    const crashSound = Phaser.Math.Between(0, 1) === 0 ? 'crash1' : 'crash3';
+    this.sound.play(crashSound, { volume: 0.8 });
+
+
+    // Si se estrella saltando, dejamos que el juego corra un poco más para ver la animación
+    const delay = this.isJumping ? 600 : 0;
+
+    this.time.delayedCall(delay, () => {
+      this.isGameOver = true;
+      if (this.bgVideo) this.bgVideo.pause();
+      if (this.playerRunImg) this.playerRunImg.pause();
+      if (this._currentBgm) this._currentBgm.pause();
+      if (this.spawnTimer) this.spawnTimer.paused = true;
+      if (this.timeScoreTimer) this.timeScoreTimer.paused = true;
+
+      // Crear un panel oscuro con blur
+      const overlay = this.add.graphics();
+      overlay.fillStyle(0x000000, 0.8);
+      overlay.fillRect(0, 0, this.scale.width, this.scale.height);
+      overlay.setDepth(1000);
+
+      // Texto de Game Over
+      const width = this.scale.width;
+      const height = this.scale.height;
+
+      this.add.text(width / 2, height / 2 - 100, 'GAME OVER', {
+        fontSize: '120px',
+        color: '#ff0000',
+        fontStyle: 'bold',
+        stroke: '#ffffff',
+        strokeThickness: 8
+      }).setOrigin(0.5).setDepth(1001);
+
+      this.add.text(width / 2, height / 2 + 50, `Puntuación: ${this.score}`, {
+        fontSize: '60px',
+        color: '#ffff00',
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(1001);
+
+      const restartBtn = this.add.text(width / 2, height / 2 + 180, 'REINICIAR', {
+        fontSize: '50px',
+        color: '#ffffff',
+        backgroundColor: '#9c4eb3',
+        padding: { x: 30, y: 15 }
+      }).setOrigin(0.5).setDepth(1001).setInteractive();
+
+      restartBtn.on('pointerdown', () => {
+        this.scene.restart();
+      });
+
+      // Animación de entrada
+      overlay.setAlpha(0);
+      this.tweens.add({ targets: overlay, alpha: 1, duration: 500 });
+    });
+  }
 
   _cleanup() {
     // Quitar el listener del WebSocket — crítico para evitar memory leaks
@@ -1967,8 +2144,6 @@ export class SubwaySurfersScene extends Phaser.Scene {
   _gameOver() {
     if (this.isGameOver) return;
     this.isGameOver = true;
-    const crashSound = Phaser.Math.Between(0, 1) === 0 ? 'crash1' : 'crash3';
-    try { this.sound.play(crashSound, { volume: 1.5 }); } catch (_) { }
     this.cameras.main.shake(600, 0.03);
     const { width, height } = this.scale;
 
