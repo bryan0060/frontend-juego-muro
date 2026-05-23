@@ -1895,65 +1895,6 @@ export class SubwaySurfersScene extends Phaser.Scene {
     });
   }
 
-  _gameOver() {
-    if (this._isGameOverTriggered) return;
-    this._isGameOverTriggered = true;
-
-    // Reproducir sonido de choque aleatorio
-    const crashSound = Phaser.Math.Between(0, 1) === 0 ? 'crash1' : 'crash3';
-    this.sound.play(crashSound, { volume: 0.8 });
-
-    // Si se estrella saltando, dejamos que el juego corra un poco más para ver la animación
-    const delay = this.isJumping ? 600 : 0;
-
-    this.time.delayedCall(delay, () => {
-      this.isGameOver = true;
-      if (this.bgVideo) this.bgVideo.pause();
-      if (this.playerRunImg) this.playerRunImg.pause();
-      if (this._currentBgm) this._currentBgm.pause();
-      if (this.spawnTimer) this.spawnTimer.paused = true;
-      if (this.timeScoreTimer) this.timeScoreTimer.paused = true;
-
-      // Crear un panel oscuro con blur
-      const overlay = this.add.graphics();
-      overlay.fillStyle(0x000000, 0.8);
-      overlay.fillRect(0, 0, this.scale.width, this.scale.height);
-      overlay.setDepth(1000);
-
-      // Texto de Game Over
-      const width = this.scale.width;
-      const height = this.scale.height;
-
-      this.add.text(width / 2, height / 2 - 100, 'GAME OVER', {
-        fontSize: '120px',
-        color: '#ff0000',
-        fontStyle: 'bold',
-        stroke: '#ffffff',
-        strokeThickness: 8
-      }).setOrigin(0.5).setDepth(1001);
-
-      this.add.text(width / 2, height / 2 + 50, `Puntuación: ${this.score}`, {
-        fontSize: '60px',
-        color: '#ffff00',
-        fontStyle: 'bold'
-      }).setOrigin(0.5).setDepth(1001);
-
-      const restartBtn = this.add.text(width / 2, height / 2 + 180, 'REINICIAR', {
-        fontSize: '50px',
-        color: '#ffffff',
-        backgroundColor: '#9c4eb3',
-        padding: { x: 30, y: 15 }
-      }).setOrigin(0.5).setDepth(1001).setInteractive();
-
-      restartBtn.on('pointerdown', () => {
-        this.scene.restart();
-      });
-
-      // Animación de entrada
-      overlay.setAlpha(0);
-      this.tweens.add({ targets: overlay, alpha: 1, duration: 500 });
-    });
-  }
 
   _cleanup() {
     // Quitar el listener del WebSocket — crítico para evitar memory leaks
@@ -2026,6 +1967,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
   _gameOver() {
     if (this.isGameOver) return;
     this.isGameOver = true;
+    const crashSound = Phaser.Math.Between(0, 1) === 0 ? 'crash1' : 'crash3';
+    try { this.sound.play(crashSound, { volume: 1.5 }); } catch (_) { }
     this.cameras.main.shake(600, 0.03);
     const { width, height } = this.scale;
 
