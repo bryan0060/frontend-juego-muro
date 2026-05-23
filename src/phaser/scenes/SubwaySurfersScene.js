@@ -15,7 +15,9 @@ let TRACK_CONFIG = {
   centerXOffset: 0,
   laneSpacing: 350,
   vanishingPointXOffset: 0,
-  horizonYFactor: 0.58
+  horizonYFactor: 0.58,
+  yOffset: 0,
+  scaleMultiplier: 1.0
 };
 
 // Configuración para obstáculos aéreos (como el carro futurista)
@@ -92,7 +94,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.score = 0;
     this.isGameOver = false;
     this.nextDifficultyScore = 500;
-    this.spawnDelay = 2000;
+    this.spawnDelay = 3500;
 
     // ── Estado anterior del backend ──
     // Solo actuamos cuando el estado CAMBIA, no cada frame
@@ -199,7 +201,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.score = 0;
     this.gameSpeed = 2.0;
     this.currentLane = 1;
-    this.spawnDelay = 2000;
+    this.spawnDelay = 3500;
     this._isRestarting = false;
     this.isInvincible = false;
     this.isDoublePoints = false;
@@ -1337,10 +1339,19 @@ export class SubwaySurfersScene extends Phaser.Scene {
       this._trackDebugMode = !this._trackDebugMode;
       if (this._trackDebugMode) {
         if (this.spawnTimer) this.spawnTimer.paused = true;
+        if (this.collectibles) this.collectibles.clear(true, true);
+        if (this.obstacles) this.obstacles.clear(true, true);
+
+        // Spawnear obstáculo terrestre congelado
+        this._spawnObstacle(1);
+        const obs = this.obstacles.getChildren()[0];
+        obs.isAirborne = false;
+        obs.trackY = this.scale.height * 0.8;
       } else {
         if (this.spawnTimer) this.spawnTimer.paused = false;
         if (this._debugText) this._debugText.setVisible(false);
         if (this.trackGraphics) this.trackGraphics.clear();
+        if (this.obstacles) this.obstacles.clear(true, true);
       }
     }
 
@@ -1425,41 +1436,42 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
     }
 
-    if (this._airborneDebugMode) {
-      if (this._debugKeys.U.isDown) AIRBORNE_CONFIG.centerXOffset -= 1;
-      if (this._debugKeys.J.isDown) AIRBORNE_CONFIG.centerXOffset += 1;
-      if (this._debugKeys.I.isDown) AIRBORNE_CONFIG.vanishingPointXOffset -= 1;
-      if (this._debugKeys.K.isDown) AIRBORNE_CONFIG.vanishingPointXOffset += 1;
-      if (this._debugKeys.O.isDown) AIRBORNE_CONFIG.laneSpacing += 1;
-      if (this._debugKeys.L.isDown) AIRBORNE_CONFIG.laneSpacing = Math.max(50, AIRBORNE_CONFIG.laneSpacing - 1);
-      if (this._debugKeys.T.isDown) AIRBORNE_CONFIG.horizonYFactor = Math.min(1.0, AIRBORNE_CONFIG.horizonYFactor + 0.002);
-      if (this._debugKeys.G.isDown) AIRBORNE_CONFIG.horizonYFactor = Math.max(0.2, AIRBORNE_CONFIG.horizonYFactor - 0.002);
+    if (this._airborneDebugMode || this._trackDebugMode) {
+      const conf = this._airborneDebugMode ? AIRBORNE_CONFIG : TRACK_CONFIG;
+      if (this._debugKeys.U.isDown) conf.centerXOffset -= 1;
+      if (this._debugKeys.J.isDown) conf.centerXOffset += 1;
+      if (this._debugKeys.I.isDown) conf.vanishingPointXOffset -= 1;
+      if (this._debugKeys.K.isDown) conf.vanishingPointXOffset += 1;
+      if (this._debugKeys.O.isDown) conf.laneSpacing += 1;
+      if (this._debugKeys.L.isDown) conf.laneSpacing = Math.max(50, conf.laneSpacing - 1);
+      if (this._debugKeys.T.isDown) conf.horizonYFactor = Math.min(1.0, conf.horizonYFactor + 0.002);
+      if (this._debugKeys.G.isDown) conf.horizonYFactor = Math.max(0.2, conf.horizonYFactor - 0.002);
 
-      if (this._debugKeys.W.isDown) AIRBORNE_CONFIG.yOffset -= 2;
-      if (this._debugKeys.S.isDown) AIRBORNE_CONFIG.yOffset += 2;
-      if (this._debugKeys.A.isDown) AIRBORNE_CONFIG.scaleMultiplier -= 0.005;
-      if (this._debugKeys.D.isDown) AIRBORNE_CONFIG.scaleMultiplier += 0.005;
+      if (this._debugKeys.W.isDown) conf.yOffset -= 2;
+      if (this._debugKeys.S.isDown) conf.yOffset += 2;
+      if (this._debugKeys.A.isDown) conf.scaleMultiplier -= 0.005;
+      if (this._debugKeys.D.isDown) conf.scaleMultiplier += 0.005;
 
       if (!this._debugText) {
-        this._debugText = this.add.text(this.scale.width / 2, 250, '', {
+        this._debugText = this.add.text(this.scale.width / 2, 100, '', {
           fontSize: '24px', color: '#ffffff', backgroundColor: 'rgba(0,0,0,0.85)',
-          padding: { x: 15, y: 10 }, align: 'center', stroke: '#ff00ff', strokeThickness: 2,
+          padding: { x: 15, y: 10 }, align: 'center', stroke: '#00ffff', strokeThickness: 2,
           fontFamily: 'monospace'
         }).setOrigin(0.5).setDepth(3000);
       }
       this._debugText.setVisible(true);
       this._debugText.setText(
-        `🛠️ MODO DEPURA CARRO VOLADOR 🛠️\n\n` +
+        `🛠️ MODO DEPURA ${this._airborneDebugMode ? 'AÉREO' : 'PISTA'} 🛠️\n\n` +
         `Mantén presionadas las teclas:\n` +
-        `• U / J : Mover Centro de Pista (centerXOffset: ${AIRBORNE_CONFIG.centerXOffset.toFixed(0)})\n` +
-        `• I / K : Mover Punto de Fuga / Horizonte (vanishingPointXOffset: ${AIRBORNE_CONFIG.vanishingPointXOffset.toFixed(0)})\n` +
-        `• O / L : Ajustar Ancho de Carriles (laneSpacing: ${AIRBORNE_CONFIG.laneSpacing.toFixed(0)})\n` +
-        `• T / G : Mover Altura del Horizonte (horizonYFactor: ${AIRBORNE_CONFIG.horizonYFactor.toFixed(3)})\n` +
-        `• W / S : Subir / Bajar (yOffset: ${AIRBORNE_CONFIG.yOffset.toFixed(0)})\n` +
-        `• A / D : Agrandar / Achicar (scaleMultiplier: ${AIRBORNE_CONFIG.scaleMultiplier.toFixed(3)})\n\n` +
-        `Copia y pega esto al inicio del archivo:\n` +
-        `let AIRBORNE_CONFIG = { yOffset: ${AIRBORNE_CONFIG.yOffset.toFixed(0)}, scaleMultiplier: ${AIRBORNE_CONFIG.scaleMultiplier.toFixed(3)}, centerXOffset: ${AIRBORNE_CONFIG.centerXOffset.toFixed(0)}, laneSpacing: ${AIRBORNE_CONFIG.laneSpacing.toFixed(0)}, vanishingPointXOffset: ${AIRBORNE_CONFIG.vanishingPointXOffset.toFixed(0)}, horizonYFactor: ${AIRBORNE_CONFIG.horizonYFactor.toFixed(3)} };\n\n` +
-        `Presiona 'V' para salir del modo depuración`
+        `• W / S : Subir / Bajar (yOffset: ${(conf.yOffset || 0).toFixed(0)})\n` +
+        `• A / D : Escalar (scaleMultiplier: ${(conf.scaleMultiplier || 1).toFixed(3)})\n` +
+        `• U / J : Centro (centerXOffset: ${conf.centerXOffset.toFixed(0)})\n` +
+        `• I / K : Fuga (vanishingPointXOffset: ${conf.vanishingPointXOffset.toFixed(0)})\n` +
+        `• O / L : Carriles (laneSpacing: ${conf.laneSpacing.toFixed(0)})\n` +
+        `• T / G : Horizonte (horizonYFactor: ${conf.horizonYFactor.toFixed(3)})\n\n` +
+        `Copia y reemplaza en ${this._airborneDebugMode ? 'AIRBORNE_CONFIG' : 'TRACK_CONFIG'} o en tu Escenario:\n` +
+        `{ centerXOffset: ${conf.centerXOffset.toFixed(0)}, laneSpacing: ${conf.laneSpacing.toFixed(0)}, vanishingPointXOffset: ${conf.vanishingPointXOffset.toFixed(0)}, horizonYFactor: ${conf.horizonYFactor.toFixed(3)}, yOffset: ${(conf.yOffset || 0).toFixed(0)}, scaleMultiplier: ${(conf.scaleMultiplier || 1).toFixed(3)} }\n\n` +
+        `Presiona '${this._airborneDebugMode ? 'V' : 'C'}' para salir del modo depuración`
       );
     }
 
@@ -1586,15 +1598,29 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
       // Si el objeto está en el aire, se eleva visualmente según la configuración
       const airborneYOffset = obj.isAirborne ? (isAvion ? AIRBORNE_CONFIG.yOffset : -550) * progress : 0;
-      obj.y = obj.trackY + airborneYOffset;
+      const isObstacle = this.obstacles && this.obstacles.contains(obj);
+      const groundYOffset = (!obj.isAirborne && isObstacle) ? (TRACK_CONFIG.yOffset || 0) * progress : 0;
+      obj.y = obj.trackY + airborneYOffset + groundYOffset;
 
       const pulse = obj.pulseFactor !== undefined ? obj.pulseFactor : 1;
-      const isObstacle = this.obstacles && this.obstacles.contains(obj);
-      const airborneScale = obj.isAirborne && isObstacle ? AIRBORNE_CONFIG.scaleMultiplier : 1;
+
+      let scaleMult = 1;
+      if (isObstacle) {
+        scaleMult = obj.isAirborne ? AIRBORNE_CONFIG.scaleMultiplier : (TRACK_CONFIG.scaleMultiplier || 1.0);
+      }
+
       const baseSize = isObstacle ? 350 : 200;
-      const targetSize = baseSize * progress * pulse * airborneScale;
+      const targetSize = baseSize * progress * pulse * scaleMult;
       const scaleFactor = targetSize / Math.max(obj.width, obj.height);
       obj.setScale(scaleFactor);
+
+      if (obj.downArrow) {
+        obj.downArrow.x = obj.x + 80 * progress;
+        obj.downArrow.y = obj.y - (100 + (obj.arrowOffset || 0)) * progress;
+        obj.downArrow.setScale(progress);
+        obj.downArrow.setDepth(obj.depth + 1);
+        obj.downArrow.setAlpha(obj.alpha);
+      }
 
       obj.setAlpha(Phaser.Math.Clamp(progress * 4, 0, 1));
       obj.setDepth(20);
@@ -1706,6 +1732,21 @@ export class SubwaySurfersScene extends Phaser.Scene {
     obs.lane = lane;
     obs.isAirborne = isAirborne;
     obs.setOrigin(0.5, 1);
+
+    if (isAirborne && obsKey === 'obs_avion') {
+      const arrowText = this.add.text(0, 0, '⬇', { fontSize: '120px', color: '#ff0000', stroke: '#ffffff', strokeThickness: 12 }).setOrigin(0.5);
+      obs.downArrow = arrowText;
+      obs.arrowOffset = 0;
+      this.tweens.add({
+        targets: obs,
+        arrowOffset: 30,
+        duration: 300,
+        yoyo: true,
+        repeat: -1
+      });
+      obs.on('destroy', () => arrowText.destroy());
+    }
+
     this.obstacles.add(obs);
   }
 
@@ -2012,66 +2053,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     });
   }
 
-  _gameOver() {
-    if (this._isGameOverTriggered) return;
-    this._isGameOverTriggered = true;
 
-    // Reproducir sonido de choque aleatorio
-    const crashSound = Phaser.Math.Between(0, 1) === 0 ? 'crash1' : 'crash3';
-    this.sound.play(crashSound, { volume: 0.8 });
-
-
-    // Si se estrella saltando, dejamos que el juego corra un poco más para ver la animación
-    const delay = this.isJumping ? 600 : 0;
-
-    this.time.delayedCall(delay, () => {
-      this.isGameOver = true;
-      if (this.bgVideo) this.bgVideo.pause();
-      if (this.playerRunImg) this.playerRunImg.pause();
-      if (this._currentBgm) this._currentBgm.pause();
-      if (this.spawnTimer) this.spawnTimer.paused = true;
-      if (this.timeScoreTimer) this.timeScoreTimer.paused = true;
-
-      // Crear un panel oscuro con blur
-      const overlay = this.add.graphics();
-      overlay.fillStyle(0x000000, 0.8);
-      overlay.fillRect(0, 0, this.scale.width, this.scale.height);
-      overlay.setDepth(1000);
-
-      // Texto de Game Over
-      const width = this.scale.width;
-      const height = this.scale.height;
-
-      this.add.text(width / 2, height / 2 - 100, 'GAME OVER', {
-        fontSize: '120px',
-        color: '#ff0000',
-        fontStyle: 'bold',
-        stroke: '#ffffff',
-        strokeThickness: 8
-      }).setOrigin(0.5).setDepth(1001);
-
-      this.add.text(width / 2, height / 2 + 50, `Puntuación: ${this.score}`, {
-        fontSize: '60px',
-        color: '#ffff00',
-        fontStyle: 'bold'
-      }).setOrigin(0.5).setDepth(1001);
-
-      const restartBtn = this.add.text(width / 2, height / 2 + 180, 'REINICIAR', {
-        fontSize: '50px',
-        color: '#ffffff',
-        backgroundColor: '#9c4eb3',
-        padding: { x: 30, y: 15 }
-      }).setOrigin(0.5).setDepth(1001).setInteractive();
-
-      restartBtn.on('pointerdown', () => {
-        this.scene.restart();
-      });
-
-      // Animación de entrada
-      overlay.setAlpha(0);
-      this.tweens.add({ targets: overlay, alpha: 1, duration: 500 });
-    });
-  }
 
   _cleanup() {
     // Quitar el listener del WebSocket — crítico para evitar memory leaks
@@ -2144,6 +2126,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
   _gameOver() {
     if (this.isGameOver) return;
     this.isGameOver = true;
+    const crashSound = Phaser.Math.Between(0, 1) === 0 ? 'crash1' : 'crash3';
+    try { this.sound.play(crashSound, { volume: 1.5 }); } catch (_) { }
     this.cameras.main.shake(600, 0.03);
     const { width, height } = this.scale;
 
