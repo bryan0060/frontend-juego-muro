@@ -58,25 +58,25 @@ const RUN_CONFIGS = {
 // Rutas de los videos de cada personaje (correr/idle, saltar y deslizarse)
 // Para configurar nuevos personajes o cambiar sus videos, solo debes editar las rutas aquí.
 const CHARACTER_VIDEOS = {
-  NB1: { // Personaje 1 (Niño Blanco)
+  NB1: {
     run: 'assets/images/subway/Personaje/NB1.webm',
     jump: 'assets/images/subway/Personaje/niño blanco/0519 (1).mp4',
     slide: 'assets/images/subway/Personaje/niño blanco/N-B-D.mp4'
   },
-  NB2: { // Personaje 2 (Niño Moreno)
+  NB2: {
     run: 'assets/images/subway/Personaje/NB2.webm',
-    jump: 'assets/images/subway/Personaje/niño moreno/niño moreno saltando.mp4',
+    jump: 'assets/images/subway/Personaje/niño moreno/n-m-s.png',
     slide: 'assets/images/subway/Personaje/niño moreno/verdadero saltando.mp4'
   },
-  NB3: { // Personaje 3 (Niña Blanca)
+  NB3: {
     run: 'assets/images/subway/Personaje/niña blanca/niña blanca corriendo.mp4',
-    jump: 'assets/images/subway/Personaje/niña blanca/Niña blanca saltando.png', // <-- Imagen PNG
-    slide: 'assets/images/subway/Personaje/niña blanca/nIña delizando verdadero.mp4'
+    jump: 'assets/images/subway/Personaje/niña blanca/Niña blanca saltando.png',
+    slide: 'assets/images/subway/Personaje/niña blanca/nina-blanca-deslizandose.png'
   },
-  NB4: { // Personaje 4 (Niña Morena)
+  NB4: {
     run: 'assets/images/subway/Personaje/nina_morena/nina_morena_corriendo.mp4',
     jump: 'assets/images/subway/Personaje/nina_morena/nina_morena_saltando.mp4',
-    slide: 'assets/images/subway/Personaje/nina_morena/nina_morena_deslizandose.png' // <-- Imagen PNG
+    slide: 'assets/images/subway/Personaje/nina_morena/nina_morena_deslizandose.png'
   }
 };
 
