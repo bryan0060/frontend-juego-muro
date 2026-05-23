@@ -1,10 +1,10 @@
 import * as Phaser from 'phaser';
 
 const SCENARIOS = [
-  { id: 'calle', intro: 'intro_calle', loop: 'loop_calle', threshold: 0, trackConfig: { centerXOffset: 7, laneSpacing: 538, vanishingPointXOffset: 6, horizonYFactor: 0.566 } },
-  { id: 'piso1', intro: 'intro_piso1', loop: 'loop_piso1', threshold: 1500, trackConfig: { centerXOffset: 0, laneSpacing: 811, vanishingPointXOffset: -5, horizonYFactor: 0.546 } },
-  { id: 'piso2', intro: 'intro_piso2', loop: 'loop_piso2', loopEndTime: 7, threshold: 3000, trackConfig: { centerXOffset: -3, laneSpacing: 509, vanishingPointXOffset: -5, horizonYFactor: 0.548 } },
-  { id: 'piso3', intro: 'intro_piso3', loop: 'loop_piso3', threshold: 4500, trackConfig: { centerXOffset: 30, laneSpacing: 509, vanishingPointXOffset: 7, horizonYFactor: 0.530 } }
+  { id: 'calle', intro: 'intro_calle', loop: 'loop_calle', threshold: 0, trackConfig: { centerXOffset: 7, laneSpacing: 538, vanishingPointXOffset: 6, horizonYFactor: 0.566, yOffset: 0, scaleMultiplier: 1.0 } },
+  { id: 'piso1', intro: 'intro_piso1', loop: 'loop_piso1', threshold: 1500, trackConfig: { centerXOffset: 0, laneSpacing: 811, vanishingPointXOffset: -5, horizonYFactor: 0.546, yOffset: 0, scaleMultiplier: 1.0 } },
+  { id: 'piso2', intro: 'intro_piso2', loop: 'loop_piso2', loopEndTime: 7, threshold: 3000, trackConfig: { centerXOffset: -3, laneSpacing: 509, vanishingPointXOffset: -5, horizonYFactor: 0.548, yOffset: 0, scaleMultiplier: 1.0 } },
+  { id: 'piso3', intro: 'intro_piso3', loop: 'loop_piso3', threshold: 4500, trackConfig: { centerXOffset: 30, laneSpacing: 509, vanishingPointXOffset: 7, horizonYFactor: 0.530, yOffset: 0, scaleMultiplier: 1.0 } }
 ];
 
 // Mapeo de carril backend → índice de lane Phaser
@@ -20,7 +20,7 @@ let TRACK_CONFIG = {
   scaleMultiplier: 1.0
 };
 
-// Configuración para obstáculos aéreos (como el carro futurista)
+// Configuración para obstáculos aéreos 
 let AIRBORNE_CONFIG = {
   yOffset: -364,
   scaleMultiplier: 0.855,
@@ -226,7 +226,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
     // Cargar config de pista del primer escenario
     if (SCENARIOS[this.currentScenarioIndex].trackConfig) {
-      TRACK_CONFIG = { ...SCENARIOS[this.currentScenarioIndex].trackConfig };
+      TRACK_CONFIG = { ...TRACK_CONFIG, ...SCENARIOS[this.currentScenarioIndex].trackConfig };
     }
 
     this.cameras.main.fadeIn(300, 0, 0, 0);
@@ -477,7 +477,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
     // Actualizar config de pista al nuevo escenario
     if (currentScenario.trackConfig) {
-      TRACK_CONFIG = { ...currentScenario.trackConfig };
+      TRACK_CONFIG = { ...TRACK_CONFIG, ...currentScenario.trackConfig };
     }
 
     this.isIntroPlaying = true;
@@ -525,7 +525,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.scoreText.setText(this.score);
 
     if (currentScenario.trackConfig) {
-      TRACK_CONFIG = { ...currentScenario.trackConfig };
+      TRACK_CONFIG = { ...TRACK_CONFIG, ...currentScenario.trackConfig };
     }
 
     this.isIntroPlaying = true;
@@ -1356,58 +1356,13 @@ export class SubwaySurfersScene extends Phaser.Scene {
     }
 
     if (this._trackDebugMode) {
-      if (this._debugKeys.U.isDown) {
-        TRACK_CONFIG.centerXOffset -= 1;
-      }
-      if (this._debugKeys.J.isDown) {
-        TRACK_CONFIG.centerXOffset += 1;
-      }
-      if (this._debugKeys.I.isDown) {
-        TRACK_CONFIG.vanishingPointXOffset -= 1;
-      }
-      if (this._debugKeys.K.isDown) {
-        TRACK_CONFIG.vanishingPointXOffset += 1;
-      }
-      if (this._debugKeys.O.isDown) {
-        TRACK_CONFIG.laneSpacing += 1;
-      }
-      if (this._debugKeys.L.isDown) {
-        TRACK_CONFIG.laneSpacing = Math.max(50, TRACK_CONFIG.laneSpacing - 1);
-      }
-      if (this._debugKeys.T.isDown) {
-        TRACK_CONFIG.horizonYFactor = Math.min(1.0, TRACK_CONFIG.horizonYFactor + 0.002);
-      }
-      if (this._debugKeys.G.isDown) {
-        TRACK_CONFIG.horizonYFactor = Math.max(0.2, TRACK_CONFIG.horizonYFactor - 0.002);
-      }
-
-      // Sincronizar this.lanes
+      // Sincronizar this.lanes (los controles reales de variables ocurren en el bloque unificado más abajo)
       this.lanes = [-TRACK_CONFIG.laneSpacing, 0, TRACK_CONFIG.laneSpacing];
 
       // Actualizar posición del playerContainer inmediatamente
       if (this.playerContainer) {
         this.playerContainer.x = this._getPlayerXForLane(this.currentLane);
       }
-
-      if (!this._debugText) {
-        this._debugText = this.add.text(this.scale.width / 2, 250, '', {
-          fontSize: '24px', color: '#ffffff', backgroundColor: 'rgba(0,0,0,0.85)',
-          padding: { x: 15, y: 10 }, align: 'center', stroke: '#ff00ff', strokeThickness: 2,
-          fontFamily: 'monospace'
-        }).setOrigin(0.5).setDepth(3000);
-      }
-      this._debugText.setVisible(true);
-      this._debugText.setText(
-        `🛠️ MODO DEPURA PISTA / CARRILES 🛠️\n\n` +
-        `Mantén presionadas las teclas:\n` +
-        `• U / J : Mover Centro de Pista (centerXOffset: ${TRACK_CONFIG.centerXOffset.toFixed(0)})\n` +
-        `• I / K : Mover Punto de Fuga / Horizonte (vanishingPointXOffset: ${TRACK_CONFIG.vanishingPointXOffset.toFixed(0)})\n` +
-        `• O / L : Ajustar Ancho de Carriles (laneSpacing: ${TRACK_CONFIG.laneSpacing.toFixed(0)})\n` +
-        `• T / G : Mover Altura del Horizonte (horizonYFactor: ${TRACK_CONFIG.horizonYFactor.toFixed(3)})\n\n` +
-        `Copia y pega esto en el SCENARIO correspondiente:\n` +
-        `trackConfig: { centerXOffset: ${TRACK_CONFIG.centerXOffset.toFixed(0)}, laneSpacing: ${TRACK_CONFIG.laneSpacing.toFixed(0)}, vanishingPointXOffset: ${TRACK_CONFIG.vanishingPointXOffset.toFixed(0)}, horizonYFactor: ${TRACK_CONFIG.horizonYFactor.toFixed(3)} }\n\n` +
-        `Presiona 'C' para salir del modo depuración`
-      );
     }
 
     // Toggle modo depura carro volador (V)
