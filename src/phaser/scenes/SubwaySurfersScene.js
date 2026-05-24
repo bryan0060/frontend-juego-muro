@@ -1,10 +1,10 @@
 import * as Phaser from 'phaser';
 
 const SCENARIOS = [
-  { id: 'calle', intro: 'intro_calle', loop: 'loop_calle', threshold: 0, trackConfig: { centerXOffset: 7, laneSpacing: 538, vanishingPointXOffset: 6, horizonYFactor: 0.566, yOffset: 0, scaleMultiplier: 1.0 } },
-  { id: 'piso1', intro: 'intro_piso1', loop: 'loop_piso1', threshold: 1500, trackConfig: { centerXOffset: 0, laneSpacing: 811, vanishingPointXOffset: -5, horizonYFactor: 0.546, yOffset: 0, scaleMultiplier: 1.0 } },
-  { id: 'piso2', intro: 'intro_piso2', loop: 'loop_piso2', loopEndTime: 7, threshold: 3000, trackConfig: { centerXOffset: -3, laneSpacing: 509, vanishingPointXOffset: -5, horizonYFactor: 0.548, yOffset: 0, scaleMultiplier: 1.0 } },
-  { id: 'piso3', intro: 'intro_piso3', loop: 'loop_piso3', threshold: 4500, trackConfig: { centerXOffset: 30, laneSpacing: 509, vanishingPointXOffset: 7, horizonYFactor: 0.530, yOffset: 0, scaleMultiplier: 1.0 } }
+  { id: 'calle', intro: 'intro_calle', loop: 'loop_calle', threshold: 0, trackConfig: { centerXOffset: 7, laneSpacing: 538, vanishingPointXOffset: 6, horizonYFactor: 0.556, yOffset: 0, scaleMultiplier: 0.855 } },
+  { id: 'piso1', intro: 'intro_piso1', loop: 'loop_piso1', threshold: 1500, trackConfig: { centerXOffset: 0, laneSpacing: 811, vanishingPointXOffset: -5, horizonYFactor: 0.546, yOffset: 0, scaleMultiplier: 0.855 } },
+  { id: 'piso2', intro: 'intro_piso2', loop: 'loop_piso2', loopEndTime: 7, threshold: 3000, trackConfig: { centerXOffset: -3, laneSpacing: 509, vanishingPointXOffset: -5, horizonYFactor: 0.548, yOffset: 0, scaleMultiplier: 0.855 } },
+  { id: 'piso3', intro: 'intro_piso3', loop: 'loop_piso3', threshold: 4500, trackConfig: { centerXOffset: 30, laneSpacing: 509, vanishingPointXOffset: 7, horizonYFactor: 0.518, yOffset: 8, scaleMultiplier: 0.955} }
 ];
 
 // Mapeo de carril backend → índice de lane Phaser
@@ -22,7 +22,7 @@ let TRACK_CONFIG = {
 
 // Configuración para obstáculos aéreos 
 let AIRBORNE_CONFIG = {
-  yOffset: -364,
+  yOffset: -230,
   scaleMultiplier: 0.855,
   centerXOffset: 8,
   laneSpacing: 541,
@@ -51,7 +51,7 @@ const JUMP_CONFIGS = {
 
 // Configuración de escala, posición y croma para correr/idle de cada personaje
 const RUN_CONFIGS = {
-  NB1: { scale: 0.442, xOffset: -10, yOffset: 60, threshold: 59 },
+  NB1: { scale: 0.416, xOffset: -10, yOffset: 60, threshold: 59 },
   NB2: { scale: 0.538, xOffset: -5, yOffset: 43, threshold: 50 },
   NB3: { scale: 0.536, xOffset: 84, yOffset: 401, threshold: 34 }, // Niña Blanca (Video MP4 con fondo negro, valores calibrados)
   NB4: { scale: 0.532, xOffset: 109, yOffset: 423, threshold: 32 }  // Niña Morena (Video MP4 con fondo negro)
