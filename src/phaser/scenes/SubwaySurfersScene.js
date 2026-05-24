@@ -635,11 +635,15 @@ export class SubwaySurfersScene extends Phaser.Scene {
   }
 
   _createUI() {
-    const { width } = this.scale;
+    const { width, height } = this.scale;
     this.scoreText = this.add.text(width / 2, 80, '0', {
       fontSize: '110px', color: '#ffffff', stroke: '#9c4eb3', strokeThickness: 10
     }).setOrigin(0.5).setDepth(100);
     this._buildScenarioMenu();
+
+    this.actionWarningText = this.add.text(width / 2, height / 2 - 100, '', {
+      fontSize: '250px', color: '#ffea00', stroke: '#ff0000', strokeThickness: 15, fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(200).setVisible(false);
   }
 
   _cancelHold() {
@@ -648,6 +652,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    let showWarning = false;
+    let warningMsg = '';
+
     if (this.holdBtn) {
       this.holdBtn.time += delta;
       const progress = Math.min(this.holdBtn.time / this.holdBtn.duration, 1);
@@ -1602,6 +1609,13 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
       const verticalDist = Math.abs(obj.trackY - playerY);
 
+      if (!isCalibrating && verticalDist < 400 && verticalDist >= 60 && obj.lane === this.currentLane && !obj.hit) {
+        if (this.obstacles && this.obstacles.contains(obj)) {
+          showWarning = true;
+          warningMsg = obj.isAirborne ? '⬇' : '⬆';
+        }
+      }
+
       // Ampliar un poco el margen para que no haya falsos negativos, pero exigir la acción correcta
       if (!isCalibrating && verticalDist < 60 && obj.lane === this.currentLane && !obj.hit) {
         if (this.obstacles && this.obstacles.contains(obj)) {
@@ -1633,6 +1647,15 @@ export class SubwaySurfersScene extends Phaser.Scene {
         }
       }
     });
+
+    if (this.actionWarningText) {
+      if (showWarning) {
+        this.actionWarningText.setText(warningMsg);
+        this.actionWarningText.setVisible(true);
+      } else {
+        this.actionWarningText.setVisible(false);
+      }
+    }
   }
 
   _spawnCycle() {
