@@ -1562,6 +1562,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       let scaleMult = 1;
       if (isObstacle) {
         scaleMult = obj.isAirborne ? AIRBORNE_CONFIG.scaleMultiplier : (TRACK_CONFIG.scaleMultiplier || 1.0);
+        if (obj.customScale) scaleMult *= obj.customScale;
       }
 
       const baseSize = isObstacle ? 350 : 200;
@@ -1646,6 +1647,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
     let obsKey = 'obs_castle';
     let isAirborne = false;
+    let customScale = 1.0;
 
     if (this.currentScenarioIndex === 0) { // calle
       const r = Phaser.Math.Between(1, 100);
@@ -1677,15 +1679,16 @@ export class SubwaySurfersScene extends Phaser.Scene {
       else obsKey = 'obs_piso2_pollo2';
     } else if (this.currentScenarioIndex === 3) { // piso 3
       const r = Phaser.Math.Between(1, 4);
-      if (r === 1) obsKey = 'obs_piso3_balon';
-      else if (r === 2) obsKey = 'obs_piso3_maq1';
-      else if (r === 3) obsKey = 'obs_piso3_maq2';
-      else obsKey = 'obs_piso3_pesas';
+      if (r === 1) { obsKey = 'obs_piso3_balon'; customScale = 1.0; }
+      else if (r === 2) { obsKey = 'obs_piso3_maq1'; customScale = 1.0; }
+      else if (r === 3) { obsKey = 'obs_piso3_maq2'; customScale = 1.0; }
+      else { obsKey = 'obs_piso3_pesas'; customScale = 1.0; }
     }
 
     const obs = this.add.sprite(this.scale.width / 2, this.scale.height * TRACK_CONFIG.horizonYFactor, obsKey);
     obs.lane = lane;
     obs.isAirborne = isAirborne;
+    obs.customScale = customScale;
     obs.setOrigin(0.5, 1);
 
     if (isAirborne && obsKey === 'obs_avion') {
