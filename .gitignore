@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Videos just dance (muy pesados)
+public/assets/images/just-dance/*.mp4
+
 # Documentos ofimáticos
 *.docx
 *.pdf

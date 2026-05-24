@@ -1,10 +1,10 @@
 import * as Phaser from 'phaser';
 
 const SCENARIOS = [
-  { id: 'calle', intro: 'intro_calle', loop: 'loop_calle', threshold: 0, trackConfig: { centerXOffset: 7, laneSpacing: 538, vanishingPointXOffset: 6, horizonYFactor: 0.566 } },
-  { id: 'piso1', intro: 'intro_piso1', loop: 'loop_piso1', threshold: 1500, trackConfig: { centerXOffset: 0, laneSpacing: 811, vanishingPointXOffset: -5, horizonYFactor: 0.546 } },
-  { id: 'piso2', intro: 'intro_piso2', loop: 'loop_piso2', loopEndTime: 7, threshold: 3000, trackConfig: { centerXOffset: -3, laneSpacing: 509, vanishingPointXOffset: -5, horizonYFactor: 0.548 } },
-  { id: 'piso3', intro: 'intro_piso3', loop: 'loop_piso3', threshold: 4500, trackConfig: { centerXOffset: 30, laneSpacing: 509, vanishingPointXOffset: 7, horizonYFactor: 0.530 } }
+  { id: 'calle', intro: 'intro_calle', loop: 'loop_calle', threshold: 0, trackConfig: { centerXOffset: 7, laneSpacing: 538, vanishingPointXOffset: 6, horizonYFactor: 0.556, yOffset: 0, scaleMultiplier: 0.855 } },
+  { id: 'piso1', intro: 'intro_piso1', loop: 'loop_piso1', threshold: 1500, trackConfig: { centerXOffset: 0, laneSpacing: 811, vanishingPointXOffset: -5, horizonYFactor: 0.546, yOffset: 0, scaleMultiplier: 0.855 } },
+  { id: 'piso2', intro: 'intro_piso2', loop: 'loop_piso2', loopEndTime: 7, threshold: 3000, trackConfig: { centerXOffset: -3, laneSpacing: 509, vanishingPointXOffset: -5, horizonYFactor: 0.548, yOffset: 0, scaleMultiplier: 0.855 } },
+  { id: 'piso3', intro: 'intro_piso3', loop: 'loop_piso3', threshold: 4500, trackConfig: { centerXOffset: 30, laneSpacing: 509, vanishingPointXOffset: 7, horizonYFactor: 0.518, yOffset: 8, scaleMultiplier: 0.955} }
 ];
 
 // Mapeo de carril backend → índice de lane Phaser
@@ -15,17 +15,19 @@ let TRACK_CONFIG = {
   centerXOffset: 0,
   laneSpacing: 350,
   vanishingPointXOffset: 0,
-  horizonYFactor: 0.58
+  horizonYFactor: 0.58,
+  yOffset: 0,
+  scaleMultiplier: 1.0
 };
 
-// Configuración para obstáculos aéreos (como el carro futurista)
+// Configuración para obstáculos aéreos 
 let AIRBORNE_CONFIG = {
-  yOffset: -430,
-  scaleMultiplier: 0.975,
-  centerXOffset: 5,
-  laneSpacing: 524,
-  vanishingPointXOffset: 7,
-  horizonYFactor: 0.568
+  yOffset: -230,
+  scaleMultiplier: 0.855,
+  centerXOffset: 8,
+  laneSpacing: 541,
+  vanishingPointXOffset: 9,
+  horizonYFactor: 0.566
 };
 
 // Factor de reducción constante para optimizar rendimiento de croma sin alterar aspecto original
@@ -49,7 +51,7 @@ const JUMP_CONFIGS = {
 
 // Configuración de escala, posición y croma para correr/idle de cada personaje
 const RUN_CONFIGS = {
-  NB1: { scale: 0.442, xOffset: -10, yOffset: 60, threshold: 59 },
+  NB1: { scale: 0.416, xOffset: -10, yOffset: 60, threshold: 59 },
   NB2: { scale: 0.538, xOffset: -5, yOffset: 43, threshold: 50 },
   NB3: { scale: 0.536, xOffset: 84, yOffset: 401, threshold: 34 }, // Niña Blanca (Video MP4 con fondo negro, valores calibrados)
   NB4: { scale: 0.532, xOffset: 109, yOffset: 423, threshold: 32 }  // Niña Morena (Video MP4 con fondo negro)
@@ -58,25 +60,25 @@ const RUN_CONFIGS = {
 // Rutas de los videos de cada personaje (correr/idle, saltar y deslizarse)
 // Para configurar nuevos personajes o cambiar sus videos, solo debes editar las rutas aquí.
 const CHARACTER_VIDEOS = {
-  NB1: { // Personaje 1 (Niño Blanco)
+  NB1: {
     run: 'assets/images/subway/Personaje/NB1.webm',
     jump: 'assets/images/subway/Personaje/niño blanco/0519 (1).mp4',
     slide: 'assets/images/subway/Personaje/niño blanco/N-B-D.mp4'
   },
-  NB2: { // Personaje 2 (Niño Moreno)
+  NB2: {
     run: 'assets/images/subway/Personaje/NB2.webm',
-    jump: 'assets/images/subway/Personaje/niño moreno/niño moreno saltando.mp4',
+    jump: 'assets/images/subway/Personaje/niño moreno/n-m-s.png',
     slide: 'assets/images/subway/Personaje/niño moreno/verdadero saltando.mp4'
   },
-  NB3: { // Personaje 3 (Niña Blanca)
+  NB3: {
     run: 'assets/images/subway/Personaje/niña blanca/niña blanca corriendo.mp4',
-    jump: 'assets/images/subway/Personaje/niña blanca/Niña blanca saltando.png', // <-- Imagen PNG
-    slide: 'assets/images/subway/Personaje/niña blanca/nIña delizando verdadero.mp4'
+    jump: 'assets/images/subway/Personaje/niña blanca/Niña blanca saltando.png',
+    slide: 'assets/images/subway/Personaje/niña blanca/nina-blanca-deslizandose.png'
   },
-  NB4: { // Personaje 4 (Niña Morena)
+  NB4: {
     run: 'assets/images/subway/Personaje/nina_morena/nina_morena_corriendo.mp4',
     jump: 'assets/images/subway/Personaje/nina_morena/nina_morena_saltando.mp4',
-    slide: 'assets/images/subway/Personaje/nina_morena/nina_morena_deslizandose.png' // <-- Imagen PNG
+    slide: 'assets/images/subway/Personaje/nina_morena/nina_morena_deslizandose.png'
   }
 };
 
@@ -92,7 +94,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.score = 0;
     this.isGameOver = false;
     this.nextDifficultyScore = 500;
-    this.spawnDelay = 2000;
+    this.spawnDelay = 3500;
 
     // ── Estado anterior del backend ──
     // Solo actuamos cuando el estado CAMBIA, no cada frame
@@ -148,7 +150,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.load.image('obs_rainbow', 'assets/images/subway/image27.png');
 
     // Obstáculos de Calle
-    this.load.image('obs_carro_futurista', 'assets/images/subway/Obstaculos/Escenario Calle/Carro Futurista.png');
+    this.load.image('obs_avion', 'assets/images/subway/Obstaculos/Escenario Calle/avion.png');
     this.load.image('obs_carro_1', 'assets/images/subway/Obstaculos/Escenario Calle/Carro_1.png');
     this.load.image('obs_carro_2', 'assets/images/subway/Obstaculos/Escenario Calle/Carro_2.png');
     this.load.image('obs_moto_1', 'assets/images/subway/Obstaculos/Escenario Calle/Moto_1.png');
@@ -175,8 +177,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.load.image('obs_piso3_pesas', 'assets/images/subway/Obstaculos/Escenario Tercer Piso CC/Pesas.png');
 
     // Sonidos
-    this.load.audio('crash1', 'assets/audio/subway surfer/golpe1.mp3');
-    this.load.audio('crash3', 'assets/audio/subway surfer/golpe3.mp3');
+    this.load.audio('crash1', 'assets/audio/subway surfer/choque con obstaculos/golpe1.mp3');
+    this.load.audio('crash3', 'assets/audio/subway surfer/choque con obstaculos/golpe3.mp3');
+    this.load.audio('sound_potenciador', ('/assets/audio/subway surfer/potenciadores/Efecto_Potenciadores.mp3'));
 
     this.load.image('sun', 'assets/images/subway/Potenciadores/image64.png');
     this.load.image('potenciador_60', 'assets/images/subway/Potenciadores/image60.png');
@@ -198,7 +201,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.score = 0;
     this.gameSpeed = 2.0;
     this.currentLane = 1;
-    this.spawnDelay = 2000;
+    this.spawnDelay = 3500;
     this._isRestarting = false;
     this.isInvincible = false;
     this.isDoublePoints = false;
@@ -223,7 +226,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
     // Cargar config de pista del primer escenario
     if (SCENARIOS[this.currentScenarioIndex].trackConfig) {
-      TRACK_CONFIG = { ...SCENARIOS[this.currentScenarioIndex].trackConfig };
+      TRACK_CONFIG = { ...TRACK_CONFIG, ...SCENARIOS[this.currentScenarioIndex].trackConfig };
     }
 
     this.cameras.main.fadeIn(300, 0, 0, 0);
@@ -474,7 +477,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
     // Actualizar config de pista al nuevo escenario
     if (currentScenario.trackConfig) {
-      TRACK_CONFIG = { ...currentScenario.trackConfig };
+      TRACK_CONFIG = { ...TRACK_CONFIG, ...currentScenario.trackConfig };
     }
 
     this.isIntroPlaying = true;
@@ -514,6 +517,114 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.cameras.main.flash(500, 255, 255, 255);
   }
 
+  _goToScenario(index) {
+    if (index === this.currentScenarioIndex) return;
+    this.currentScenarioIndex = index;
+    const currentScenario = SCENARIOS[this.currentScenarioIndex];
+    this.score = currentScenario.threshold;
+    this.scoreText.setText(this.score);
+
+    if (currentScenario.trackConfig) {
+      TRACK_CONFIG = { ...TRACK_CONFIG, ...currentScenario.trackConfig };
+    }
+
+    this.isIntroPlaying = true;
+    this.introCountdown = 5;
+    if (this.playerContainer) this.playerContainer.setVisible(false);
+
+    if (this._currentBgm) this._currentBgm.stop();
+    const bgmKeys = ['bgm_calle', 'bgm_piso1', 'bgm_piso2', 'bgm_piso3'];
+    if (bgmKeys[this.currentScenarioIndex]) {
+      this._currentBgm = this.sound.add(bgmKeys[this.currentScenarioIndex], { loop: true, volume: 0.4 });
+      this._currentBgm.play();
+    }
+
+    this.countdownText.setText(this.introCountdown);
+    this.countdownText.setVisible(true);
+
+    if (this.levelCompleteText) {
+      this.levelCompleteText.setVisible(true).setScale(0);
+      this.tweens.add({ targets: this.levelCompleteText, scale: 1, duration: 500, ease: 'Back.easeOut' });
+    }
+
+    if (currentScenario.intro) {
+      if (this.background) this.background.setVisible(false);
+      this.bgVideo.setVisible(true);
+      this.bgVideo.changeSource(currentScenario.intro);
+      this.bgVideo.setMute(true);
+      this.bgVideo.play();
+    } else if (currentScenario.loop) {
+      if (this.background) this.background.setVisible(false);
+      this.bgVideo.setVisible(true);
+      this.bgVideo.changeSource(currentScenario.loop);
+      this.bgVideo.setMute(true);
+      this.bgVideo.setLoop(true);
+      this.bgVideo.play();
+      this._finishIntro();
+    }
+
+    if (this.introTimerEvent) this.introTimerEvent.destroy();
+    this.introTimerEvent = this.time.delayedCall(5000, () => this._finishIntro());
+
+    if (this.obstacles) this.obstacles.clear(true, true);
+    if (this.collectibles) this.collectibles.clear(true, true);
+
+    this.cameras.main.flash(500, 255, 255, 255);
+  }
+
+  _buildScenarioMenu() {
+    const { width } = this.scale;
+
+    this.scenarioMenuContainer = this.add.container(width - 150, 150).setDepth(200).setVisible(false);
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.8);
+    bg.fillRoundedRect(-100, 0, 200, 220, 10);
+    bg.lineStyle(2, 0x40c0dd, 1);
+    bg.strokeRoundedRect(-100, 0, 200, 220, 10);
+    this.scenarioMenuContainer.add(bg);
+
+    const title = this.add.text(0, 20, 'Escenarios', {
+      fontSize: '20px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+    }).setOrigin(0.5);
+    this.scenarioMenuContainer.add(title);
+
+    SCENARIOS.forEach((scen, idx) => {
+      const btnBg = this.add.rectangle(0, 60 + idx * 45, 180, 35, 0x40c0dd, 1).setInteractive({ cursor: 'pointer' });
+      const btnTxt = this.add.text(0, 60 + idx * 45, scen.id.toUpperCase(), {
+        fontSize: '18px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+      }).setOrigin(0.5);
+
+      btnBg.on('pointerover', () => btnBg.setFillStyle(0x2da0bc));
+      btnBg.on('pointerout', () => btnBg.setFillStyle(0x40c0dd));
+      btnBg.on('pointerdown', () => {
+        this.scenarioMenuContainer.setVisible(false);
+        this._goToScenario(idx);
+      });
+
+      this.scenarioMenuContainer.add([btnBg, btnTxt]);
+    });
+
+    const toggleBtn = this.add.container(width - 150, 60).setDepth(200);
+    const toggleBg = this.add.graphics();
+    toggleBg.fillStyle(0x000000, 0.7);
+    toggleBg.fillRoundedRect(-100, -20, 200, 40, 10);
+    toggleBg.lineStyle(2, 0x40c0dd, 1);
+    toggleBg.strokeRoundedRect(-100, -20, 200, 40, 10);
+    toggleBtn.add(toggleBg);
+
+    const toggleTxt = this.add.text(0, 0, '🎯 Saltar', {
+      fontSize: '18px', fontFamily: 'Luckiest Guy', color: '#ffffff'
+    }).setOrigin(0.5);
+    toggleBtn.add(toggleTxt);
+
+    const hitArea = this.add.rectangle(0, 0, 200, 40, 0x000000, 0).setInteractive({ cursor: 'pointer' });
+    hitArea.on('pointerdown', () => {
+      this.scenarioMenuContainer.setVisible(!this.scenarioMenuContainer.visible);
+    });
+    toggleBtn.add(hitArea);
+  }
+
   _startSpawnTimer() {
     if (this.spawnTimer) this.spawnTimer.destroy();
     this.spawnTimer = this.time.addEvent({
@@ -528,6 +639,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.scoreText = this.add.text(width / 2, 80, '0', {
       fontSize: '110px', color: '#ffffff', stroke: '#9c4eb3', strokeThickness: 10
     }).setOrigin(0.5).setDepth(100);
+    this._buildScenarioMenu();
   }
 
   _cancelHold() {
@@ -1227,66 +1339,30 @@ export class SubwaySurfersScene extends Phaser.Scene {
       this._trackDebugMode = !this._trackDebugMode;
       if (this._trackDebugMode) {
         if (this.spawnTimer) this.spawnTimer.paused = true;
+        if (this.collectibles) this.collectibles.clear(true, true);
+        if (this.obstacles) this.obstacles.clear(true, true);
+
+        // Spawnear obstáculo terrestre congelado
+        this._spawnObstacle(1);
+        const obs = this.obstacles.getChildren()[0];
+        obs.isAirborne = false;
+        obs.trackY = this.scale.height * 0.8;
       } else {
         if (this.spawnTimer) this.spawnTimer.paused = false;
         if (this._debugText) this._debugText.setVisible(false);
         if (this.trackGraphics) this.trackGraphics.clear();
+        if (this.obstacles) this.obstacles.clear(true, true);
       }
     }
 
     if (this._trackDebugMode) {
-      if (this._debugKeys.U.isDown) {
-        TRACK_CONFIG.centerXOffset -= 1;
-      }
-      if (this._debugKeys.J.isDown) {
-        TRACK_CONFIG.centerXOffset += 1;
-      }
-      if (this._debugKeys.I.isDown) {
-        TRACK_CONFIG.vanishingPointXOffset -= 1;
-      }
-      if (this._debugKeys.K.isDown) {
-        TRACK_CONFIG.vanishingPointXOffset += 1;
-      }
-      if (this._debugKeys.O.isDown) {
-        TRACK_CONFIG.laneSpacing += 1;
-      }
-      if (this._debugKeys.L.isDown) {
-        TRACK_CONFIG.laneSpacing = Math.max(50, TRACK_CONFIG.laneSpacing - 1);
-      }
-      if (this._debugKeys.T.isDown) {
-        TRACK_CONFIG.horizonYFactor = Math.min(1.0, TRACK_CONFIG.horizonYFactor + 0.002);
-      }
-      if (this._debugKeys.G.isDown) {
-        TRACK_CONFIG.horizonYFactor = Math.max(0.2, TRACK_CONFIG.horizonYFactor - 0.002);
-      }
-
-      // Sincronizar this.lanes
+      // Sincronizar this.lanes (los controles reales de variables ocurren en el bloque unificado más abajo)
       this.lanes = [-TRACK_CONFIG.laneSpacing, 0, TRACK_CONFIG.laneSpacing];
 
       // Actualizar posición del playerContainer inmediatamente
       if (this.playerContainer) {
         this.playerContainer.x = this._getPlayerXForLane(this.currentLane);
       }
-
-      if (!this._debugText) {
-        this._debugText = this.add.text(this.scale.width / 2, 250, '', {
-          fontSize: '24px', color: '#ffffff', backgroundColor: 'rgba(0,0,0,0.85)',
-          padding: { x: 15, y: 10 }, align: 'center', stroke: '#ff00ff', strokeThickness: 2,
-          fontFamily: 'monospace'
-        }).setOrigin(0.5).setDepth(3000);
-      }
-      this._debugText.setVisible(true);
-      this._debugText.setText(
-        `🛠️ MODO DEPURA PISTA / CARRILES 🛠️\n\n` +
-        `Mantén presionadas las teclas:\n` +
-        `• U / J : Mover Centro de Pista (centerXOffset: ${TRACK_CONFIG.centerXOffset.toFixed(0)})\n` +
-        `• I / K : Mover Punto de Fuga / Horizonte (vanishingPointXOffset: ${TRACK_CONFIG.vanishingPointXOffset.toFixed(0)})\n` +
-        `• O / L : Ajustar Ancho de Carriles (laneSpacing: ${TRACK_CONFIG.laneSpacing.toFixed(0)})\n` +
-        `• T / G : Mover Altura del Horizonte (horizonYFactor: ${TRACK_CONFIG.horizonYFactor.toFixed(3)})\n\n` +
-        `Copia y pega esto en el SCENARIO correspondiente:\n` +
-        `trackConfig: { centerXOffset: ${TRACK_CONFIG.centerXOffset.toFixed(0)}, laneSpacing: ${TRACK_CONFIG.laneSpacing.toFixed(0)}, vanishingPointXOffset: ${TRACK_CONFIG.vanishingPointXOffset.toFixed(0)}, horizonYFactor: ${TRACK_CONFIG.horizonYFactor.toFixed(3)} }\n\n` +
-        `Presiona 'C' para salir del modo depuración`
-      );
     }
 
     // Toggle modo depura carro volador (V)
@@ -1302,10 +1378,10 @@ export class SubwaySurfersScene extends Phaser.Scene {
         if (this.collectibles) this.collectibles.clear(true, true);
         if (this.obstacles) this.obstacles.clear(true, true);
 
-        // Spawnear el carro volador congelado en el centro
+        // Spawnear el avion congelado en el centro
         this._spawnObstacle(1);
         const obs = this.obstacles.getChildren()[0];
-        obs.setTexture('obs_carro_futurista');
+        obs.setTexture('obs_avion');
         obs.isAirborne = true;
         obs.trackY = this.scale.height * 0.8; // en medio de la pista visualmente
       } else {
@@ -1315,41 +1391,42 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
     }
 
-    if (this._airborneDebugMode) {
-      if (this._debugKeys.U.isDown) AIRBORNE_CONFIG.centerXOffset -= 1;
-      if (this._debugKeys.J.isDown) AIRBORNE_CONFIG.centerXOffset += 1;
-      if (this._debugKeys.I.isDown) AIRBORNE_CONFIG.vanishingPointXOffset -= 1;
-      if (this._debugKeys.K.isDown) AIRBORNE_CONFIG.vanishingPointXOffset += 1;
-      if (this._debugKeys.O.isDown) AIRBORNE_CONFIG.laneSpacing += 1;
-      if (this._debugKeys.L.isDown) AIRBORNE_CONFIG.laneSpacing = Math.max(50, AIRBORNE_CONFIG.laneSpacing - 1);
-      if (this._debugKeys.T.isDown) AIRBORNE_CONFIG.horizonYFactor = Math.min(1.0, AIRBORNE_CONFIG.horizonYFactor + 0.002);
-      if (this._debugKeys.G.isDown) AIRBORNE_CONFIG.horizonYFactor = Math.max(0.2, AIRBORNE_CONFIG.horizonYFactor - 0.002);
+    if (this._airborneDebugMode || this._trackDebugMode) {
+      const conf = this._airborneDebugMode ? AIRBORNE_CONFIG : TRACK_CONFIG;
+      if (this._debugKeys.U.isDown) conf.centerXOffset -= 1;
+      if (this._debugKeys.J.isDown) conf.centerXOffset += 1;
+      if (this._debugKeys.I.isDown) conf.vanishingPointXOffset -= 1;
+      if (this._debugKeys.K.isDown) conf.vanishingPointXOffset += 1;
+      if (this._debugKeys.O.isDown) conf.laneSpacing += 1;
+      if (this._debugKeys.L.isDown) conf.laneSpacing = Math.max(50, conf.laneSpacing - 1);
+      if (this._debugKeys.T.isDown) conf.horizonYFactor = Math.min(1.0, conf.horizonYFactor + 0.002);
+      if (this._debugKeys.G.isDown) conf.horizonYFactor = Math.max(0.2, conf.horizonYFactor - 0.002);
 
-      if (this._debugKeys.W.isDown) AIRBORNE_CONFIG.yOffset -= 2;
-      if (this._debugKeys.S.isDown) AIRBORNE_CONFIG.yOffset += 2;
-      if (this._debugKeys.A.isDown) AIRBORNE_CONFIG.scaleMultiplier -= 0.005;
-      if (this._debugKeys.D.isDown) AIRBORNE_CONFIG.scaleMultiplier += 0.005;
+      if (this._debugKeys.W.isDown) conf.yOffset -= 2;
+      if (this._debugKeys.S.isDown) conf.yOffset += 2;
+      if (this._debugKeys.A.isDown) conf.scaleMultiplier -= 0.005;
+      if (this._debugKeys.D.isDown) conf.scaleMultiplier += 0.005;
 
       if (!this._debugText) {
-        this._debugText = this.add.text(this.scale.width / 2, 250, '', {
+        this._debugText = this.add.text(this.scale.width / 2, 100, '', {
           fontSize: '24px', color: '#ffffff', backgroundColor: 'rgba(0,0,0,0.85)',
-          padding: { x: 15, y: 10 }, align: 'center', stroke: '#ff00ff', strokeThickness: 2,
+          padding: { x: 15, y: 10 }, align: 'center', stroke: '#00ffff', strokeThickness: 2,
           fontFamily: 'monospace'
         }).setOrigin(0.5).setDepth(3000);
       }
       this._debugText.setVisible(true);
       this._debugText.setText(
-        `🛠️ MODO DEPURA CARRO VOLADOR 🛠️\n\n` +
+        `🛠️ MODO DEPURA ${this._airborneDebugMode ? 'AÉREO' : 'PISTA'} 🛠️\n\n` +
         `Mantén presionadas las teclas:\n` +
-        `• U / J : Mover Centro de Pista (centerXOffset: ${AIRBORNE_CONFIG.centerXOffset.toFixed(0)})\n` +
-        `• I / K : Mover Punto de Fuga / Horizonte (vanishingPointXOffset: ${AIRBORNE_CONFIG.vanishingPointXOffset.toFixed(0)})\n` +
-        `• O / L : Ajustar Ancho de Carriles (laneSpacing: ${AIRBORNE_CONFIG.laneSpacing.toFixed(0)})\n` +
-        `• T / G : Mover Altura del Horizonte (horizonYFactor: ${AIRBORNE_CONFIG.horizonYFactor.toFixed(3)})\n` +
-        `• W / S : Subir / Bajar (yOffset: ${AIRBORNE_CONFIG.yOffset.toFixed(0)})\n` +
-        `• A / D : Agrandar / Achicar (scaleMultiplier: ${AIRBORNE_CONFIG.scaleMultiplier.toFixed(3)})\n\n` +
-        `Copia y pega esto al inicio del archivo:\n` +
-        `let AIRBORNE_CONFIG = { yOffset: ${AIRBORNE_CONFIG.yOffset.toFixed(0)}, scaleMultiplier: ${AIRBORNE_CONFIG.scaleMultiplier.toFixed(3)}, centerXOffset: ${AIRBORNE_CONFIG.centerXOffset.toFixed(0)}, laneSpacing: ${AIRBORNE_CONFIG.laneSpacing.toFixed(0)}, vanishingPointXOffset: ${AIRBORNE_CONFIG.vanishingPointXOffset.toFixed(0)}, horizonYFactor: ${AIRBORNE_CONFIG.horizonYFactor.toFixed(3)} };\n\n` +
-        `Presiona 'V' para salir del modo depuración`
+        `• W / S : Subir / Bajar (yOffset: ${(conf.yOffset || 0).toFixed(0)})\n` +
+        `• A / D : Escalar (scaleMultiplier: ${(conf.scaleMultiplier || 1).toFixed(3)})\n` +
+        `• U / J : Centro (centerXOffset: ${conf.centerXOffset.toFixed(0)})\n` +
+        `• I / K : Fuga (vanishingPointXOffset: ${conf.vanishingPointXOffset.toFixed(0)})\n` +
+        `• O / L : Carriles (laneSpacing: ${conf.laneSpacing.toFixed(0)})\n` +
+        `• T / G : Horizonte (horizonYFactor: ${conf.horizonYFactor.toFixed(3)})\n\n` +
+        `Copia y reemplaza en ${this._airborneDebugMode ? 'AIRBORNE_CONFIG' : 'TRACK_CONFIG'} o en tu Escenario:\n` +
+        `{ centerXOffset: ${conf.centerXOffset.toFixed(0)}, laneSpacing: ${conf.laneSpacing.toFixed(0)}, vanishingPointXOffset: ${conf.vanishingPointXOffset.toFixed(0)}, horizonYFactor: ${conf.horizonYFactor.toFixed(3)}, yOffset: ${(conf.yOffset || 0).toFixed(0)}, scaleMultiplier: ${(conf.scaleMultiplier || 1).toFixed(3)} }\n\n` +
+        `Presiona '${this._airborneDebugMode ? 'V' : 'C'}' para salir del modo depuración`
       );
     }
 
@@ -1447,8 +1524,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
       if (obj.trackY === undefined) obj.trackY = obj.y;
       obj.trackY += currentSpeed;
 
-      const isCarroVolador = obj.isAirborne && this.obstacles && this.obstacles.contains(obj);
-      const conf = isCarroVolador ? AIRBORNE_CONFIG : TRACK_CONFIG;
+      const isAvion = obj.isAirborne && this.obstacles && this.obstacles.contains(obj);
+      const conf = isAvion ? AIRBORNE_CONFIG : TRACK_CONFIG;
       const localHorizonY = this.scale.height * conf.horizonYFactor;
 
       const customProgress = (obj.trackY - localHorizonY) / (this.scale.height - localHorizonY);
@@ -1475,16 +1552,31 @@ export class SubwaySurfersScene extends Phaser.Scene {
       obj.x = Phaser.Math.Linear(startX, targetX, progress);
 
       // Si el objeto está en el aire, se eleva visualmente según la configuración
-      const airborneYOffset = obj.isAirborne ? (isCarroVolador ? AIRBORNE_CONFIG.yOffset : -550) * progress : 0;
-      obj.y = obj.trackY + airborneYOffset;
+      const airborneYOffset = obj.isAirborne ? (isAvion ? AIRBORNE_CONFIG.yOffset : -550) * progress : 0;
+      const isObstacle = this.obstacles && this.obstacles.contains(obj);
+      const groundYOffset = (!obj.isAirborne && isObstacle) ? (TRACK_CONFIG.yOffset || 0) * progress : 0;
+      obj.y = obj.trackY + airborneYOffset + groundYOffset;
 
       const pulse = obj.pulseFactor !== undefined ? obj.pulseFactor : 1;
-      const isObstacle = this.obstacles && this.obstacles.contains(obj);
-      const airborneScale = obj.isAirborne && isObstacle ? AIRBORNE_CONFIG.scaleMultiplier : 1;
+
+      let scaleMult = 1;
+      if (isObstacle) {
+        scaleMult = obj.isAirborne ? AIRBORNE_CONFIG.scaleMultiplier : (TRACK_CONFIG.scaleMultiplier || 1.0);
+        if (obj.customScale) scaleMult *= obj.customScale;
+      }
+
       const baseSize = isObstacle ? 350 : 200;
-      const targetSize = baseSize * progress * pulse * airborneScale;
+      const targetSize = baseSize * progress * pulse * scaleMult;
       const scaleFactor = targetSize / Math.max(obj.width, obj.height);
       obj.setScale(scaleFactor);
+
+      if (obj.downArrow) {
+        obj.downArrow.x = obj.x + 80 * progress;
+        obj.downArrow.y = obj.y - (100 + (obj.arrowOffset || 0)) * progress;
+        obj.downArrow.setScale(progress);
+        obj.downArrow.setDepth(obj.depth + 1);
+        obj.downArrow.setAlpha(obj.alpha);
+      }
 
       obj.setAlpha(Phaser.Math.Clamp(progress * 4, 0, 1));
       obj.setDepth(20);
@@ -1514,8 +1606,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
       if (!isCalibrating && verticalDist < 60 && obj.lane === this.currentLane && !obj.hit) {
         if (this.obstacles && this.obstacles.contains(obj)) {
           if (obj.isAirborne) {
-            // Es el carro volador: te estrellas si SALTAS
-            if (this.isJumping && !this._jumpDebugMode && !this.isInvincible) {
+            // Es el avion: te estrellas si NO TE DESLIZAS
+            if (!this.isSliding && !this._slideDebugMode && !this.isInvincible) {
               obj.hit = true;
               this._gameOver();
             }
@@ -1555,11 +1647,12 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
     let obsKey = 'obs_castle';
     let isAirborne = false;
+    let customScale = 1.0;
 
     if (this.currentScenarioIndex === 0) { // calle
       const r = Phaser.Math.Between(1, 100);
-      if (r <= 35) { // 35% probabilidad de carro volador
-        obsKey = 'obs_carro_futurista';
+      if (r <= 35) { // 35% probabilidad de avion
+        obsKey = 'obs_avion';
         isAirborne = true;
       } else if (r <= 50) {
         obsKey = 'obs_carro_1';
@@ -1586,16 +1679,32 @@ export class SubwaySurfersScene extends Phaser.Scene {
       else obsKey = 'obs_piso2_pollo2';
     } else if (this.currentScenarioIndex === 3) { // piso 3
       const r = Phaser.Math.Between(1, 4);
-      if (r === 1) obsKey = 'obs_piso3_balon';
-      else if (r === 2) obsKey = 'obs_piso3_maq1';
-      else if (r === 3) obsKey = 'obs_piso3_maq2';
-      else obsKey = 'obs_piso3_pesas';
+      if (r === 1) { obsKey = 'obs_piso3_balon'; customScale = 1.0; }
+      else if (r === 2) { obsKey = 'obs_piso3_maq1'; customScale = 1.0; }
+      else if (r === 3) { obsKey = 'obs_piso3_maq2'; customScale = 1.0; }
+      else { obsKey = 'obs_piso3_pesas'; customScale = 1.0; }
     }
 
     const obs = this.add.sprite(this.scale.width / 2, this.scale.height * TRACK_CONFIG.horizonYFactor, obsKey);
     obs.lane = lane;
     obs.isAirborne = isAirborne;
+    obs.customScale = customScale;
     obs.setOrigin(0.5, 1);
+
+    if (isAirborne && obsKey === 'obs_avion') {
+      const arrowText = this.add.text(0, 0, '⬇', { fontSize: '120px', color: '#ff0000', stroke: '#ffffff', strokeThickness: 12 }).setOrigin(0.5);
+      obs.downArrow = arrowText;
+      obs.arrowOffset = 0;
+      this.tweens.add({
+        targets: obs,
+        arrowOffset: 30,
+        duration: 300,
+        yoyo: true,
+        repeat: -1
+      });
+      obs.on('destroy', () => arrowText.destroy());
+    }
+
     this.obstacles.add(obs);
   }
 
@@ -1820,6 +1929,13 @@ export class SubwaySurfersScene extends Phaser.Scene {
     if (obj.glowCircle) obj.glowCircle.destroy();
     obj.destroy();
 
+    try {
+      const sfx = this.sound.add('sound_potenciador', { volume: 1.0 });
+      sfx.play();
+    } catch (e) {
+      console.error("Error al reproducir sonido de potenciador:", e);
+    }
+
     if (obj.texture.key === 'potenciador_75') {
       // Estrella: Invencibilidad 5 seg
       this.isInvincible = true;
@@ -1895,65 +2011,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     });
   }
 
-  _gameOver() {
-    if (this._isGameOverTriggered) return;
-    this._isGameOverTriggered = true;
 
-    // Reproducir sonido de choque aleatorio
-    const crashSound = Phaser.Math.Between(0, 1) === 0 ? 'crash1' : 'crash3';
-    this.sound.play(crashSound, { volume: 0.8 });
-
-    // Si se estrella saltando, dejamos que el juego corra un poco más para ver la animación
-    const delay = this.isJumping ? 600 : 0;
-
-    this.time.delayedCall(delay, () => {
-      this.isGameOver = true;
-      if (this.bgVideo) this.bgVideo.pause();
-      if (this.playerRunImg) this.playerRunImg.pause();
-      if (this._currentBgm) this._currentBgm.pause();
-      if (this.spawnTimer) this.spawnTimer.paused = true;
-      if (this.timeScoreTimer) this.timeScoreTimer.paused = true;
-
-      // Crear un panel oscuro con blur
-      const overlay = this.add.graphics();
-      overlay.fillStyle(0x000000, 0.8);
-      overlay.fillRect(0, 0, this.scale.width, this.scale.height);
-      overlay.setDepth(1000);
-
-      // Texto de Game Over
-      const width = this.scale.width;
-      const height = this.scale.height;
-
-      this.add.text(width / 2, height / 2 - 100, 'GAME OVER', {
-        fontSize: '120px',
-        color: '#ff0000',
-        fontStyle: 'bold',
-        stroke: '#ffffff',
-        strokeThickness: 8
-      }).setOrigin(0.5).setDepth(1001);
-
-      this.add.text(width / 2, height / 2 + 50, `Puntuación: ${this.score}`, {
-        fontSize: '60px',
-        color: '#ffff00',
-        fontStyle: 'bold'
-      }).setOrigin(0.5).setDepth(1001);
-
-      const restartBtn = this.add.text(width / 2, height / 2 + 180, 'REINICIAR', {
-        fontSize: '50px',
-        color: '#ffffff',
-        backgroundColor: '#9c4eb3',
-        padding: { x: 30, y: 15 }
-      }).setOrigin(0.5).setDepth(1001).setInteractive();
-
-      restartBtn.on('pointerdown', () => {
-        this.scene.restart();
-      });
-
-      // Animación de entrada
-      overlay.setAlpha(0);
-      this.tweens.add({ targets: overlay, alpha: 1, duration: 500 });
-    });
-  }
 
   _cleanup() {
     // Quitar el listener del WebSocket — crítico para evitar memory leaks
@@ -2026,6 +2084,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
   _gameOver() {
     if (this.isGameOver) return;
     this.isGameOver = true;
+    const crashSound = Phaser.Math.Between(0, 1) === 0 ? 'crash1' : 'crash3';
+    try { this.sound.play(crashSound, { volume: 1.5 }); } catch (_) { }
     this.cameras.main.shake(600, 0.03);
     const { width, height } = this.scale;
 

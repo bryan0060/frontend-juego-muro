@@ -1,0 +1,352 @@
+[
+  {
+    "t": 2.0,
+    "esqueleto": {
+      "nariz": {
+        "x": 0.516,
+        "y": 0.3041,
+        "confidence": 1.0
+      },
+      "hombro_izquierdo": {
+        "x": 0.5487,
+        "y": 0.3641,
+        "confidence": 1.0
+      },
+      "hombro_derecho": {
+        "x": 0.484,
+        "y": 0.3653,
+        "confidence": 1.0
+      },
+      "codo_izquierdo": {
+        "x": 0.5582,
+        "y": 0.4387,
+        "confidence": 0.9898
+      },
+      "codo_derecho": {
+        "x": 0.4678,
+        "y": 0.4532,
+        "confidence": 0.9903
+      },
+      "muneca_izquierda": {
+        "x": 0.551,
+        "y": 0.4333,
+        "confidence": 0.9952
+      },
+      "muneca_derecha": {
+        "x": 0.49,
+        "y": 0.4182,
+        "confidence": 0.9976
+      },
+      "cadera_izquierda": {
+        "x": 0.5299,
+        "y": 0.5438,
+        "confidence": 0.9999
+      },
+      "cadera_derecha": {
+        "x": 0.4912,
+        "y": 0.5394,
+        "confidence": 0.9999
+      },
+      "rodilla_izquierda": {
+        "x": 0.5295,
+        "y": 0.6992,
+        "confidence": 0.9971
+      },
+      "rodilla_derecha": {
+        "x": 0.4703,
+        "y": 0.6891,
+        "confidence": 0.9977
+      },
+      "tobillo_izquierdo": {
+        "x": 0.5264,
+        "y": 0.8384,
+        "confidence": 0.9966
+      },
+      "tobillo_derecho": {
+        "x": 0.4717,
+        "y": 0.8273,
+        "confidence": 0.9978
+      }
+    }
+  },
+  {
+    "t": 4.0,
+    "esqueleto": {
+      "nariz": {
+        "x": 0.508,
+        "y": 0.2987,
+        "confidence": 1.0
+      },
+      "hombro_izquierdo": {
+        "x": 0.5475,
+        "y": 0.3673,
+        "confidence": 1.0
+      },
+      "hombro_derecho": {
+        "x": 0.4904,
+        "y": 0.3683,
+        "confidence": 0.9999
+      },
+      "codo_izquierdo": {
+        "x": 0.5509,
+        "y": 0.458,
+        "confidence": 0.9963
+      },
+      "codo_derecho": {
+        "x": 0.4821,
+        "y": 0.4227,
+        "confidence": 0.9843
+      },
+      "muneca_izquierda": {
+        "x": 0.5269,
+        "y": 0.5309,
+        "confidence": 0.9922
+      },
+      "muneca_derecha": {
+        "x": 0.5181,
+        "y": 0.3601,
+        "confidence": 0.9876
+      },
+      "cadera_izquierda": {
+        "x": 0.532,
+        "y": 0.5441,
+        "confidence": 0.9999
+      },
+      "cadera_derecha": {
+        "x": 0.4952,
+        "y": 0.5404,
+        "confidence": 0.9999
+      },
+      "rodilla_izquierda": {
+        "x": 0.5291,
+        "y": 0.6994,
+        "confidence": 0.9953
+      },
+      "rodilla_derecha": {
+        "x": 0.4673,
+        "y": 0.6842,
+        "confidence": 0.9968
+      },
+      "tobillo_izquierdo": {
+        "x": 0.5272,
+        "y": 0.8407,
+        "confidence": 0.9953
+      },
+      "tobillo_derecho": {
+        "x": 0.4677,
+        "y": 0.8231,
+        "confidence": 0.9961
+      }
+    }
+  },
+  {
+    "t": 6.0,
+    "esqueleto": {
+      "nariz": {
+        "x": 0.5229,
+        "y": 0.2931,
+        "confidence": 1.0
+      },
+      "hombro_izquierdo": {
+        "x": 0.5555,
+        "y": 0.3603,
+        "confidence": 0.9999
+      },
+      "hombro_derecho": {
+        "x": 0.4879,
+        "y": 0.3593,
+        "confidence": 0.9999
+      },
+      "codo_izquierdo": {
+        "x": 0.5613,
+        "y": 0.4328,
+        "confidence": 0.929
+      },
+      "codo_derecho": {
+        "x": 0.4712,
+        "y": 0.4472,
+        "confidence": 0.9918
+      },
+      "muneca_izquierda": {
+        "x": 0.5497,
+        "y": 0.4166,
+        "confidence": 0.952
+      },
+      "muneca_derecha": {
+        "x": 0.5063,
+        "y": 0.4166,
+        "confidence": 0.9944
+      },
+      "cadera_izquierda": {
+        "x": 0.5353,
+        "y": 0.5431,
+        "confidence": 0.9999
+      },
+      "cadera_derecha": {
+        "x": 0.4964,
+        "y": 0.5393,
+        "confidence": 0.9999
+      },
+      "rodilla_izquierda": {
+        "x": 0.533,
+        "y": 0.6982,
+        "confidence": 0.992
+      },
+      "rodilla_derecha": {
+        "x": 0.4776,
+        "y": 0.6858,
+        "confidence": 0.9946
+      },
+      "tobillo_izquierdo": {
+        "x": 0.5247,
+        "y": 0.8397,
+        "confidence": 0.9933
+      },
+      "tobillo_derecho": {
+        "x": 0.4739,
+        "y": 0.824,
+        "confidence": 0.9955
+      }
+    }
+  },
+  {
+    "t": 8.0,
+    "esqueleto": {
+      "nariz": {
+        "x": 0.5241,
+        "y": 0.3128,
+        "confidence": 1.0
+      },
+      "hombro_izquierdo": {
+        "x": 0.5491,
+        "y": 0.3737,
+        "confidence": 1.0
+      },
+      "hombro_derecho": {
+        "x": 0.4934,
+        "y": 0.3579,
+        "confidence": 0.9999
+      },
+      "codo_izquierdo": {
+        "x": 0.557,
+        "y": 0.4601,
+        "confidence": 0.9078
+      },
+      "codo_derecho": {
+        "x": 0.4813,
+        "y": 0.4198,
+        "confidence": 0.9823
+      },
+      "muneca_izquierda": {
+        "x": 0.5597,
+        "y": 0.5412,
+        "confidence": 0.8568
+      },
+      "muneca_derecha": {
+        "x": 0.5167,
+        "y": 0.3656,
+        "confidence": 0.9913
+      },
+      "cadera_izquierda": {
+        "x": 0.5373,
+        "y": 0.5467,
+        "confidence": 0.9999
+      },
+      "cadera_derecha": {
+        "x": 0.4996,
+        "y": 0.5431,
+        "confidence": 0.9999
+      },
+      "rodilla_izquierda": {
+        "x": 0.5303,
+        "y": 0.702,
+        "confidence": 0.9962
+      },
+      "rodilla_derecha": {
+        "x": 0.4583,
+        "y": 0.6767,
+        "confidence": 0.9967
+      },
+      "tobillo_izquierdo": {
+        "x": 0.5191,
+        "y": 0.84,
+        "confidence": 0.9956
+      },
+      "tobillo_derecho": {
+        "x": 0.4661,
+        "y": 0.8185,
+        "confidence": 0.9967
+      }
+    }
+  },
+  {
+    "t": 10.0,
+    "esqueleto": {
+      "nariz": {
+        "x": 0.5393,
+        "y": 0.3113,
+        "confidence": 0.9999
+      },
+      "hombro_izquierdo": {
+        "x": 0.5428,
+        "y": 0.3697,
+        "confidence": 0.9997
+      },
+      "hombro_derecho": {
+        "x": 0.4805,
+        "y": 0.347,
+        "confidence": 1.0
+      },
+      "codo_izquierdo": {
+        "x": 0.5446,
+        "y": 0.4463,
+        "confidence": 0.5684
+      },
+      "codo_derecho": {
+        "x": 0.4689,
+        "y": 0.4356,
+        "confidence": 0.9973
+      },
+      "muneca_izquierda": {
+        "x": 0.5486,
+        "y": 0.4879,
+        "confidence": 0.672
+      },
+      "muneca_derecha": {
+        "x": 0.5214,
+        "y": 0.4032,
+        "confidence": 0.9981
+      },
+      "cadera_izquierda": {
+        "x": 0.5276,
+        "y": 0.546,
+        "confidence": 0.9982
+      },
+      "cadera_derecha": {
+        "x": 0.4908,
+        "y": 0.5401,
+        "confidence": 0.9986
+      },
+      "rodilla_izquierda": {
+        "x": 0.5199,
+        "y": 0.7093,
+        "confidence": 0.9841
+      },
+      "rodilla_derecha": {
+        "x": 0.4798,
+        "y": 0.7006,
+        "confidence": 0.9828
+      },
+      "tobillo_izquierdo": {
+        "x": 0.4906,
+        "y": 0.8369,
+        "confidence": 0.9748
+      },
+      "tobillo_derecho": {
+        "x": 0.4651,
+        "y": 0.8395,
+        "confidence": 0.9855
+      }
+    }
+  }
+]

@@ -13,6 +13,29 @@ export class BootScene extends Phaser.Scene {
   preload() {
     const { width, height } = this.scale;
 
+    // Just Dance
+    this.load.json('evals_asereje', 'assets/jsons/asereje_poses.json');
+    this.load.json('evals_dale_pa_ve', 'assets/jsons/dalepave_poses.json');
+    this.load.json('evals_yamal', 'assets/jsons/lamine_poses.json');
+    this.load.json('evals_taza', 'assets/jsons/taza_poses.json');
+    this.load.json('evals_macarena', 'assets/jsons/macarena_poses.json');
+    this.load.json('evals_cuerpo',       'assets/jsons/cuerpo_poses.json');
+    this.load.json('evals_la_bomba',    'assets/jsons/bomba_poses.json');
+
+    this.load.audio('jd_menu_music', 'assets/audio/sonidos-just-dance/fondo-musica-dance.mp3');
+
+    this.load.video('just_dance_asereje', 'assets/images/just-dance/asereje.mp4');
+    this.load.video('just_dance_bomba', 'assets/images/just-dance/bomba.mp4');
+    this.load.video('just_dance_lamine', 'assets/images/just-dance/lamine.mp4');
+    this.load.video('just_dance_dalepave', 'assets/images/just-dance/dalepave.mp4');
+    this.load.video('just_dance_taza', 'assets/images/just-dance/taza.mp4');
+    this.load.video('just_dance_cuerpo', 'assets/images/just-dance/cuerpo.mp4');
+    this.load.video('just_dance_macarena', 'assets/images/just-dance/macarena.mp4');
+
+
+    this.load.image('just_dance_bg_grandes', 'assets/images/just-dance/just_dance_bg_grandes.jpeg');
+    this.load.image('just_dance_bg_ninos', 'assets/images/just-dance/just_dance_bg_ninos.jpeg');
+
     // Imagenes juego Duro contra el Muro
     this.load.image('duro_muro_fondo', 'assets/images/duro-muro/fondo.jpg');
     this.load.image('duro_muro_textura', 'assets/images/duro-muro/muro.jpg');
