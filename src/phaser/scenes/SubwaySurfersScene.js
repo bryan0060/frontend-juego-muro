@@ -1654,34 +1654,35 @@ export class SubwaySurfersScene extends Phaser.Scene {
       if (r <= 35) { // 35% probabilidad de avion
         obsKey = 'obs_avion';
         isAirborne = true;
+        customScale = 1.0;
       } else if (r <= 50) {
-        obsKey = 'obs_carro_1';
+        obsKey = 'obs_carro_1'; customScale = 1.0;
       } else if (r <= 65) {
-        obsKey = 'obs_carro_2';
+        obsKey = 'obs_carro_2'; customScale = 1.0;
       } else if (r <= 80) {
-        obsKey = 'obs_moto_1';
+        obsKey = 'obs_moto_1'; customScale = 1.0;
       } else {
-        obsKey = 'obs_moto_2';
+        obsKey = 'obs_moto_2'; customScale = 1.0;
       }
     } else if (this.currentScenarioIndex === 1) { // piso 1
       const r = Phaser.Math.Between(1, 6);
-      if (r === 1) obsKey = 'obs_piso1_carrito';
-      else if (r === 2) obsKey = 'obs_piso1_nino1';
-      else if (r === 3) obsKey = 'obs_piso1_nino2';
-      else if (r === 4) obsKey = 'obs_piso1_personacarrito';
-      else if (r === 5) obsKey = 'obs_piso1_persona1';
-      else obsKey = 'obs_piso1_persona2';
+      if (r === 1) { obsKey = 'obs_piso1_carrito'; customScale = 1.0; }
+      else if (r === 2) { obsKey = 'obs_piso1_nino1'; customScale = 1.0; }
+      else if (r === 3) { obsKey = 'obs_piso1_nino2'; customScale = 1.0; }
+      else if (r === 4) { obsKey = 'obs_piso1_personacarrito'; customScale = 1.0; }
+      else if (r === 5) { obsKey = 'obs_piso1_persona1'; customScale = 1.0; }
+      else { obsKey = 'obs_piso1_persona2'; customScale = 1.0; }
     } else if (this.currentScenarioIndex === 2) { // piso 2
       const r = Phaser.Math.Between(1, 4);
-      if (r === 1) obsKey = 'obs_piso2_palomitas';
-      else if (r === 2) obsKey = 'obs_piso2_pizza';
-      else if (r === 3) obsKey = 'obs_piso2_pollo1';
-      else obsKey = 'obs_piso2_pollo2';
+      if (r === 1) { obsKey = 'obs_piso2_palomitas'; customScale = 1.0; }
+      else if (r === 2) { obsKey = 'obs_piso2_pizza'; customScale = 1.0; }
+      else if (r === 3) { obsKey = 'obs_piso2_pollo1'; customScale = 1.0; }
+      else { obsKey = 'obs_piso2_pollo2'; customScale = 1.0; }
     } else if (this.currentScenarioIndex === 3) { // piso 3
       const r = Phaser.Math.Between(1, 4);
-      if (r === 1) { obsKey = 'obs_piso3_balon'; customScale = 1.0; }
-      else if (r === 2) { obsKey = 'obs_piso3_maq1'; customScale = 1.0; }
-      else if (r === 3) { obsKey = 'obs_piso3_maq2'; customScale = 1.0; }
+      if (r === 1) { obsKey = 'obs_piso3_balon'; customScale = 0.8; }
+      else if (r === 2) { obsKey = 'obs_piso3_maq1'; customScale = 1.5; }
+      else if (r === 3) { obsKey = 'obs_piso3_maq2'; customScale = 1.5; }
       else { obsKey = 'obs_piso3_pesas'; customScale = 1.0; }
     }
 
