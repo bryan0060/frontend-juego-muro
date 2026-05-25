@@ -37,22 +37,22 @@ const DOWNSCALE_FACTOR = 4;
 const SLIDE_CONFIGS = {
   NB1: { scale: 0.204, xOffset: -90, yOffset: 42, threshold: 45 }, // Niño Blanco (N-B-D.mp4 ajustado en tamaño y alineado al suelo)
   NB2: { scale: 0.204, xOffset: -71, yOffset: 42, threshold: 4 }, // Niño Moreno (Valores iniciales para 1080p, listos para calibración del nuevo video)
-  NB3: { scale: 0.182, xOffset: -56, yOffset: 42, threshold: 60, chromaColor: 'white' }, // Niña Blanca (valores calibrados con fondo blanco)
-  NB4: { scale: 0.230, xOffset: -24, yOffset: 147, threshold: 26 }, // Niña Morena (video PNG updated), valores calibrados)
+  NB3: { scale: 0.266, xOffset: -37, yOffset: 148, threshold: 0, chromaColor: 'white' }, // Niña Blanca (valores calibrados con fondo blanco)
+  NB4: { scale: 0.298, xOffset: -34, yOffset: 182, threshold: 26 }, // Niña Morena (video PNG updated), valores calibrados)
 };
 
 // Configuración de escala, posición (offset) y croma para el salto de cada personaje
 const JUMP_CONFIGS = {
   NB1: { scale: 0.228, xOffset: -53, yOffset: -14, threshold: 45 }, // Niño Blanco (0519 (1).mp4 precargado con coordenadas perfectas del usuario)
-  NB2: { scale: 0.228, xOffset: -59, yOffset: -14, threshold: 4 }, // Niño Moreno (Umbral calibrado a 4 para recuperar el cabello al 100%)
-  NB3: { scale: 0.268, xOffset: -21, yOffset: 137, threshold: 24 }, // Niña Blanca (valores calibrados)
-  NB4: { scale: 0.450, xOffset: 92, yOffset: 296, threshold: 34 }
+  NB2: { scale: 0.234, xOffset: 7, yOffset: -50, threshold: 4 }, // Niño Moreno (Umbral calibrado a 4 para recuperar el cabello al 100%)
+  NB3: { scale: 0.268, xOffset: -35, yOffset: 32, threshold: 24 }, // Niña Blanca (valores calibrados)
+  NB4: { scale: 0.486, xOffset: 97, yOffset: 292, threshold: 29 }
 };
 
 // Configuración de escala, posición y croma para correr/idle de cada personaje
 const RUN_CONFIGS = {
   NB1: { scale: 0.416, xOffset: -10, yOffset: 60, threshold: 59 },
-  NB2: { scale: 0.538, xOffset: -5, yOffset: 43, threshold: 50 },
+  NB2: { scale: 0.392, xOffset: 5, yOffset: 68, threshold: 50 },
   NB3: { scale: 0.536, xOffset: 84, yOffset: 401, threshold: 34 }, // Niña Blanca (Video MP4 con fondo negro, valores calibrados)
   NB4: { scale: 0.532, xOffset: 109, yOffset: 423, threshold: 32 }  // Niña Morena (Video MP4 con fondo negro)
 };
@@ -1693,12 +1693,12 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
     } else if (this.currentScenarioIndex === 1) { // piso 1
       const r = Phaser.Math.Between(1, 6);
-      if (r === 1) { obsKey = 'obs_piso1_carrito'; customScale = 1.0; }
-      else if (r === 2) { obsKey = 'obs_piso1_nino1'; customScale = 1.0; }
-      else if (r === 3) { obsKey = 'obs_piso1_nino2'; customScale = 1.0; }
-      else if (r === 4) { obsKey = 'obs_piso1_personacarrito'; customScale = 1.0; }
-      else if (r === 5) { obsKey = 'obs_piso1_persona1'; customScale = 1.0; }
-      else { obsKey = 'obs_piso1_persona2'; customScale = 1.0; }
+      if (r === 1) { obsKey = 'obs_piso1_carrito'; customScale = 1.2; }
+      else if (r === 2) { obsKey = 'obs_piso1_nino1'; customScale = 1.2; }
+      else if (r === 3) { obsKey = 'obs_piso1_nino2'; customScale = 1.2; }
+      else if (r === 4) { obsKey = 'obs_piso1_personacarrito'; customScale = 1.2; }
+      else if (r === 5) { obsKey = 'obs_piso1_persona1'; customScale = 1.2; }
+      else { obsKey = 'obs_piso1_persona2'; customScale = 1.2; }
     } else if (this.currentScenarioIndex === 2) { // piso 2
       const r = Phaser.Math.Between(1, 4);
       if (r === 1) { obsKey = 'obs_piso2_palomitas'; customScale = 1.0; }
@@ -1708,8 +1708,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
     } else if (this.currentScenarioIndex === 3) { // piso 3
       const r = Phaser.Math.Between(1, 4);
       if (r === 1) { obsKey = 'obs_piso3_balon'; customScale = 0.8; }
-      else if (r === 2) { obsKey = 'obs_piso3_maq1'; customScale = 1.5; }
-      else if (r === 3) { obsKey = 'obs_piso3_maq2'; customScale = 1.5; }
+      else if (r === 2) { obsKey = 'obs_piso3_maq1'; customScale = 1.2; }
+      else if (r === 3) { obsKey = 'obs_piso3_maq2'; customScale = 1.2; }
       else { obsKey = 'obs_piso3_pesas'; customScale = 1.0; }
     }
 
