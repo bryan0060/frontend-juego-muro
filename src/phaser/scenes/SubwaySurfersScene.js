@@ -1609,17 +1609,19 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
       const verticalDist = Math.abs(obj.trackY - playerY);
 
-      // Mostrar la flecha justo en el momento indicado (aprox. 0.75s antes del impacto, adaptado a la velocidad actual)
-      const warningDistance = 60 + (currentSpeed * 45); 
-      if (!isCalibrating && verticalDist < warningDistance && verticalDist >= 60 && obj.lane === this.currentLane && !obj.hit) {
+      // Mostrar la flecha justo en el momento indicado (aprox. 1.25s antes del impacto, adaptado a la latencia)
+      const warningDistance = 20 + (currentSpeed * 75); 
+      if (!isCalibrating && verticalDist < warningDistance && verticalDist >= 20 && obj.lane === this.currentLane && !obj.hit) {
         if (this.obstacles && this.obstacles.contains(obj)) {
           showWarning = true;
           warningMsg = obj.isAirborne ? '⬇' : '⬆';
         }
       }
 
-      // Ampliar un poco el margen para que no haya falsos negativos, pero exigir la acción correcta
-      if (!isCalibrating && verticalDist < 60 && obj.lane === this.currentLane && !obj.hit) {
+      // Reducimos la ventana de colisión a 20. 
+      // Antes era 60 (ancho de 120px), lo que tardaba 1000ms en cruzarse y era MAYOR a los 800ms que dura el salto,
+      // haciendo que fuera casi imposible no chocar.
+      if (!isCalibrating && verticalDist < 20 && obj.lane === this.currentLane && !obj.hit) {
         if (this.obstacles && this.obstacles.contains(obj)) {
           if (obj.isAirborne) {
             // Es el avion: te estrellas si NO TE DESLIZAS
