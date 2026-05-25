@@ -1609,7 +1609,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
 
       const verticalDist = Math.abs(obj.trackY - playerY);
 
-      if (!isCalibrating && verticalDist < 400 && verticalDist >= 60 && obj.lane === this.currentLane && !obj.hit) {
+      // Mostrar la flecha justo en el momento indicado (aprox. 0.75s antes del impacto, adaptado a la velocidad actual)
+      const warningDistance = 60 + (currentSpeed * 45); 
+      if (!isCalibrating && verticalDist < warningDistance && verticalDist >= 60 && obj.lane === this.currentLane && !obj.hit) {
         if (this.obstacles && this.obstacles.contains(obj)) {
           showWarning = true;
           warningMsg = obj.isAirborne ? '⬇' : '⬆';
