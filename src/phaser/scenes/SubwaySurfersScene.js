@@ -3,7 +3,7 @@ import * as Phaser from 'phaser';
 const SCENARIOS = [
   { id: 'calle', intro: 'intro_calle', loop: 'loop_calle', threshold: 0, trackConfig: { centerXOffset: 7, laneSpacing: 538, vanishingPointXOffset: 6, horizonYFactor: 0.556, yOffset: 0, scaleMultiplier: 0.855 } },
   { id: 'piso1', intro: 'intro_piso1', loop: 'loop_piso1', threshold: 1500, trackConfig: { centerXOffset: 0, laneSpacing: 811, vanishingPointXOffset: -5, horizonYFactor: 0.546, yOffset: 0, scaleMultiplier: 0.855 } },
-  { id: 'piso2', intro: 'intro_piso2', loop: 'loop_piso2', threshold: 3000, trackConfig: { centerXOffset: -3, laneSpacing: 509, vanishingPointXOffset: -5, horizonYFactor: 0.548, yOffset: 0, scaleMultiplier: 0.855 } },
+  { id: 'piso2', intro: 'intro_piso2', loop: 'loop_piso2', threshold: 3000, trackConfig: { centerXOffset: 25, laneSpacing: 501, vanishingPointXOffset: 3, horizonYFactor: 0.520, yOffset: -6, scaleMultiplier: 0.830 } },
   { id: 'piso3', intro: 'intro_piso3', loop: 'loop_piso3', threshold: 4500, trackConfig: { centerXOffset: 30, laneSpacing: 509, vanishingPointXOffset: 7, horizonYFactor: 0.518, yOffset: 8, scaleMultiplier: 0.955 } }
 ];
 
@@ -1705,7 +1705,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       if (r === 1) { obsKey = 'obs_piso2_palomitas'; customScale = 1.0; }
       else if (r === 2) { obsKey = 'obs_piso2_pizza'; customScale = 0.8; }
       else if (r === 3) { obsKey = 'obs_piso2_pollo1'; customScale = 1.0; }
-      else { obsKey = 'obs_piso2_pollo2'; customScale = 1.0; }
+      else { obsKey = 'obs_piso2_pollo2'; customScale = 0.8; }
     } else if (this.currentScenarioIndex === 3) { // piso 3
       const r = Phaser.Math.Between(1, 4);
       if (r === 1) { obsKey = 'obs_piso3_balon'; customScale = 0.8; }
