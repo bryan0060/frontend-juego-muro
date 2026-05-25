@@ -3,8 +3,8 @@ import * as Phaser from 'phaser';
 const SCENARIOS = [
   { id: 'calle', intro: 'intro_calle', loop: 'loop_calle', threshold: 0, trackConfig: { centerXOffset: 7, laneSpacing: 538, vanishingPointXOffset: 6, horizonYFactor: 0.556, yOffset: 0, scaleMultiplier: 0.855 } },
   { id: 'piso1', intro: 'intro_piso1', loop: 'loop_piso1', threshold: 1500, trackConfig: { centerXOffset: 0, laneSpacing: 811, vanishingPointXOffset: -5, horizonYFactor: 0.546, yOffset: 0, scaleMultiplier: 0.855 } },
-  { id: 'piso2', intro: 'intro_piso2', loop: 'loop_piso2', loopEndTime: 7, threshold: 3000, trackConfig: { centerXOffset: -3, laneSpacing: 509, vanishingPointXOffset: -5, horizonYFactor: 0.548, yOffset: 0, scaleMultiplier: 0.855 } },
-  { id: 'piso3', intro: 'intro_piso3', loop: 'loop_piso3', threshold: 4500, trackConfig: { centerXOffset: 30, laneSpacing: 509, vanishingPointXOffset: 7, horizonYFactor: 0.518, yOffset: 8, scaleMultiplier: 0.955} }
+  { id: 'piso2', intro: 'intro_piso2', loop: 'loop_piso2', threshold: 3000, trackConfig: { centerXOffset: -3, laneSpacing: 509, vanishingPointXOffset: -5, horizonYFactor: 0.548, yOffset: 0, scaleMultiplier: 0.855 } },
+  { id: 'piso3', intro: 'intro_piso3', loop: 'loop_piso3', threshold: 4500, trackConfig: { centerXOffset: 30, laneSpacing: 509, vanishingPointXOffset: 7, horizonYFactor: 0.518, yOffset: 8, scaleMultiplier: 0.955 } }
 ];
 
 // Mapeo de carril backend → índice de lane Phaser
@@ -1610,8 +1610,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
       const verticalDist = Math.abs(obj.trackY - playerY);
 
       // Mostrar la flecha justo en el momento indicado (aprox. 1.25s antes del impacto, adaptado a la latencia)
-      const warningDistance = 20 + (currentSpeed * 75); 
-      if (!isCalibrating && verticalDist < warningDistance && verticalDist >= 20 && obj.lane === this.currentLane && !obj.hit) {
+      const warningDistance = 20 + (currentSpeed * 75);
+      // Solo mostramos la flecha si el obstáculo viene hacia nosotros (trackY < playerY), evitando que reaparezca cuando ya pasó
+      if (!isCalibrating && obj.trackY < playerY && verticalDist < warningDistance && verticalDist >= 20 && obj.lane === this.currentLane && !obj.hit) {
         if (this.obstacles && this.obstacles.contains(obj)) {
           showWarning = true;
           warningMsg = obj.isAirborne ? '⬇' : '⬆';
@@ -1702,7 +1703,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     } else if (this.currentScenarioIndex === 2) { // piso 2
       const r = Phaser.Math.Between(1, 4);
       if (r === 1) { obsKey = 'obs_piso2_palomitas'; customScale = 1.0; }
-      else if (r === 2) { obsKey = 'obs_piso2_pizza'; customScale = 1.0; }
+      else if (r === 2) { obsKey = 'obs_piso2_pizza'; customScale = 0.8; }
       else if (r === 3) { obsKey = 'obs_piso2_pollo1'; customScale = 1.0; }
       else { obsKey = 'obs_piso2_pollo2'; customScale = 1.0; }
     } else if (this.currentScenarioIndex === 3) { // piso 3
