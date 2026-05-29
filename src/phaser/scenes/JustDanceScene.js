@@ -120,6 +120,11 @@ export class JustDanceScene extends Phaser.Scene {
 
   // ── WebSocket ────────────────────────────────────────────────────────────────
   _onWsMessage(e) {
+    try {
+      if (!this.scene?.isActive('JustDanceScene')) return;
+    } catch (_) {
+      return;
+    }
     const d = e.detail;
 
     if (d.port === 8081) {
@@ -135,9 +140,13 @@ export class JustDanceScene extends Phaser.Scene {
   }
 
   _hitTest(x, y) {
+    const ahora = Date.now();
+    if (ahora - (this._lastHit ?? 0) < 800) return;
+
     for (const btn of this.sensorButtons) {
       if (x >= btn.absX - btn.w / 2 && x <= btn.absX + btn.w / 2 &&
         y >= btn.absY - btn.h / 2 && y <= btn.absY + btn.h / 2) {
+        this._lastHit = ahora;
         btn.callback();
         return;
       }
@@ -198,8 +207,12 @@ export class JustDanceScene extends Phaser.Scene {
       .on('pointerdown', () => { this.sound.play('pop'); this.scene.restart({ modo: otroModo }); });
 
     this.sensorButtons.push({
-      absX: btnX + btnW / 2, absY: btnY + btnH / 2, w: btnW, h: btnH,
-      callback: () => { this.sound.play('pop'); this.scene.restart({ modo: otroModo }); },
+      absX: btnX + btnW / 2, absY: btnY + btnH / 2, w: btnW + 60, h: btnH + 40,
+      callback: () => {
+        this.sound.play('pop');
+        this._limpiarEscena();
+        this.scene.restart({ modo: otroModo });
+      },
     });
 
     // Cards
@@ -354,6 +367,26 @@ export class JustDanceScene extends Phaser.Scene {
     this.time.delayedCall(1500, () => sendMessage({ juego: 'poses', modo: 'solo' }, 8080));
 
     this._buildHUD();
+    const btnCambiar = this.add.text(20, 120, '🎵 Cambiar canción', {
+      fontSize: '22px', fontFamily: 'Arial Black',
+      color: '#ffffff', backgroundColor: '#00000088',
+      padding: { x: 14, y: 8 },
+    }).setOrigin(0, 0).setDepth(70).setInteractive({ cursor: 'pointer' });
+
+    btnCambiar.on('pointerdown', () => {
+      this.sound.play('pop');
+      if (this._video) { this._video.stop(); this._video.destroy(); this._video = null; }
+      this._mostrarSongSelect();
+    });
+
+    this.sensorButtons.push({
+      absX: 110, absY: 132, w: 200, h: 44,
+      callback: () => {
+        this.sound.play('pop');
+        if (this._video) { this._video.stop(); this._video.destroy(); this._video = null; }
+        this._mostrarSongSelect();
+      }
+    });
     this._programarEvaluaciones();
     this._video.on('complete', () => this._mostrarResultados());
   }

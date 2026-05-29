@@ -90,6 +90,7 @@ export class MagicBoardScene extends Phaser.Scene {
     this._activeTraces = [];
     this._setupInputs();
     this._impactHandler = (e) => {
+      if (!this.scene.isActive('MagicBoardScene')) return;
       if (e.detail.port !== 8081) return;
       const touches = e.detail.touches;
       if (!touches || touches.length === 0) return;

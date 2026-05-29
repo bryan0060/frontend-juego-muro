@@ -255,30 +255,35 @@ const CONFIG = {
       nombre: '👉 ¡Apúntense!',
       descripcion: '¡Cada uno extiende el brazo hacia el otro!',
       imagenKey: 'pose_duo_brazo',
+      umbralExito: 0.40,
     },
     {
       id: 'duo_superheroes1',
       nombre: '🦸 ¡Superhéroes!',
       descripcion: '¡Pónganse en pose de superhéroe!',
       imagenKey: 'pose_duo_superheroes1',
+      umbralExito: 0.40,
     },
     {
       id: 'duo_superheroes2',
       nombre: '🦸 ¡Al rescate!',
       descripcion: '¡Vuelen como superhéroes!',
       imagenKey: 'pose_duo_superheroes2',
+      umbralExito: 0.40,
     },
     {
       id: 'duo_disco',
       nombre: '🕺 ¡A bailar!',
       descripcion: '¡Saquen sus mejores pasos de baile!',
       imagenKey: 'pose_duo_disco',
+      umbralExito: 0.40,
     },
     {
       id: 'duo_dinos',
       nombre: '🦕 ¡Dinosaurios!',
       descripcion: '¡Rugean como dinosaurios!',
       imagenKey: 'pose_duo_dinos',
+      umbralExito: 0.40,
     },
     {
       id: 'duo_corazon',
@@ -322,6 +327,8 @@ export class DuroMuroScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+
+    this._debugEsqueleto = false;
 
     this.rondaActual = 0;
     this.puntaje = 0;
@@ -1075,7 +1082,7 @@ export class DuroMuroScene extends Phaser.Scene {
 
   // ─── Iniciar ronda ────────────────────────────────────────────────────────
   _iniciarRonda() {
-    if (this.rondaActual >= CONFIG.totalRondas) {
+    if (this.rondaActual >= this.posesRonda.length) {
       this._finDePartida();
       return;
     }
@@ -1083,6 +1090,7 @@ export class DuroMuroScene extends Phaser.Scene {
     this.validando = false;
     this.tiempoRestante = CONFIG.duracionPorPose;
     this._escalaMuro = { v: 0.12 };
+    this._modoQuieto = false;
 
     const pose = this.posesRonda[this.rondaActual];
     this.rondaActual++;
@@ -1090,6 +1098,27 @@ export class DuroMuroScene extends Phaser.Scene {
 
     this._actualizarIndicadorRondas();
     this.textoInstruccion.setText(pose.descripcion);
+
+    if (!this._btnCambiarModo) {
+      this._btnCambiarModo = this.add.text(20, 120, '🔀 Cambiar modo', {
+        fontSize: '22px', fontFamily: 'Fredoka, sans-serif',
+        color: '#ffffff', backgroundColor: '#00000088',
+        padding: { x: 14, y: 8 },
+      }).setOrigin(0, 0).setDepth(70).setInteractive({ cursor: 'pointer' });
+
+      this._btnCambiarModo.on('pointerdown', () => {
+        this._sonido('pop');
+        this.time.delayedCall(50, () => this._volverAlMenu());
+      });
+
+      this.sensorButtons.push({
+        absX: 110, absY: 132, w: 200, h: 44,
+        callback: () => {
+          this._sonido('pop');
+          this.time.delayedCall(50, () => this._volverAlMenu());
+        }
+      });
+    }
 
     // Primero el preview, luego arrancar
     this._previewPose(pose, () => {
@@ -1175,6 +1204,12 @@ export class DuroMuroScene extends Phaser.Scene {
       this._timerQuieto = this.time.delayedCall((CONFIG.duracionPorPose - 3) * 1000, () => {
         if (!this.juegoActivo) return;
 
+        this._modoQuieto = true;
+        if (this._emojiPose) {
+          this._emojiPose.destroy();
+          this._emojiPose = null;
+        }
+
         this.tweens.add({
           targets: [this.grafEsqueleto, this.grafFeedback],
           alpha: 0,
@@ -1204,6 +1239,80 @@ export class DuroMuroScene extends Phaser.Scene {
         this.cameras.main.shake(200, 0.006);
         this._sonido('dm_quieto');
       });
+    });
+  }
+
+  _mostrarDebugPoses() {
+    const { width: W, height: H } = this.scale;
+
+    // Pausar juego actual
+    this.juegoActivo = false;
+    this._timerRonda?.destroy();
+    this._tweenMuro?.stop();
+    this._limpiarMuro();
+    this._textoQuieto?.destroy();
+    this._textoQuieto = null;
+    this.grafEsqueleto.clear();
+    this.grafFeedback.clear();
+    this.textoTimer.setText('');
+
+    const panel = this.add.container(0, 0).setDepth(500);
+
+    const bg = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.92);
+    panel.add(bg);
+
+    const titulo = this.add.text(W / 2, 40, '🛠️ DEBUG — Seleccionar Pose', {
+      fontSize: '32px', fontFamily: 'Fredoka, sans-serif',
+      color: '#fdbf2c',
+    }).setOrigin(0.5);
+    panel.add(titulo);
+
+    const todasPoses = [...CONFIG.poses, ...CONFIG.posesDuo];
+    const cols = 4;
+    const btnW = 280, btnH = 60, gap = 10;
+    const startX = W / 2 - (cols * (btnW + gap)) / 2 + btnW / 2;
+    const startY = 100;
+
+    todasPoses.forEach((pose, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = startX + col * (btnW + gap);
+      const y = startY + row * (btnH + gap);
+
+      const esDuo = pose.id.startsWith('duo_');
+      const btn = this.add.rectangle(x, y, btnW, btnH, esDuo ? C.naranja : C.azul, 1)
+        .setInteractive({ cursor: 'pointer' });
+      panel.add(btn);
+
+      const txt = this.add.text(x, y, pose.nombre, {
+        fontSize: '18px', fontFamily: 'Fredoka, sans-serif',
+        color: '#ffffff', stroke: '#000', strokeThickness: 3,
+        wordWrap: { width: btnW - 10 }, align: 'center',
+      }).setOrigin(0.5);
+      panel.add(txt);
+
+      btn.on('pointerdown', () => {
+        panel.destroy();
+        const modo = esDuo ? 'duo' : 'solo';
+        this.modo = modo;
+        this.posesRonda = [pose];
+        this.rondaActual = 0;
+        this.validando = false;
+        const enviar = () => sendMessage({ juego: 'poses', modo }, 8080);
+        enviar();
+        this._cuentaRegresiva();
+      });
+    });
+
+    const btnCerrar = this.add.text(W / 2, H - 40, 'CERRAR', {
+      fontSize: '24px', fontFamily: 'Fredoka, sans-serif',
+      color: '#ffffff', backgroundColor: '#ff3344',
+      padding: { x: 20, y: 10 },
+    }).setOrigin(0.5).setInteractive({ cursor: 'pointer' });
+    panel.add(btnCerrar);
+    btnCerrar.on('pointerdown', () => {
+      panel.destroy();
+      this._iniciarRonda();
     });
   }
 
@@ -1258,6 +1367,15 @@ export class DuroMuroScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    if (!this._debugKeys) {
+      this._debugKeys = {
+        D: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+      };
+    }
+    if (Phaser.Input.Keyboard.JustDown(this._debugKeys.D)) {
+      this._mostrarDebugPoses();
+    }
+
     if (!this.juegoActivo && !this.validando) {
       this.grafEsqueleto.clear();
       this.grafFeedback.clear();
@@ -1292,15 +1410,17 @@ export class DuroMuroScene extends Phaser.Scene {
       const hayAlguien = this.esq1 || this.esq2;
       if (hayAlguien) {
         this.textoSinJugador.setVisible(false);
-        if (this.esq1) {
-          const e1 = this._espejearEsqueleto(this._normalizarEsqueleto(this.esq1));
-          this._dibujarEsqueleto(this.grafEsqueleto, e1, 0, 0, width / 2, height, C.azul, 48, 36);
-          this._dibujarEsqueleto(this.grafEsqueleto, e1, 0, 0, width / 2, height, 0xffffff, 18, 18);
-        }
-        if (this.esq2) {
-          const e2 = this._espejearEsqueleto(this._normalizarEsqueleto(this.esq2));
-          this._dibujarEsqueleto(this.grafEsqueleto, e2, width / 2, 0, width / 2, height, C.naranja, 48, 36);
-          this._dibujarEsqueleto(this.grafEsqueleto, e2, width / 2, 0, width / 2, height, 0xffffff, 18, 18);
+        if (this._debugEsqueleto) {
+          if (this.esq2) {
+            const e2 = this._espejearEsqueleto(this._normalizarEsqueleto(this.esq2));
+            this._dibujarEsqueleto(this.grafEsqueleto, e2, 0, 0, width / 2, height, C.azul, 48, 36);
+            this._dibujarEsqueleto(this.grafEsqueleto, e2, 0, 0, width / 2, height, 0xffffff, 18, 18);
+          }
+          if (this.esq1) {
+            const e1 = this._espejearEsqueleto(this._normalizarEsqueleto(this.esq1));
+            this._dibujarEsqueleto(this.grafEsqueleto, e1, width / 2, 0, width / 2, height, C.naranja, 48, 36);
+            this._dibujarEsqueleto(this.grafEsqueleto, e1, width / 2, 0, width / 2, height, 0xffffff, 18, 18);
+          }
         }
         if (this.juegoActivo && this._poseActual) {
           this._dibujarFeedback(this._poseActual, this.esqueleto);
@@ -1313,8 +1433,10 @@ export class DuroMuroScene extends Phaser.Scene {
         this.textoSinJugador.setVisible(false);
         const esqueletoEval = this._normalizarEsqueleto(this.esqueleto);
         const esqueletoNorm = this._espejearEsqueleto(esqueletoEval);
-        this._dibujarEsqueleto(this.grafEsqueleto, esqueletoNorm, 0, 0, width, height, C.azul, 48, 36);
-        this._dibujarEsqueleto(this.grafEsqueleto, esqueletoNorm, 0, 0, width, height, 0xffffff, 18, 18);
+        if (this._debugEsqueleto) {
+          this._dibujarEsqueleto(this.grafEsqueleto, esqueletoNorm, 0, 0, width, height, C.azul, 48, 36);
+          this._dibujarEsqueleto(this.grafEsqueleto, esqueletoNorm, 0, 0, width, height, 0xffffff, 18, 18);
+        }
         if (this.juegoActivo && this._poseActual) {
           this._dibujarFeedback(this._poseActual, esqueletoNorm, esqueletoEval);
         }
@@ -1622,6 +1744,20 @@ export class DuroMuroScene extends Phaser.Scene {
     this.grafFeedback.lineTo(xUmbral, by + 20);
     this.grafFeedback.strokePath();
 
+    if (!this._modoQuieto) {
+      const emojis = [
+        { min: 0.75, emoji: '🔥' },
+        { min: 0.55, emoji: '😄' },
+        { min: 0.35, emoji: '😐' },
+        { min: 0, emoji: '😴' },
+      ];
+      const emojiActual = emojis.find(e => pct >= e.min)?.emoji ?? '😴';
+      if (this._emojiPose) this._emojiPose.destroy();
+      this._emojiPose = this.add.text(
+        bx + bw * pct, by - 50, emojiActual, { fontSize: '48px' }
+      ).setOrigin(0.5).setDepth(17);
+    }
+
     const ahora = this.time.now;
     const nivelActual = pct >= CONFIG.umbralExito ? 'bien' : (pct >= 0.4 ? 'medio' : 'mal');
 
@@ -1665,19 +1801,17 @@ export class DuroMuroScene extends Phaser.Scene {
     }
 
     if (poseId === 'duo_brazo') {
-      if (!esq || !esq2) return { aciertos: 0, total: 4, porcentaje: 0 };
+      if (!esq || !esq2) return { aciertos: 0, total: 2, porcentaje: 0 };
       const get1 = j => esq[j];
       const get2 = j => esq2[j];
+      const distY = (a, b) => a && b ? Math.abs(a.y - b.y) : 0;
       const masAfuera = (a, b, lado) => {
         if (!a || !b) return false;
         return lado === 'izq' ? a.x < b.x : a.x > b.x;
       };
-      const distY = (a, b) => a && b ? Math.abs(a.y - b.y) : 0;
       const checks = [
-        () => masAfuera(get1('muneca_derecha'), get1('hombro_derecho'), 'der'),
-        () => distY(get1('muneca_derecha'), get1('hombro_derecho')) < 0.25,
-        () => masAfuera(get2('muneca_izquierda'), get2('hombro_izquierdo'), 'izq'),
-        () => distY(get2('muneca_izquierda'), get2('hombro_izquierdo')) < 0.25,
+        () => (masAfuera(get1('muneca_derecha'), get1('hombro_derecho'), 'der') || masAfuera(get1('muneca_izquierda'), get1('hombro_izquierdo'), 'izq')) && distY(get1('muneca_derecha'), get1('hombro_derecho')) < 0.3,
+        () => (masAfuera(get2('muneca_derecha'), get2('hombro_derecho'), 'der') || masAfuera(get2('muneca_izquierda'), get2('hombro_izquierdo'), 'izq')) && distY(get2('muneca_izquierda'), get2('hombro_izquierdo')) < 0.3,
       ];
       const total = checks.length;
       const aciertos = checks.filter(fn => fn()).length;
@@ -1706,15 +1840,13 @@ export class DuroMuroScene extends Phaser.Scene {
     }
 
     if (poseId === 'duo_superheroes2') {
-      if (!esq || !esq2) return { aciertos: 0, total: 4, porcentaje: 0 };
+      if (!esq || !esq2) return { aciertos: 0, total: 2, porcentaje: 0 };
       const get1 = j => esq[j];
       const get2 = j => esq2[j];
       const masArriba = (a, b) => a && b && a.y < b.y;
       const checks = [
-        () => masArriba(get1('muneca_derecha'), get1('nariz')),
-        () => masArriba(get2('muneca_izquierda'), get2('nariz')),
-        () => !masArriba(get1('muneca_izquierda'), get1('hombro_izquierdo')),
-        () => !masArriba(get2('muneca_derecha'), get2('hombro_derecho')),
+        () => masArriba(get1('muneca_derecha'), get1('nariz')) || masArriba(get1('muneca_izquierda'), get1('nariz')),
+        () => masArriba(get2('muneca_derecha'), get2('nariz')) || masArriba(get2('muneca_izquierda'), get2('nariz')),
       ];
       const total = checks.length;
       const aciertos = checks.filter(fn => fn()).length;
@@ -1921,7 +2053,8 @@ export class DuroMuroScene extends Phaser.Scene {
       ? this._espejearEsqueleto(this._normalizarEsqueleto(this.esq2))
       : null;
     const { aciertos, total, porcentaje } = this._evaluarPoseCompleta(pose.id, esqNorm, esq2Norm);
-    const exito = porcentaje >= CONFIG.umbralExito;
+    const umbral = pose.umbralExito ?? CONFIG.umbralExito;
+    const exito = porcentaje >= umbral;
 
     if (exito) {
       this.combo++;
@@ -2170,6 +2303,8 @@ export class DuroMuroScene extends Phaser.Scene {
 
   _volverAlMenu() {
     // Detener timers activos
+    this._btnCambiarModo?.destroy();
+    this._btnCambiarModo = null;
     this._timerRonda?.destroy();
     this._tweenMuro?.stop();
     this._musicaActual?.stop();
@@ -2272,8 +2407,8 @@ export class DuroMuroScene extends Phaser.Scene {
 
     const onReiniciar = () => this.scene.restart();
     btn.on('pointerdown', onReiniciar);
-    btn.on('pointerover', () => { btn.setFillColor(0x7a3690); this.tweens.add({ targets: btn, scaleX: 1.06, scaleY: 1.06, duration: 100 }); });
-    btn.on('pointerout', () => { btn.setFillColor(C.purpura); this.tweens.add({ targets: btn, scaleX: 1, scaleY: 1, duration: 100 }); });
+    btn.on('pointerover', () => { btn.setFillStyle(0x7a3690); this.tweens.add({ targets: btn, scaleX: 1.06, scaleY: 1.06, duration: 100 }); });
+    btn.on('pointerout', () => { btn.setFillStyle(C.purpura); this.tweens.add({ targets: btn, scaleX: 1, scaleY: 1, duration: 100 }); });
 
     // ── Botón Cambiar modo ───────────────────────────────────
     const btn2 = this.add.rectangle(width / 2 + 185, height / 2 + 175, 320, 75, C.azul)
@@ -2287,8 +2422,8 @@ export class DuroMuroScene extends Phaser.Scene {
 
     const onCambiarModo = () => this._volverAlMenu();
     btn2.on('pointerdown', onCambiarModo);
-    btn2.on('pointerover', () => { btn2.setFillColor(0x2a8fa0); this.tweens.add({ targets: btn2, scaleX: 1.06, scaleY: 1.06, duration: 100 }); });
-    btn2.on('pointerout', () => { btn2.setFillColor(C.azul); this.tweens.add({ targets: btn2, scaleX: 1, scaleY: 1, duration: 100 }); });
+    btn2.on('pointerover', () => { btn2.setFillStyle(0x2a8fa0); this.tweens.add({ targets: btn2, scaleX: 1.06, scaleY: 1.06, duration: 100 }); });
+    btn2.on('pointerout', () => { btn2.setFillStyle(C.azul); this.tweens.add({ targets: btn2, scaleX: 1, scaleY: 1, duration: 100 }); });
 
     // LiDAR — ambos botones
     this.sensorButtons.push(
@@ -2300,26 +2435,27 @@ export class DuroMuroScene extends Phaser.Scene {
 
   // ─── WebSocket ────────────────────────────────────────────────────────────
   _onWsMessage(event) {
+    try {
+      if (!this.scene?.isActive('DuroMuroScene')) return;
+    } catch (_) {
+      return;
+    }
     const data = event.detail;
 
     // ── Puerto 8081 — LiDAR ──────────────────────────────────
     if (data.port === 8081) {
+      const ahora = Date.now();
+      if (ahora - (this._lastSensorHit ?? 0) < 800) return;
+
       let x, y;
-      if (data.touches?.length > 0) {
-        x = data.touches[0].x;
-        y = data.touches[0].y;
-      } else if (data.x !== undefined) {
-        x = data.x;
-        y = data.y;
-      } else return;
+      if (data.touches?.length > 0) { x = data.touches[0].x; y = data.touches[0].y; }
+      else if (data.x !== undefined) { x = data.x; y = data.y; }
+      else return;
 
       for (const btn of this.sensorButtons) {
-        if (
-          x >= btn.absX - btn.w / 2 &&
-          x <= btn.absX + btn.w / 2 &&
-          y >= btn.absY - btn.h / 2 &&
-          y <= btn.absY + btn.h / 2
-        ) {
+        if (x >= btn.absX - btn.w / 2 && x <= btn.absX + btn.w / 2 &&
+          y >= btn.absY - btn.h / 2 && y <= btn.absY + btn.h / 2) {
+          this._lastSensorHit = ahora;
           btn.callback();
           return;
         }

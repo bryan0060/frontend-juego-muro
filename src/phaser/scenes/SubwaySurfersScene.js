@@ -211,6 +211,8 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.collectibles = null;
     this._lastLaneChange = 0;
 
+    this.sensorButtons = [];
+
     // ── Resetear estado del backend al reiniciar ──
     this._lastCarril = 'CENTER';
     this._lastAccion = 'IDLE';
@@ -390,7 +392,33 @@ export class SubwaySurfersScene extends Phaser.Scene {
   // ─────────────────────────────────────────
 
   _handleWS(event) {
+    try {
+      if (!this.scene?.isActive('SubwaySurfersScene')) return;
+    } catch (_) {
+      return;
+    }
     const data = event.detail;
+    // ... resto igual
+
+    // ── Puerto 8081 — LiDAR ──
+    if (data.port === 8081) {
+      if (!this.scene?.isActive('SubwaySurfersScene')) return;
+      if (this.isGameOver) {
+        let x, y;
+        if (data.touches?.length > 0) { x = data.touches[0].x; y = data.touches[0].y; }
+        else if (data.x !== undefined) { x = data.x; y = data.y; }
+        if (x !== undefined && this.sensorButtons) {
+          for (const btn of this.sensorButtons) {
+            if (x >= btn.absX - btn.w / 2 && x <= btn.absX + btn.w / 2 &&
+              y >= btn.absY - btn.h / 2 && y <= btn.absY + btn.h / 2) {
+              btn.callback();
+              return;
+            }
+          }
+        }
+      }
+      return;
+    }
 
     if (data.port !== 8080) return;
     if (data.juego_activo !== 'esquive') return;
@@ -623,6 +651,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       this.scenarioMenuContainer.setVisible(!this.scenarioMenuContainer.visible);
     });
     toggleBtn.add(hitArea);
+    toggleBtn.setVisible(false);
   }
 
   _startSpawnTimer() {
@@ -2154,6 +2183,15 @@ export class SubwaySurfersScene extends Phaser.Scene {
     });
     btn.on('pointerup', () => this._cancelHold());
     btn.on('pointerout', () => this._cancelHold());
+    this.sensorButtons = [];
+    this.sensorButtons.push({
+      absX: width / 2, absY: height / 2 + 140, w: 400, h: 90,
+      callback: () => {
+        if (!this.isGameOver || this._isRestarting) return;
+        this._isRestarting = true;
+        this.scene.restart();
+      }
+    });
 
     this.time.delayedCall(500, () => {
       if (!this._isRestarting) this.input.on('pointerdown', restartAction);

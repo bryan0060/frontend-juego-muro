@@ -757,6 +757,15 @@ export class AnimalesScene extends Phaser.Scene {
             padding: { x: 20, y: 10 }
         }).setOrigin(1, 0.5).setDepth(301).setInteractive({ cursor: 'pointer' });
 
+        this.sensorButtons = [];
+        this.sensorButtons.push({
+            absX: W - 40, absY: 40, w: 200, h: 50,
+            callback: () => {
+                this.sound.play('pop');
+                terminarIntro();
+            }
+        });
+
         // Bordes redondeados y sombra para el botón de saltar
         skipText.setShadow(2, 2, '#000000', 4);
 
@@ -1412,24 +1421,49 @@ export class AnimalesScene extends Phaser.Scene {
     }
 
     _onWsMessage(event) {
+        try {
+            if (!this.scene?.isActive('AnimalesScene')) return;
+        } catch (_) {
+            return;
+        }
         const data = event.detail;
 
         // ── Puerto 8081 — LiDAR ──
         if (data.port === 8081) {
+            let x, y;
+            if (data.touches?.length > 0) {
+                x = data.touches[0].x;
+                y = data.touches[0].y;
+            } else if (data.x !== undefined) {
+                x = data.x;
+                y = data.y;
+            } else return;
+
+            // Verificar sensorButtons primero
+            if (this.sensorButtons?.length > 0) {
+                for (const btn of this.sensorButtons) {
+                    if (x >= btn.absX - btn.w / 2 && x <= btn.absX + btn.w / 2 &&
+                        y >= btn.absY - btn.h / 2 && y <= btn.absY + btn.h / 2) {
+                        btn.callback();
+                        return;
+                    }
+                }
+            }
+
             if (this.estado === 'seleccion') {
                 this.sound.play('pop');
                 this.cameras.main.flash(400, 255, 255, 255);
                 this._iniciarJuego('scenery_bosque');
                 return;
             }
+
             if (data.touches?.length > 0) {
                 data.touches.forEach(touch => this._checkHit(touch.x, touch.y));
-            } else if (data.x !== undefined) {
-                this._checkHit(data.x, data.y);
+            } else if (x !== undefined) {
+                this._checkHit(x, y);
             }
             return;
         }
-
         // ── Puerto 8080 — Cámara ──
         if (data.port !== 8080) return;
         if (data.juego_activo !== 'impacto') return;
@@ -1494,11 +1528,15 @@ export class AnimalesScene extends Phaser.Scene {
     }
 
     returnToMenu() {
-        if (this.estado === 'seleccion') {
-            return false;
-        }
-        this._volverAlMenu();
-        return true;
+        this.juegoActivo = false;
+        this.sound.stopAll();
+        this.tweens.killAll();
+        this.time.removeAllEvents();
+        this.enemigos.getChildren().forEach(e => {
+            if (e.timerText) e.timerText.destroy();
+            e.destroy();
+        });
+        return false; // ← Siempre devuelve false para que PhaserGame llame onBack()
     }
 
     _gameOver() {
@@ -1534,7 +1572,15 @@ export class AnimalesScene extends Phaser.Scene {
             padding: { x: 20, y: 10 }
         }).setOrigin(1, 0.5).setDepth(301).setInteractive({ cursor: 'pointer' });
 
+
+
         skipText.setShadow(2, 2, '#000000', 4);
+
+        this.sensorButtons = [];
+        this.sensorButtons.push({
+            absX: W - 40, absY: 40, w: 200, h: 50,
+            callback: () => { this.sound.play('pop'); terminarVideoDerrota(); }
+        });
 
         let videoFinalizado = false;
         const terminarVideoDerrota = () => {
@@ -1561,13 +1607,16 @@ export class AnimalesScene extends Phaser.Scene {
                 this.scene.restart({ reintentarEscenario: this.playlistEscenarios[0] });
             });
 
-            const btnMenuGO = this.add.text(W / 2, H / 2 + 90, '☰ VOLVER AL MENÚ', {
-                fontSize: '28px', color: '#ffffff', backgroundColor: '#2e1a4e', padding: { x: 20, y: 10 }
-            }).setOrigin(0.5).setDepth(101).setInteractive({ cursor: 'pointer' });
-            btnMenuGO.on('pointerdown', () => {
-                this.sound.play('pop');
-                this._volverAlMenu();
-            });
+            this.sensorButtons = [];
+            this.sensorButtons.push(
+                {
+                    absX: W / 2, absY: H / 2 + 20, w: 200, h: 60, callback: () => {
+                        this.sound.play('pop');
+                        this.sound.stopAll();
+                        this.scene.restart({ reintentarEscenario: this.playlistEscenarios[0] });
+                    }
+                },
+            );
 
             this.sound.play('end');
         };
@@ -1616,6 +1665,12 @@ export class AnimalesScene extends Phaser.Scene {
         }).setOrigin(1, 0.5).setDepth(301).setInteractive({ cursor: 'pointer' });
 
         skipText.setShadow(2, 2, '#000000', 4);
+
+        this.sensorButtons = [];
+        this.sensorButtons.push({
+            absX: W - 40, absY: 40, w: 200, h: 50,
+            callback: () => { this.sound.play('pop'); terminarVideoVictoria(); }
+        });
 
         let videoFinalizado = false;
         const terminarVideoVictoria = () => {
@@ -1711,6 +1766,25 @@ export class AnimalesScene extends Phaser.Scene {
                 backgroundColor: '#9c4eb3',
                 padding: { x: 25, y: 12 }
             }).setOrigin(0.5).setDepth(103).setInteractive({ cursor: 'pointer' });
+
+            this.sensorButtons = [];
+            this.sensorButtons.push(
+                {
+                    absX: W / 2, absY: H / 2 + 65, w: 260, h: 60, callback: () => {
+                        this.sound.play('pop');
+                        winParticles.destroy();
+                        this.sound.stopAll();
+                        this.scene.restart({ reintentarEscenario: 'scenery_bosque' });
+                    }
+                },
+                {
+                    absX: W / 2, absY: H / 2 + 135, w: 260, h: 60, callback: () => {
+                        this.sound.play('pop');
+                        winParticles.destroy();
+                        this._volverAlMenu();
+                    }
+                }
+            );
 
             btnMenu.on('pointerover', () => {
                 this.tweens.add({ targets: btnMenu, scale: 1.05, duration: 100 });

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './CharacterSelection.module.css';
-import { getFirstTouch } from '../../services/websocket/WebSocketClient';
+import { getFirstTouch, connectWebSocket } from '../../services/websocket/WebSocketClient';
 
 const CHARACTERS = [
   { id: 'NB1', image: 'assets/images/subway/Personaje/personajef1.png', label: 'Personaje 1' },
@@ -28,7 +28,7 @@ const CharacterSelection = ({ onSelect, onBack }) => {
     const audio = new Audio('assets/audio/subway surfer/menú de personajes/Song_1.mp3');
     audio.loop = true;
     audio.volume = 0.4;
-    
+
     // El autoplay puede estar bloqueado por el navegador hasta que haya interacción,
     // pero intentamos reproducirlo de inmediato.
     audio.play().catch(e => console.log('Audio autoplay bloqueado:', e));
@@ -45,7 +45,7 @@ const CharacterSelection = ({ onSelect, onBack }) => {
     if (isHolding) {
       timer = setInterval(() => {
         setHoldProgress((prev) => {
-          const next = Math.min(prev + (20 / 2000) * 100, 100); // 2 segundos en total
+          const next = Math.min(prev + (20 / 1000) * 100, 100); // 1 segundo
           if (next >= 100) {
             clearInterval(timer);
             setTimeout(onBack, 0); // Evitar disparar en medio de la actualización de estado
@@ -73,6 +73,7 @@ const CharacterSelection = ({ onSelect, onBack }) => {
 
   // Listener para el sensor WebSocket (Radar LiDAR / Toque)
   useEffect(() => {
+    connectWebSocket(8081);
     const mountTime = Date.now();
 
     const handleSensor = (e) => {
@@ -130,7 +131,7 @@ const CharacterSelection = ({ onSelect, onBack }) => {
   return (
     <div className={styles.container}>
       <div className={styles.overlay} />
-      
+
       <h1 className={styles.title}>Selecciona tu Personaje</h1>
 
       <div className={styles.grid}>
