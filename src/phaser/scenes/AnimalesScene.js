@@ -301,10 +301,6 @@ export class AnimalesScene extends Phaser.Scene {
         this.esqueletoActual = null;
         this.enemigos = this.add.group();
 
-        this.redIzquierda = this.add.image(-200, -200, 'red').setScale(0.3).setDepth(20).setVisible(false);
-        this.redIzquierda.targetX = -200;
-        this.redIzquierda.targetY = -200;
-
         this.redDerecha = this.add.image(-200, -200, 'red').setScale(0.3).setDepth(20).setVisible(false);
         this.redDerecha.targetX = -200;
         this.redDerecha.targetY = -200;
@@ -1277,8 +1273,8 @@ export class AnimalesScene extends Phaser.Scene {
             const prevY = red.y;
 
             // Lerp — 0.35 = fluido pero responsivo
-            red.x = Phaser.Math.Linear(red.x, red.targetX, 0.35);
-            red.y = Phaser.Math.Linear(red.y, red.targetY, 0.35);
+            red.x = Phaser.Math.Linear(red.x, red.targetX, 0.7);
+            red.y = Phaser.Math.Linear(red.y, red.targetY, 0.7);
 
             // Rotación según dirección del movimiento
             const dx = red.x - prevX;
@@ -1454,21 +1450,15 @@ export class AnimalesScene extends Phaser.Scene {
             return Math.max(0, Math.min(1, (y - yMin) / (yMax - yMin)));
         };
 
-        if (mano_izquierda?.visible) {
-            this.redIzquierda.targetX = (1 - remapX(mano_izquierda.x)) * this.W;
-            this.redIzquierda.targetY = remapY(mano_izquierda.y) * this.H;
-            this.redIzquierda.setVisible(true);
-        } else {
-            this.redIzquierda.setVisible(false);
-        }
-
         if (mano_derecha?.visible) {
             this.redDerecha.targetX = (1 - remapX(mano_derecha.x)) * this.W;
             this.redDerecha.targetY = remapY(mano_derecha.y) * this.H;
-            this.redDerecha.setVisible(true);
+            if (this.redDerecha) this.redDerecha.setVisible(true);
         } else {
-            this.redDerecha.setVisible(false);
+            if (this.redDerecha) this.redDerecha.setVisible(false);
         }
+
+        if (this.redIzquierda) this.redIzquierda.setVisible(false);
     }
 
     _checkHit(x, y) {
@@ -1480,8 +1470,8 @@ export class AnimalesScene extends Phaser.Scene {
             // de esta manera el radio de colisión escala perfectamente con el tamaño del animal
             const halfWidth = (enemigo.displayWidth || 0) / 2;
             const halfHeight = (enemigo.displayHeight || 0) / 2;
-            const sizeRadius = Math.max(halfWidth, halfHeight) * 1.35; // 35% de margen adicional para facilidad de toque
-            const hitRadius = Math.max(130, sizeRadius); // Mínimo 130 píxeles de tolerancia para animales pequeños
+            const sizeRadius = Math.max(halfWidth, halfHeight) * 1.6;
+            const hitRadius = Math.max(160, sizeRadius);
 
             if (dist < hitRadius) {
                 this._eliminarEnemigo(enemigo, true);

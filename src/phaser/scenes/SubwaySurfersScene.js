@@ -102,7 +102,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this._lastAccion = 'IDLE';
 
     this._lastLaneChange = 0;
-    this._laneCooldown = 400; //Cooldown para camios entre carriles
+    this._laneCooldown = 0; //Cooldown para camios entre carriles
 
     // Referencia al listener para poder quitarlo en cleanup
     this._wsHandler = null;

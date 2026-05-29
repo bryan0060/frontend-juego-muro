@@ -17,29 +17,31 @@ const CONEXIONES = [
 
 const CANCIONES = {
   grandes: [
-    { id: 'asereje', titulo: 'Aserejé', artista: 'Las Ketchup', videoKey: 'just_dance_asereje', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_asereje' },
-    { id: 'yamal', titulo: 'Pase de Yamal', artista: '', videoKey: 'just_dance_lamine', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_yamal' },
-    { id: 'dale_pa_ve', titulo: "Dale Pa' Ve", artista: '', videoKey: 'just_dance_dalepave', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_dale_pa_ve' },
-    { id: 'la_bomba', titulo: 'La Bomba', artista: '', videoKey: 'just_dance_bomba', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_la_bomba' },
+    { id: 'asereje', titulo: 'Aserejé', artista: 'Las Ketchup', videoKey: 'just_dance_asereje', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_asereje', strictness: 2.5 },
+    { id: 'yamal', titulo: 'Pase de Yamal', artista: '', videoKey: 'just_dance_lamine', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_yamal', strictness: 5.0, joints: ['muneca_izquierda', 'muneca_derecha'] },
+    { id: 'dale_pa_ve', titulo: "Dale Pa' Ve", artista: '', videoKey: 'just_dance_dalepave', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_dale_pa_ve', strictness: 4.5 },
+    { id: 'la_bomba', titulo: 'La Bomba', artista: '', videoKey: 'just_dance_bomba', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_la_bomba', strictness: 2.5 },
   ],
   ninos: [
-    { id: 'cuerpo', titulo: 'El Baile del Cuerpo', artista: '', videoKey: 'just_dance_cuerpo', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_cuerpo' },
-    { id: 'macarena', titulo: 'Macarena', artista: 'Los del Río', videoKey: 'just_dance_macarena', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_macarena' },
-    { id: 'taza', titulo: 'Soy una Taza', artista: '', videoKey: 'just_dance_taza', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_taza' },
+    { id: 'cuerpo', titulo: 'El Baile del Cuerpo', artista: '', videoKey: 'just_dance_cuerpo', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_cuerpo', strictness: 4.5 },
+    { id: 'macarena', titulo: 'Macarena', artista: 'Los del Río', videoKey: 'just_dance_macarena', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_macarena', strictness: 4.5 },
+    { id: 'taza', titulo: 'Soy una Taza', artista: '', videoKey: 'just_dance_taza', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_taza', strictness: 4.5 },
   ],
 };
 
 const GRADES = [
-  { label: '¡PERFECT!', min: 0.85, color: 0xfdbf2c, pts: 500 },
-  { label: '¡GENIAL!', min: 0.72, color: 0x3dc9a1, pts: 300 },
-  { label: '¡BIEN!', min: 0.55, color: 0x40c0dd, pts: 150 },
+  { label: '¡PERFECT!', min: 0.75, color: 0xfdbf2c, pts: 500 },
+  { label: '¡GENIAL!', min: 0.55, color: 0x3dc9a1, pts: 300 },
+  { label: '¡BIEN!', min: 0.35, color: 0x40c0dd, pts: 150 },
   { label: '¡MUÉVETE!', min: 0, color: 0xfa804f, pts: 0 },
 ];
 
 const ST = { SELECT: 'SELECT', COUNTDOWN: 'COUNTDOWN', PLAYING: 'PLAYING', PREVIEW: 'PREVIEW', EVAL: 'EVAL', RESULTS: 'RESULTS' };
 
-function poseSim(a, b) {
-  const keys = Object.keys(b).filter(k => a[k] && b[k]);
+function poseSim(a, b, strictness = 2.5, joints = null) {
+  const keys = joints
+    ? joints.filter(k => a[k] && b[k])
+    : Object.keys(b).filter(k => a[k] && b[k]);
   if (keys.length === 0) return 0;
   const totalDist = keys.reduce((sum, k) => {
     const dx = a[k].x - b[k].x;
@@ -47,7 +49,7 @@ function poseSim(a, b) {
     return sum + Math.sqrt(dx * dx + dy * dy);
   }, 0);
   const avgDist = totalDist / keys.length;
-  return Math.max(0, 1 - avgDist * 4);
+  return Math.max(0, 1 - avgDist * strictness);
 }
 
 function getGrade(sim) {
@@ -60,6 +62,7 @@ export class JustDanceScene extends Phaser.Scene {
 
   init(data) {
     this.modo = data?.modo ?? 'grandes';
+    this._debugEsqueleto = false;
     this.state = ST.SELECT;
     this.esqueletoActual = null;
     this.cancion = null;
@@ -575,7 +578,7 @@ export class JustDanceScene extends Phaser.Scene {
     if (this._stickCanvas) { this._stickCanvas.remove(); this._stickCanvas = null; }
 
     const esquNorm = this.esqueletoActual ? this._normalizarEsqueleto(this.esqueletoActual) : null;
-    const sim = esquNorm ? poseSim(esquNorm, poseObjetivo) : 0;
+    const sim = esquNorm ? poseSim(esquNorm, poseObjetivo, this.cancion.strictness ?? 2.5, this.cancion.joints ?? null) : 0;
     const grade = getGrade(sim);
 
 
@@ -1019,7 +1022,7 @@ export class JustDanceScene extends Phaser.Scene {
     if (!this.grafEsqueleto) return;
     this.grafEsqueleto.clear();
 
-    if (this.esqueletoActual && (this.state === ST.PLAYING || this.state === ST.PREVIEW || this.state === ST.EVAL)) {
+    if (this._debugEsqueleto && this.esqueletoActual && (this.state === ST.PLAYING || this.state === ST.PREVIEW || this.state === ST.EVAL)) {
       const esqNorm = this._normalizarEsqueleto(this.esqueletoActual);
       const esqEsp = this._espejearEsqueleto(esqNorm);
       this._dibujarEsqueleto(this.grafEsqueleto, esqEsp, 0, 0, this.W, this.H, C.blue, 48, 36);
