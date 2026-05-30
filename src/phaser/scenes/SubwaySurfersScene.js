@@ -1614,8 +1614,14 @@ export class SubwaySurfersScene extends Phaser.Scene {
         obj.downArrow.setAlpha(obj.alpha);
       }
 
-      obj.setAlpha(Phaser.Math.Clamp(progress * 4, 0, 1));
-      obj.setDepth(20);
+      let currentAlpha = Phaser.Math.Clamp(progress * 4, 0, 1);
+      if (obj.trackY > playerY) {
+        currentAlpha = Math.max(0, 1 - ((obj.trackY - playerY) / 100));
+        obj.setDepth(60); // Mostrar por delante del jugador cuando ya lo pasó
+      } else {
+        obj.setDepth(20);
+      }
+      obj.setAlpha(currentAlpha);
 
       // Actualizar el halo de luz si tiene uno
       if (obj.glowCircle) {
@@ -1627,11 +1633,11 @@ export class SubwaySurfersScene extends Phaser.Scene {
           obj.glowCircle.y = obj.y - (100 * progress * pulse);
           obj.glowCircle.setScale(progress * pulse);
           obj.glowCircle.setAlpha(obj.alpha * (0.6 + Math.sin(this.time.now * 0.01) * 0.2)); // Latido extra en el alfa
-          obj.glowCircle.setDepth(19);
+          obj.glowCircle.setDepth(obj.depth - 1);
         }
       }
 
-      if (obj.trackY > this.scale.height + 200) {
+      if (obj.trackY > this.scale.height + 100) {
         if (obj.glowCircle) obj.glowCircle.destroy();
         obj.destroy();
       }
