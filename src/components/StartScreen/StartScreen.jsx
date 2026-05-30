@@ -43,37 +43,41 @@ const StartScreen = ({ onPlay }) => {
 
   useEffect(() => {
     const handleSensor = (e) => {
-      if (e.detail.port !== 8081) return;
+      try {
+        if (e.detail.port !== 8081) return;
 
-      const touch = getFirstTouch(e.detail);
-      if (!touch) return;
-      const { x, y } = touch;
+        const touch = getFirstTouch(e.detail);
+        if (!touch) return;
+        const { x, y } = touch;
 
-      if (showScreensaver) {
-        handleCloseScreensaver();
+        if (showScreensaver) {
+          handleCloseScreensaver();
+          return;
+        }
+
+        const playEl = playBtnRef.current;
+        if (playEl) {
+          const rect = playEl.getBoundingClientRect();
+          if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+            onPlay();
+            return;
+          }
+        }
+
+        const starEl = starBtnRef.current;
+        if (starEl) {
+          const rect = starEl.getBoundingClientRect();
+          const margin = 20;
+          if (
+            x >= rect.left - margin && x <= rect.right + margin &&
+            y >= rect.top - margin && y <= rect.bottom + margin
+          ) {
+            handleOpenScreensaver();
+            return;
+          }
+        }
+      } catch (_) {
         return;
-      }
-
-      const playEl = playBtnRef.current;
-      if (playEl) {
-        const rect = playEl.getBoundingClientRect();
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-          onPlay();
-          return;
-        }
-      }
-
-      const starEl = starBtnRef.current;
-      if (starEl) {
-        const rect = starEl.getBoundingClientRect();
-        const margin = 20;
-        if (
-          x >= rect.left - margin && x <= rect.right + margin &&
-          y >= rect.top - margin && y <= rect.bottom + margin
-        ) {
-          handleOpenScreensaver();
-          return;
-        }
       }
     };
 

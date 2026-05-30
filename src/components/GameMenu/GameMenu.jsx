@@ -11,31 +11,35 @@ const GameMenu = ({ onSelectGame, onBack }) => {
     const mountTime = Date.now();
 
     const handleSensor = (e) => {
-      if (e.detail.port !== 8081) return;
-      if (Date.now() - mountTime < 2000) return;
+      try {
+        if (e.detail.port !== 8081) return;
+        if (Date.now() - mountTime < 2000) return;
 
-      const touch = getFirstTouch(e.detail);
-      if (!touch) return;
-      const { x, y } = touch;
+        const touch = getFirstTouch(e.detail);
+        if (!touch) return;
+        const { x, y } = touch;
 
-      const backEl = backBtnRef.current;
-      if (backEl) {
-        const rect = backEl.getBoundingClientRect();
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-          onBack();
-          return;
+        const backEl = backBtnRef.current;
+        if (backEl) {
+          const rect = backEl.getBoundingClientRect();
+          if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+            onBack();
+            return;
+          }
         }
-      }
 
-      for (const juego of GAMES) {
-        if (!juego.disponible) continue;
-        const el = cardRefs.current[juego.id];
-        if (!el) continue;
-        const rect = el.getBoundingClientRect();
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-          onSelectGame(juego);
-          break;
+        for (const juego of GAMES) {
+          if (!juego.disponible) continue;
+          const el = cardRefs.current[juego.id];
+          if (!el) continue;
+          const rect = el.getBoundingClientRect();
+          if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+            onSelectGame(juego);
+            break;
+          }
         }
+      } catch (_) {
+        return;
       }
     };
 
