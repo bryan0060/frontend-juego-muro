@@ -13,6 +13,160 @@ export class BootScene extends Phaser.Scene {
   preload() {
     const { width, height } = this.scale;
 
+    // ==================================================
+    // PANTALLA DE CARGA PERSONALIZADA "PARKE TR3S"
+    // ==================================================
+    
+    // 1. Cargar el fondo inmediatamente y dibujarlo al completarse
+    this.load.image('carga_bg', 'assets/images/carga.png');
+    this.load.once('filecomplete-image-carga_bg', () => {
+      this.bgImage = this.add.image(width / 2, height / 2, 'carga_bg');
+      const scaleX = width / this.bgImage.width;
+      const scaleY = height / this.bgImage.height;
+      const scale = Math.max(scaleX, scaleY);
+      this.bgImage.setScale(scale);
+      this.bgImage.setDepth(-1);
+    });
+
+    // 2. Crear cabezal brillante con forma de estrella amarilla neón (Canvas Sprite)
+    const starCanvas = this.textures.createCanvas('star_handle', 44, 44);
+    const sCtx = starCanvas.getContext();
+    
+    // Sombra para dar efecto premium de elevación
+    sCtx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+    sCtx.shadowBlur = 6;
+    sCtx.shadowOffsetX = 0;
+    sCtx.shadowOffsetY = 3;
+
+    // Círculo blanco con borde amarillo grueso
+    sCtx.fillStyle = '#ffffff';
+    sCtx.strokeStyle = '#f9b800';
+    sCtx.lineWidth = 4;
+    sCtx.beginPath();
+    sCtx.arc(22, 22, 16, 0, Math.PI * 2);
+    sCtx.fill();
+    sCtx.stroke();
+    
+    // Desactivar sombra para que la estrella interna quede limpia
+    sCtx.shadowColor = 'transparent';
+    sCtx.shadowBlur = 0;
+    sCtx.shadowOffsetX = 0;
+    sCtx.shadowOffsetY = 0;
+
+    // Estrella amarilla en el centro
+    sCtx.fillStyle = '#f9b800';
+    sCtx.beginPath();
+    let rot = Math.PI / 2 * 3;
+    let spikes = 5;
+    let outerRadius = 9;
+    let innerRadius = 4.5;
+    let step = Math.PI / spikes;
+    sCtx.moveTo(22, 22 - outerRadius);
+    for (let i = 0; i < spikes; i++) {
+      let sx = 22 + Math.cos(rot) * outerRadius;
+      let sy = 22 + Math.sin(rot) * outerRadius;
+      sCtx.lineTo(sx, sy);
+      rot += step;
+      
+      sx = 22 + Math.cos(rot) * innerRadius;
+      sy = 22 + Math.sin(rot) * innerRadius;
+      sCtx.lineTo(sx, sy);
+      rot += step;
+    }
+    sCtx.closePath();
+    sCtx.fill();
+    starCanvas.refresh();
+
+    // 3. Textos y Tipografías Estilizadas
+    this.loadingTitle = this.add.text(width / 2, height * 0.73, 'PREPARANDO LA EXPERIENCIA', {
+      fontSize: '22px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#8d39a3',
+      fontWeight: 'bold'
+    }).setOrigin(0.5);
+
+    this.percentText = this.add.text(width / 2, height * 0.78, '0%', {
+      fontSize: '32px', // Tamaño amigable y no gigante ni invasivo
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#1ab29e',
+      fontWeight: 'bold'
+    }).setOrigin(0.5);
+
+    this.assetText = this.add.text(width / 2, height * 0.88, 'Cargando imágenes mágicas... ✨', {
+      fontSize: '16px',
+      fontFamily: 'Fredoka, sans-serif',
+      color: '#7c2e9b',
+      fontWeight: 'bold'
+    }).setOrigin(0.5);
+
+    // 4. Barra de Progreso a Medida
+    this.barWidth = Math.min(width * 0.7, 500); // Proporcional al ancho de la pantalla y no invasivo
+    this.barHeight = 20; // Altura estilizada
+    this.barX = width / 2 - this.barWidth / 2;
+    this.barY = height * 0.83 - this.barHeight / 2; // Posicionado más abajo para no tapar el logo de la pantalla de carga
+
+    // Fondo de barra sólido color lila/gris pastel suave
+    this.progressBg = this.add.graphics();
+    this.progressBg.fillStyle(0xeae6f3, 1);
+    this.progressBg.fillRoundedRect(this.barX, this.barY, this.barWidth, this.barHeight, 10);
+
+    this.progressBar = this.add.graphics();
+
+    // Estrella de progreso
+    this.glowHead = this.add.image(this.barX, this.barY + this.barHeight / 2, 'star_handle');
+    this.glowHead.setOrigin(0.5);
+    this.glowHead.setVisible(false);
+
+    // Frases mágicas y divertidas para la pantalla de carga
+    const loadingPhrases = [
+      "Cargando imágenes mágicas... ✨",
+      "Invocando risas y diversión... 🎈",
+      "Coloreando las estrellas del parque... 🌟",
+      "Afinando los motores de la alegría... 🚀",
+      "Preparando sorpresas increíbles... 🎁",
+      "Desplegando toboganes invisibles... 🛝",
+      "Reuniendo a los duendes del juego... 🧚",
+      "Encendiendo las luces de la diversión... 💡",
+      "Dibujando sonrisas digitales... 😊",
+      "Buscando los tesoros escondidos... 💎",
+      "Mezclando pociones de pura felicidad... 🧪",
+      "Ajustando los trampolines virtuales... 🤸",
+      "Llenando el parque de magia y color... 🎨",
+      "Sembrando semillas de fantasía... 🌱"
+    ];
+
+    this.lastPhraseUpdate = 0;
+    this.currentPhraseIndex = 0;
+
+    // 5. Suscribirse a los Eventos de Carga
+    this.load.on('progress', (value) => {
+      this.percentText.setText(Math.round(value * 100) + '%');
+      
+      this.progressBar.clear();
+      if (value > 0) {
+        this.progressBar.fillStyle(0x1cbca3, 1); // Turquesa sólido del mockup
+        const currentBarWidth = Math.max(20, this.barWidth * value);
+        this.progressBar.fillRoundedRect(this.barX, this.barY, currentBarWidth, this.barHeight, 10);
+        
+        // Mover la estrella
+        this.glowHead.x = this.barX + currentBarWidth;
+        this.glowHead.setVisible(true);
+      } else {
+        this.glowHead.setVisible(false);
+      }
+    });
+
+    this.load.on('fileprogress', (file) => {
+      const now = Date.now();
+      // Solo actualizar la frase divertida cada 1200ms para evitar parpadeos molestos
+      if (!this.lastPhraseUpdate || now - this.lastPhraseUpdate > 1200) {
+        this.lastPhraseUpdate = now;
+        const nextPhrase = loadingPhrases[this.currentPhraseIndex];
+        this.assetText.setText(nextPhrase);
+        this.currentPhraseIndex = (this.currentPhraseIndex + 1) % loadingPhrases.length;
+      }
+    });
+
     // Just Dance
     this.load.json('evals_asereje', 'assets/jsons/asereje_poses.json');
     this.load.json('evals_dale_pa_ve', 'assets/jsons/dalepave_poses.json');
@@ -60,12 +214,8 @@ export class BootScene extends Phaser.Scene {
     this.load.image('pose_duo_corazon', 'assets/images/duro-muro/pose_duo_corazon.png');
     this.load.image('pose_duo_cubiertos', 'assets/images/duro-muro/pose_duo_cubiertos.png');
 
-    // Pantalla de carga
-    const loadingText = this.add.text(width / 2, height / 2, 'Cargando...', {
-      fontSize: '32px',
-      fontFamily: 'Fredoka, sans-serif',
-      color: '#ffffff',
-    }).setOrigin(0.5);
+
+
 
 
     //Sonidos duro muro
@@ -239,6 +389,42 @@ export class BootScene extends Phaser.Scene {
     // Leer la escena inicial definida desde React
     const escenaInicial = this.registry.get('escenaInicial') || 'SoccerScene';
 
-    this.scene.start(escenaInicial);
+    // Asegurar valores al 100%
+    if (this.percentText) this.percentText.setText('100%');
+    if (this.assetText) this.assetText.setText('¡Listo! Iniciando... 💜');
+    if (this.progressBar) {
+      this.progressBar.clear();
+      this.progressBar.fillStyle(0x1cbca3, 1);
+      this.progressBar.fillRoundedRect(this.barX, this.barY, this.barWidth, this.barHeight, 10);
+    }
+    if (this.glowHead) {
+      this.glowHead.x = this.barX + this.barWidth;
+      this.glowHead.setVisible(true);
+    }
+
+    // Desvanecimiento suave y transición a la escena de juego
+    const targets = [
+      this.bgImage,
+      this.loadingTitle,
+      this.percentText,
+      this.assetText,
+      this.progressBg,
+      this.progressBar,
+      this.glowHead
+    ].filter(Boolean);
+
+    this.tweens.add({
+      targets: targets,
+      alpha: 0,
+      duration: 600,
+      ease: 'Power2',
+      onComplete: () => {
+        this.scene.start(escenaInicial);
+      }
+    });
+  }
+
+  update(time, delta) {
+    // Sin partículas flotantes en el diseño final con fondo carga.png
   }
 }

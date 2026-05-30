@@ -1648,10 +1648,24 @@ export class SubwaySurfersScene extends Phaser.Scene {
         }
       }
 
-      // Reducimos la ventana de colisión a 20. 
-      // Antes era 60 (ancho de 120px), lo que tardaba 1000ms en cruzarse y era MAYOR a los 800ms que dura el salto,
-      // haciendo que fuera casi imposible no chocar.
-      if (!isCalibrating && verticalDist < 20 && obj.lane === this.currentLane && !obj.hit) {
+      // Reducimos la ventana de colisión a 20 para obstáculos y potenciadores normales. 
+      // Para potenciadores en el aire, si el jugador salta, damos un margen generoso para que
+      // lo atrape antes, durante y después.
+      let isCollision = false;
+      if (!isCalibrating && obj.lane === this.currentLane && !obj.hit) {
+        const isCollectible = !(this.obstacles && this.obstacles.contains(obj));
+        if (isCollectible && obj.isAirborne && (this.isJumping || this._jumpDebugMode)) {
+          if (verticalDist < 200) { // Margen amplio (antes, durante y después)
+            isCollision = true;
+          }
+        } else {
+          if (verticalDist < 20) {
+            isCollision = true;
+          }
+        }
+      }
+
+      if (isCollision) {
         if (this.obstacles && this.obstacles.contains(obj)) {
           if (obj.isAirborne) {
             // Es el avion: te estrellas si NO TE DESLIZAS
