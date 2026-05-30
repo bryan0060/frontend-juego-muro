@@ -1847,7 +1847,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
     this.tweens.add({
       targets: this.playerContainer,
       x: this._getPlayerXForLane(lane),
-      duration: 150,
+      duration: 80,
       ease: 'Power2'
     });
   }
@@ -1962,7 +1962,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       }
 
       // Duración del video de deslizamiento (aprox 900ms)
-      this.time.delayedCall(900, () => {
+      this.time.delayedCall(500, () => {
         this.isSliding = false;
         if (this.playerSlide) {
           this.playerSlide.stop();
