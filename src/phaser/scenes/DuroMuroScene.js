@@ -1065,6 +1065,7 @@ export class DuroMuroScene extends Phaser.Scene {
               alpha: 0, scaleX: 1.5, scaleY: 1.5,
               duration: 200,
               onComplete: () => {
+                if (!this.scene?.isActive('DuroMuroScene')) return;
                 t.destroy();
                 i++;
                 if (i < pasos.length) mostrar();
@@ -2303,6 +2304,9 @@ export class DuroMuroScene extends Phaser.Scene {
 
   _volverAlMenu() {
     // Detener timers activos
+    this.juegoActivo = false;      // ← primero esto
+    this.time.removeAllEvents();   // ← matar todos los timers
+    this.tweens.killAll();
     this._btnCambiarModo?.destroy();
     this._btnCambiarModo = null;
     this._timerRonda?.destroy();

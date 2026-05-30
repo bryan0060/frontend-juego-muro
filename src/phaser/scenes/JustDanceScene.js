@@ -17,10 +17,10 @@ const CONEXIONES = [
 
 const CANCIONES = {
   grandes: [
-    { id: 'asereje', titulo: 'Aserejé', artista: 'Las Ketchup', videoKey: 'just_dance_asereje', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_asereje', strictness: 2.5 },
+    { id: 'asereje', titulo: 'Aserejé', artista: 'Las Ketchup', videoKey: 'just_dance_asereje', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_asereje', strictness: 4.5 },
     { id: 'yamal', titulo: 'Pase de Yamal', artista: '', videoKey: 'just_dance_lamine', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_yamal', strictness: 5.0, joints: ['muneca_izquierda', 'muneca_derecha'] },
     { id: 'dale_pa_ve', titulo: "Dale Pa' Ve", artista: '', videoKey: 'just_dance_dalepave', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_dale_pa_ve', strictness: 4.5 },
-    { id: 'la_bomba', titulo: 'La Bomba', artista: '', videoKey: 'just_dance_bomba', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_la_bomba', strictness: 2.5 },
+    { id: 'la_bomba', titulo: 'La Bomba', artista: '', videoKey: 'just_dance_bomba', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_la_bomba', strictness: 4.5 },
   ],
   ninos: [
     { id: 'cuerpo', titulo: 'El Baile del Cuerpo', artista: '', videoKey: 'just_dance_cuerpo', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_cuerpo', strictness: 4.5 },
@@ -62,7 +62,7 @@ export class JustDanceScene extends Phaser.Scene {
 
   init(data) {
     this.modo = data?.modo ?? 'grandes';
-    this._debugEsqueleto = false;
+    this._debugEsqueleto = true;
     this.state = ST.SELECT;
     this.esqueletoActual = null;
     this.cancion = null;
@@ -134,8 +134,8 @@ export class JustDanceScene extends Phaser.Scene {
       return;
     }
 
-    if (d.port === 8080 && d.juego_activo === 'poses' && d.poses?.esqueleto) {
-      this.esqueletoActual = d.poses.esqueleto;
+    if (d.port === 8080 && d.juego_activo === 'poses') {
+      this.esqueletoActual = d.poses?.esqueleto ?? null;
     }
   }
 
@@ -604,6 +604,7 @@ export class JustDanceScene extends Phaser.Scene {
   _evaluarPose(poseObjetivo) {
     if (this.state === ST.RESULTS) return;
     this.state = ST.EVAL;
+
 
     this.gfxSilueta.clear();
     if (this._txtPreview) { this._txtPreview.destroy(); this._txtPreview = null; }
