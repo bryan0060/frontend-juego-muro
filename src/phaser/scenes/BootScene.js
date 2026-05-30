@@ -205,8 +205,6 @@ export class BootScene extends Phaser.Scene {
     //POSES PARA DUO
     this.load.image('pose_duo_fusion', 'assets/images/duro-muro/pose_duo_fusion.png');
     this.load.image('pose_duo_brazo', 'assets/images/duro-muro/pose_duo_brazo.png');
-    this.load.image('pose_duo_fusion', 'assets/images/duro-muro/pose_duo_fusion.png');
-    this.load.image('pose_duo_brazo', 'assets/images/duro-muro/pose_duo_brazo.png');
     this.load.image('pose_duo_superheroes1', 'assets/images/duro-muro/pose_duo_superheroes1.png');
     this.load.image('pose_duo_superheroes2', 'assets/images/duro-muro/pose_duo_superheroes2.png');
     this.load.image('pose_duo_disco', 'assets/images/duro-muro/pose_duo_disco.png');
