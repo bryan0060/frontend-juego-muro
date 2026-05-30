@@ -1528,15 +1528,12 @@ export class AnimalesScene extends Phaser.Scene {
     }
 
     returnToMenu() {
-        this.juegoActivo = false;
-        this.sound.stopAll();
-        this.tweens.killAll();
-        this.time.removeAllEvents();
-        this.enemigos.getChildren().forEach(e => {
-            if (e.timerText) e.timerText.destroy();
-            e.destroy();
-        });
-        return false; // ← Siempre devuelve false para que PhaserGame llame onBack()
+        if (this.estado === 'seleccion') {
+            return false; // Ya estamos en el menú de escenarios del juego, salir al menú principal de React
+        }
+
+        this._volverAlMenu();
+        return true; // Hemos manejado la navegación internamente
     }
 
     _gameOver() {
