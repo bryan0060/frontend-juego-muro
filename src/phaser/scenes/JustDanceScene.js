@@ -62,7 +62,7 @@ export class JustDanceScene extends Phaser.Scene {
 
   init(data) {
     this.modo = data?.modo ?? 'grandes';
-    this._debugEsqueleto = true;
+    this._debugEsqueleto = false;
     this.state = ST.SELECT;
     this.esqueletoActual = null;
     this.cancion = null;
@@ -354,7 +354,7 @@ export class JustDanceScene extends Phaser.Scene {
     // Video fullscreen — ya tiene el fondo integrado
     this._video = this.add.video(W / 2, H / 2, this.cancion.videoKey).setDepth(2);
     this._video.play(false);
-    this._video.setVolume(0.4);
+    this._video.setVolume(0.8);
     this._video.on('play', () => {
       const scaleX = W / this._video.width;
       const scaleY = H / this._video.height;

@@ -1931,11 +1931,9 @@ export class SubwaySurfersScene extends Phaser.Scene {
     if (this.isSliding || this.isJumping) return;
     this.isSliding = true;
 
-    // Configurar imagen del deslizamiento según el personaje
     const charId = this.selectedChar || 'NB1';
     const config = SLIDE_CONFIGS[charId] || { scale: 0.38, xOffset: 0, yOffset: 0 };
 
-    // Si tiene video de deslizamiento o imagen de deslizamiento, pausar video de correr y mostrar/reproducir deslizamiento
     if (this.playerSlide || this.textures.exists('player_slide_img')) {
       this.player.setVisible(false);
       if (this.playerRunImg) this.playerRunImg.setVisible(false);
@@ -1967,16 +1965,10 @@ export class SubwaySurfersScene extends Phaser.Scene {
         this.playerSlide.play(false);
       }
 
-      // Duración del video de deslizamiento (aprox 900ms)
-      this.time.delayedCall(500, () => {
+      this.time.delayedCall(600, () => {
         this.isSliding = false;
-        if (this.playerSlide) {
-          this.playerSlide.stop();
-        }
-        if (this.playerSlideImg) {
-          this.playerSlideImg.setVisible(false);
-        }
-        // Volver a mostrar y reproducir el video de correr
+        if (this.playerSlide) this.playerSlide.stop();
+        if (this.playerSlideImg) this.playerSlideImg.setVisible(false);
         if (this.playerRunImg) {
           this.playerRunImg.setVisible(true);
         } else {
@@ -1986,7 +1978,6 @@ export class SubwaySurfersScene extends Phaser.Scene {
         if (this.player.video && this.player.video.currentTime > 2) this.player.video.currentTime = 0;
       });
     } else {
-      // Comportamiento de respaldo (squish del video de correr)
       const targetObj = this.playerRunImg || this.player;
       const originalScaleY = targetObj.scaleY;
       this.tweens.add({
@@ -2002,6 +1993,7 @@ export class SubwaySurfersScene extends Phaser.Scene {
       });
     }
   }
+
 
   _collectSun(obj) {
     if (obj.glowCircle) obj.glowCircle.destroy();
