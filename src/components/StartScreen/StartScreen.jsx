@@ -13,7 +13,6 @@ const SONGS_LIST = [
 
 const VIDEOS_LIST = [
   '/assets/audioyvideosv/salvapantallas.mp4',
-  '/assets/audioyvideosv/salvapantallas2.mp4',
 ];
 
 const StartScreen = ({ onPlay }) => {
