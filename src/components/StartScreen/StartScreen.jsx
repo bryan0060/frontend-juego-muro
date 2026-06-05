@@ -92,6 +92,7 @@ const StartScreen = ({ onPlay }) => {
             src={VIDEOS_LIST[currentVideoIndex]}
             autoPlay
             muted
+            loop
             onEnded={handleVideoEnded}
             className={styles.screensaverVideo}
           />
