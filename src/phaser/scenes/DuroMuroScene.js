@@ -26,7 +26,7 @@ const CONFIG = {
   totalRondas: 8,
   duracionPorPose: 10,
   toleranciaAngulo: 30,
-  umbralExito: 0.60,
+  // Ya no se usa umbralExito: 0.60,
   poses: [
     {
       id: 'estrella',
@@ -1123,7 +1123,7 @@ export class DuroMuroScene extends Phaser.Scene {
 
     // Primero el preview, luego arrancar
     this._previewPose(pose, () => {
-      if (!this.scene.isActive('DuroMuroScene')) return;
+      if (!this.scene?.isActive('DuroMuroScene')) return;
 
       this.juegoActivo = true;
       this._crearMuro(pose);
@@ -1327,7 +1327,7 @@ export class DuroMuroScene extends Phaser.Scene {
     this._musicaActual = this.sound.add(`duro_muro_music_${indice}`, { volume: 0.5, loop: false });
 
     this._musicaActual.on('complete', () => {
-      if (this.scene.isActive('DuroMuroScene')) {
+      if (this.scene?.isActive('DuroMuroScene')) {
         this._playMusica();
       }
     });
@@ -2054,7 +2054,7 @@ export class DuroMuroScene extends Phaser.Scene {
       ? this._espejearEsqueleto(this._normalizarEsqueleto(this.esq2))
       : null;
     const { aciertos, total, porcentaje } = this._evaluarPoseCompleta(pose.id, esqNorm, esq2Norm);
-    const umbral = pose.umbralExito ?? CONFIG.umbralExito;
+    const umbral = pose.umbralExito ?? (this.modo === 'solo' ? 0.70 : 0.60);
     const exito = porcentaje >= umbral;
 
     if (exito) {

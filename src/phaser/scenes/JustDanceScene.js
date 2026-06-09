@@ -23,9 +23,9 @@ const CANCIONES = {
     { id: 'la_bomba', titulo: 'La Bomba', artista: '', videoKey: 'just_dance_bomba', bgKey: 'just_dance_bg_grandes', evalsKey: 'evals_la_bomba', strictness: 4.5 },
   ],
   ninos: [
-    { id: 'cuerpo', titulo: 'El Baile del Cuerpo', artista: '', videoKey: 'just_dance_cuerpo', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_cuerpo', strictness: 4.5 },
-    { id: 'macarena', titulo: 'Macarena', artista: 'Los del Río', videoKey: 'just_dance_macarena', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_macarena', strictness: 4.5 },
-    { id: 'taza', titulo: 'Soy una Taza', artista: '', videoKey: 'just_dance_taza', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_taza', strictness: 4.5 },
+    { id: 'cuerpo', titulo: 'El Baile del Cuerpo', artista: '', videoKey: 'just_dance_cuerpo', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_cuerpo', strictness: 3.7 },
+    { id: 'macarena', titulo: 'Macarena', artista: 'Los del Río', videoKey: 'just_dance_macarena', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_macarena', strictness: 6.0 },
+    { id: 'taza', titulo: 'Soy una Taza', artista: '', videoKey: 'just_dance_taza', bgKey: 'just_dance_bg_ninos', evalsKey: 'evals_taza', strictness: 6.8 },
   ],
 };
 
@@ -62,7 +62,7 @@ export class JustDanceScene extends Phaser.Scene {
 
   init(data) {
     this.modo = data?.modo ?? 'grandes';
-    this._debugEsqueleto = false;
+    this._debugEsqueleto = true;
     this.state = ST.SELECT;
     this.esqueletoActual = null;
     this.cancion = null;

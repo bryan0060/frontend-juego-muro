@@ -56,7 +56,11 @@ export class MagicBoardScene extends Phaser.Scene {
       { id: 'blue', hex: 0x3399ff, str: '51, 153, 255' },
       { id: 'yellow', hex: 0xffff33, str: '255, 255, 51' },
       { id: 'purple', hex: 0xff33ff, str: '255, 51, 255' },
-      { id: 'rainbow', hex: 0xffffff, str: 'rainbow', icon: '🌈' }
+      { id: 'rainbow', hex: 0xffffff, str: 'rainbow', icon: '🌈' },
+      { id: 'brown', hex: 0x8B4513, str: '139, 69, 19' },
+      { id: 'pink', hex: 0xffb6c1, str: '255, 182, 193' },
+      { id: 'orange', hex: 0xff8c00, str: '255, 140, 0' },
+      { id: 'violet', hex: 0x9c4eb3, str: '156, 78, 179' },
     ];
     this.selectedColor = this.availableColors[0];
     this.lastX = null;
@@ -525,17 +529,27 @@ export class MagicBoardScene extends Phaser.Scene {
       const col = i % 4;
       const row = Math.floor(i / 4);
       const xOffset = (col + 1) * 110;
-      const yOffset = row === 0 ? -55 : 55;
+      const yOffset = (row - 1) * 110;
       const subBtn = this.add.container(xOffset, yOffset);
       const glow = this.add.circle(0, 0, 40, c.hex, 0.2).setDepth(-1);
-      const bg = c.id === 'rainbow' ? this.add.circle(0, 0, 35, 0xffffff).setStrokeStyle(3, 0xffffff) : this.add.circle(0, 0, 35, c.hex).setStrokeStyle(3, 0xffffff, 0.8);
-      if (c.id === 'rainbow') { const txt = this.add.text(0, 0, '🌈', { fontSize: '24px' }).setOrigin(0.5); subBtn.add([glow, bg, txt]); }
-      else { subBtn.add([glow, bg]); }
+      const bg = c.id === 'rainbow'
+        ? this.add.circle(0, 0, 35, 0xffffff).setStrokeStyle(3, 0xffffff)
+        : this.add.circle(0, 0, 35, c.hex).setStrokeStyle(3, 0xffffff, 0.8);
+      if (c.id === 'rainbow') {
+        const txt = this.add.text(0, 0, '🌈', { fontSize: '24px' }).setOrigin(0.5);
+        subBtn.add([glow, bg, txt]);
+      } else {
+        subBtn.add([glow, bg]);
+      }
       this.tweens.add({ targets: glow, scale: 1.15, alpha: 0.5, duration: 1200 + i * 100, yoyo: true, loop: -1 });
       this.colorMenuCont.add(subBtn);
       this.buttons.push({
         x: 100 + xOffset, y: btnY + yOffset, cont: subBtn, holdDuration: 1500, holdTime: 0,
-        callback: () => { this.selectedColor = c; if (this.brushStyle === 'eraser') this.brushStyle = 'shootingStar'; this.colorMenuCont.setVisible(false); }
+        callback: () => {
+          this.selectedColor = c;
+          if (this.brushStyle === 'eraser') this.brushStyle = 'shootingStar';
+          this.colorMenuCont.setVisible(false);
+        }
       });
     });
   }
