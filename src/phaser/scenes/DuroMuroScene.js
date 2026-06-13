@@ -2011,6 +2011,10 @@ export class DuroMuroScene extends Phaser.Scene {
   }
 
   _actualizarBadgeMulti() {
+    try {
+      if (!this.scene?.isActive('DuroMuroScene')) return;
+    } catch (_) { return; }
+
     if (!this._badgeMulti) {
       const { width } = this.scale;
       this._badgeMulti = this.add.text(120, 108, '', {
