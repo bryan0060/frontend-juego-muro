@@ -62,7 +62,7 @@ export class JustDanceScene extends Phaser.Scene {
 
   init(data) {
     this.modo = data?.modo ?? 'grandes';
-    this._debugEsqueleto = true;
+    this._debugEsqueleto = false;
     this.state = ST.SELECT;
     this.esqueletoActual = null;
     this.cancion = null;

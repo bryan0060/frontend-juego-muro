@@ -2027,10 +2027,15 @@ export class DuroMuroScene extends Phaser.Scene {
         padding: { x: 10, y: 4 },
       }).setOrigin(0.5).setDepth(22);
     }
-    const emojis = ['', '', '🔥', '⚡', '💥', '🌟'];
-    const e = emojis[Math.min(this.multiplicador, 5)] ?? '🌟';
-    this._badgeMulti.setText(`${e} x${this.multiplicador}`).setVisible(true);
-    this.tweens.add({ targets: this._badgeMulti, scaleX: 1.3, scaleY: 1.3, duration: 120, yoyo: true });
+
+    try {
+      const emojis = ['', '', '🔥', '⚡', '💥', '🌟'];
+      const e = emojis[Math.min(this.multiplicador, 5)] ?? '🌟';
+      this._badgeMulti.setText(`${e} x${this.multiplicador}`).setVisible(true);
+      this.tweens.add({ targets: this._badgeMulti, scaleX: 1.3, scaleY: 1.3, duration: 120, yoyo: true });
+    } catch (_) {
+      this._badgeMulti = null;
+    }
   }
 
   _ocultarBadgeMulti() {
@@ -2311,6 +2316,8 @@ export class DuroMuroScene extends Phaser.Scene {
     this.juegoActivo = false;      // ← primero esto
     this.time.removeAllEvents();   // ← matar todos los timers
     this.tweens.killAll();
+    this._badgeMulti?.destroy();
+    this._badgeMulti = null;
     this._btnCambiarModo?.destroy();
     this._btnCambiarModo = null;
     this._timerRonda?.destroy();

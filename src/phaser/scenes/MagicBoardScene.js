@@ -420,6 +420,7 @@ export class MagicBoardScene extends Phaser.Scene {
   }
 
   _saveHistory() {
+    if (this.scale.width === 0 || this.scale.height === 0) return;
     if (this.history.length > 20) this.history.shift();
     this.history.push(this.ctx.getImageData(0, 0, this.scale.width, this.scale.height));
   }

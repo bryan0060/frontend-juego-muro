@@ -1475,7 +1475,6 @@ export class SoccerScene extends Phaser.Scene {
   }
 
   // ─── Compatibilidad con laser-impact externo ─────────────────────
-  // ✅ DESPUÉS
   handleImpact(event) {
     const { port } = event.detail;
     if (port !== 8081) return;
